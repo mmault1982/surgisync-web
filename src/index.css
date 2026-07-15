@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette from the Flutter app's app_colors_v2.dart */
+  --color-brand: #c45149;
+  --color-brand-dark: #a33d36;
+  --color-surface: #f9f9f9;
+  --color-error: #f93232;
+}

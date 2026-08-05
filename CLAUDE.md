@@ -43,6 +43,13 @@ fails the build if it differs from a fresh generation.
 - The schema is **vendored**, not fetched at build time. `pnpm api:pull` refreshes it; commit the
   schema and the regenerated client together. Codegen must stay offline and deterministic.
 
+Two generated things, treated differently on purpose:
+
+|                        | committed? | why                                                                                                                                                                                                                                   |
+| ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/api/generated/**` | **yes**    | Derived from an _external_ contract. The diff is the point — when the backend changes, you want to see what it did to the client, in review.                                                                                          |
+| `src/routeTree.gen.ts` | **no**     | Derived from the local file tree. Its diff says nothing the route files do not already say, so committing it is pure noise. `pnpm typecheck` regenerates it first (`tsr generate`), so a fresh clone typechecks without a build step. |
+
 ## Auth: four invariants, each with a test
 
 `src/auth/auth-store.ts` holds session state in **module scope, not React state** — the axios

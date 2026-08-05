@@ -28,73 +28,65 @@ export interface InventoryKitList {
   readonly kit_uuid: string;
   /** DEPRECATED — use part_name. */
   readonly kit_name: string;
-  /**
-     * How many units this row represents. Always 1 for serialized parts (one row per physical unit); the on-hand count for bulk parts at one location and lot.
-     * @minimum 0
-     * @maximum 2147483647
-     */
-  quantity?: number;
+  /** How many units this row represents. Always 1 for serialized parts (one row per physical unit); the on-hand count for bulk parts at one location and lot. */
+  readonly quantity: number;
   /**
      * Manufacturer-assigned identifier for this physical kit unit.
-     * @maxLength 64
      * @nullable
      */
-  manufacturer_kit_id?: string | null;
+  readonly manufacturer_kit_id: string | null;
   /**
      * Manufacturer lot/batch code for this physical kit unit.
-     * @maxLength 64
      * @nullable
      */
-  lot_code?: string | null;
+  readonly lot_code: string | null;
   /**
      * Full UDI carrier string for this physical unit — device identifier plus production identifiers (lot/serial/expiry). Distinct from the catalog-level Part.udi (DI only).
-     * @maxLength 128
      * @nullable
      */
-  udi?: string | null;
+  readonly udi: string | null;
   /** @nullable */
   readonly parent_company_name: string | null;
   readonly manufacturer_id: number;
   readonly manufacturer_name: string;
-  ownership_type?: OwnershipTypeEnum;
+  readonly ownership_type: OwnershipTypeEnum;
   /** @nullable */
-  assigned_to_representative?: number | null;
+  readonly assigned_to_representative: number | null;
   /** @nullable */
   readonly assigned_to_name: string | null;
   /** @nullable */
-  assigned_to_facility?: number | null;
+  readonly assigned_to_facility: number | null;
   /** @nullable */
   readonly assigned_to_facility_name: string | null;
   /**
      * Free-text description of where the kit physically is.
-     * @maxLength 255
      * @nullable
      */
-  physical_location?: string | null;
+  readonly physical_location: string | null;
   /**
      * Date a loaned kit is due back.
      * @nullable
      */
-  loaner_due_date?: string | null;
+  readonly loaner_due_date: string | null;
   /** @nullable */
-  expiration_date?: string | null;
+  readonly expiration_date: string | null;
   /**
      * When this physical unit last completed sterilization.
      * @nullable
      */
-  last_sterilized_at?: string | null;
-  is_complete?: boolean;
-  is_wrapped?: boolean;
-  is_signed_in?: boolean;
-  is_returned?: boolean;
-  is_lost?: boolean;
-  is_other?: boolean;
+  readonly last_sterilized_at: string | null;
+  readonly is_complete: boolean;
+  readonly is_wrapped: boolean;
+  readonly is_signed_in: boolean;
+  readonly is_returned: boolean;
+  readonly is_lost: boolean;
+  readonly is_other: boolean;
   /** @nullable */
   readonly active_transfer_id: number | null;
   /** @nullable */
   readonly active_transfer_destination_name: string | null;
   /** @nullable */
-  photo?: string | null;
+  readonly photo: string | null;
   readonly photo_count: number;
   readonly tracker: KitTracker | null;
   /** @nullable */

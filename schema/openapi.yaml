@@ -968,6 +968,17 @@ paths:
         description: Expiring on or before this date (YYYY-MM-DD). Combine with _after
           for the 30/60/90-day buckets.
       - in: query
+        name: has_expiration_date
+        schema:
+          type: boolean
+        description: true returns only stock with an expiration date; false only stock
+          without one (the 'No Expiration' preset).
+      - in: query
+        name: has_loaner_due_date
+        schema:
+          type: boolean
+        description: true returns only stock with a loaner due date.
+      - in: query
         name: in_transit
         schema:
           type: boolean
@@ -985,6 +996,11 @@ paths:
         schema:
           type: boolean
         description: Filter by whether the unit is marked lost.
+      - in: query
+        name: is_other
+        schema:
+          type: boolean
+        description: Filter by the catch-all 'other' status flag.
       - in: query
         name: is_returned
         schema:
@@ -1049,10 +1065,29 @@ paths:
             type: string
         description: Exact match on the manufacturer-assigned kit id. Repeatable.
       - in: query
+        name: manufacturer_kit_id_contains
+        schema:
+          type: string
+        description: Case-insensitive substring match on the manufacturer kit id,
+          for the Kit ID column's type-to-filter box. Use `manufacturer_kit_id` for
+          exact multi-select.
+      - in: query
         name: ordering
         schema:
           type: string
           enum:
+          - -assigned_to_name
+          - -created_at
+          - -expiration_date
+          - -is_complete
+          - -last_sterilized_at
+          - -loaner_due_date
+          - -manufacturer_kit_id
+          - -manufacturer_name
+          - -ownership_type
+          - -part_name
+          - -physical_location
+          - -quantity
           - assigned_to_name
           - created_at
           - expiration_date
@@ -1065,15 +1100,21 @@ paths:
           - part_name
           - physical_location
           - quantity
-        description: Sort column, optionally prefixed with '-' for descending. Defaults
-          to '-created_at'. Any value outside the list is rejected with 400.
+        description: Sort column. Both directions are listed explicitly because an
+          enum cannot express a prefix — and the default itself is descending, so
+          a client restricted to the bare names could not even ask for it. Any other
+          value is a 400.
       - in: query
         name: ownership_type
         schema:
           type: array
           items:
             type: string
-        description: Filter by ownership type (e.g. owned, consigned). Repeatable.
+            enum:
+            - consigned
+            - loaned
+            - owned
+        description: Filter by ownership type. Repeatable.
       - in: query
         name: page
         schema:
@@ -1104,6 +1145,27 @@ paths:
           type: string
         description: Case-insensitive search across kit name, manufacturer name, manufacturer_kit_id,
           udi, and physical_location.
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - complete
+            - incomplete
+            - lost
+            - other
+            - signed_in
+            - signed_out
+            - unwrapped
+            - wrapped
+        description: 'Filter by status label, repeatable and OR-ed together: ?status=lost&status=incomplete
+          returns stock that is either. This is what the table''s Status column needs
+          — the individual is_* flags AND together instead, so they cannot express
+          ''either''. Note some labels are the false side of a flag: `incomplete`
+          is is_complete=false, `unwrapped` is is_wrapped=false, and `signed_out`
+          is is_signed_in=false.'
       - in: query
         name: udi
         schema:
@@ -1707,6 +1769,36 @@ paths:
                 $ref: '#/components/schemas/ErrorDetail'
           description: No such object, or it belongs to another organization. The
             two are deliberately indistinguishable.
+  /api/v1/inventory-kits/facilities/:
+    get:
+      operationId: list_stock_item_facility_facets_legacy
+      description: Facilities that the requesting user's organization currently has
+        stock assigned to, for the Rep / Assigned To column's filter menu. Sorted
+        by name.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      deprecated: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/inventory-kits/manufacturer-kit-ids/:
     get:
       operationId: list_inventory_kit_manufacturer_kit_ids_legacy
@@ -1730,8 +1822,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/StringFacetResponse'
           description: ''
         '400':
           content:
@@ -1744,6 +1835,67 @@ paths:
                     type: string
           description: Validation failed. Keys are field names, plus `non_field_errors`
             for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/inventory-kits/manufacturers/:
+    get:
+      operationId: list_stock_item_manufacturer_facets_legacy
+      description: Manufacturers that the requesting user's organization actually
+        holds stock of, for the Manufacturer column's filter menu. Sorted by name.
+        Not the global manufacturer catalog — see /api/v1/manufacturers/ for that.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      deprecated: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/inventory-kits/physical-locations/:
+    get:
+      operationId: list_stock_item_physical_location_facets_legacy
+      description: Distinct physical_location values in the requesting user's organization
+        stock, for the Physical Location column's filter menu. The field is free text,
+        so this is the only way to offer a checklist of real values; the matching
+        filter is case-insensitive exact per value.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      deprecated: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringFacetResponse'
+          description: ''
         '401':
           content:
             application/json:
@@ -4099,6 +4251,17 @@ paths:
         description: Expiring on or before this date (YYYY-MM-DD). Combine with _after
           for the 30/60/90-day buckets.
       - in: query
+        name: has_expiration_date
+        schema:
+          type: boolean
+        description: true returns only stock with an expiration date; false only stock
+          without one (the 'No Expiration' preset).
+      - in: query
+        name: has_loaner_due_date
+        schema:
+          type: boolean
+        description: true returns only stock with a loaner due date.
+      - in: query
         name: in_transit
         schema:
           type: boolean
@@ -4116,6 +4279,11 @@ paths:
         schema:
           type: boolean
         description: Filter by whether the unit is marked lost.
+      - in: query
+        name: is_other
+        schema:
+          type: boolean
+        description: Filter by the catch-all 'other' status flag.
       - in: query
         name: is_returned
         schema:
@@ -4180,10 +4348,29 @@ paths:
             type: string
         description: Exact match on the manufacturer-assigned kit id. Repeatable.
       - in: query
+        name: manufacturer_kit_id_contains
+        schema:
+          type: string
+        description: Case-insensitive substring match on the manufacturer kit id,
+          for the Kit ID column's type-to-filter box. Use `manufacturer_kit_id` for
+          exact multi-select.
+      - in: query
         name: ordering
         schema:
           type: string
           enum:
+          - -assigned_to_name
+          - -created_at
+          - -expiration_date
+          - -is_complete
+          - -last_sterilized_at
+          - -loaner_due_date
+          - -manufacturer_kit_id
+          - -manufacturer_name
+          - -ownership_type
+          - -part_name
+          - -physical_location
+          - -quantity
           - assigned_to_name
           - created_at
           - expiration_date
@@ -4196,15 +4383,21 @@ paths:
           - part_name
           - physical_location
           - quantity
-        description: Sort column, optionally prefixed with '-' for descending. Defaults
-          to '-created_at'. Any value outside the list is rejected with 400.
+        description: Sort column. Both directions are listed explicitly because an
+          enum cannot express a prefix — and the default itself is descending, so
+          a client restricted to the bare names could not even ask for it. Any other
+          value is a 400.
       - in: query
         name: ownership_type
         schema:
           type: array
           items:
             type: string
-        description: Filter by ownership type (e.g. owned, consigned). Repeatable.
+            enum:
+            - consigned
+            - loaned
+            - owned
+        description: Filter by ownership type. Repeatable.
       - in: query
         name: page
         schema:
@@ -4235,6 +4428,27 @@ paths:
           type: string
         description: Case-insensitive search across kit name, manufacturer name, manufacturer_kit_id,
           udi, and physical_location.
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - complete
+            - incomplete
+            - lost
+            - other
+            - signed_in
+            - signed_out
+            - unwrapped
+            - wrapped
+        description: 'Filter by status label, repeatable and OR-ed together: ?status=lost&status=incomplete
+          returns stock that is either. This is what the table''s Status column needs
+          — the individual is_* flags AND together instead, so they cannot express
+          ''either''. Note some labels are the false side of a flag: `incomplete`
+          is is_complete=false, `unwrapped` is is_wrapped=false, and `signed_out`
+          is is_signed_in=false.'
       - in: query
         name: udi
         schema:
@@ -4867,6 +5081,35 @@ paths:
                 $ref: '#/components/schemas/ErrorDetail'
           description: No such object, or it belongs to another organization. The
             two are deliberately indistinguishable.
+  /api/v1/stock-items/facilities/:
+    get:
+      operationId: list_stock_item_facility_facets
+      description: Facilities that the requesting user's organization currently has
+        stock assigned to, for the Rep / Assigned To column's filter menu. Sorted
+        by name.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/stock-items/manufacturer-kit-ids/:
     get:
       operationId: list_inventory_kit_manufacturer_kit_ids
@@ -4889,8 +5132,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: {}
+                $ref: '#/components/schemas/StringFacetResponse'
           description: ''
         '400':
           content:
@@ -4903,6 +5145,65 @@ paths:
                     type: string
           description: Validation failed. Keys are field names, plus `non_field_errors`
             for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/stock-items/manufacturers/:
+    get:
+      operationId: list_stock_item_manufacturer_facets
+      description: Manufacturers that the requesting user's organization actually
+        holds stock of, for the Manufacturer column's filter menu. Sorted by name.
+        Not the global manufacturer catalog — see /api/v1/manufacturers/ for that.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/stock-items/physical-locations/:
+    get:
+      operationId: list_stock_item_physical_location_facets
+      description: Distinct physical_location values in the requesting user's organization
+        stock, for the Physical Location column's filter menu. The field is free text,
+        so this is the only way to offer a checklist of real values; the matching
+        filter is case-insensitive exact per value.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringFacetResponse'
+          description: ''
         '401':
           content:
             application/json:
@@ -5668,6 +5969,27 @@ components:
         * `exited_location` - Exited location
         * `autoclave_cycle` - Autoclave cycle
         * `unknown` - Unknown
+    FacetResponse:
+      type: object
+      description: Distinct related objects, sorted by name.
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetValue'
+      required:
+      - results
+    FacetValue:
+      type: object
+      description: 'One selectable option: a stable id plus the label to show.'
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
     Facility:
       type: object
       properties:
@@ -6267,29 +6589,28 @@ components:
           description: DEPRECATED — use part_name.
         quantity:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
           description: How many units this row represents. Always 1 for serialized
             parts (one row per physical unit); the on-hand count for bulk parts at
             one location and lot.
         manufacturer_kit_id:
           type: string
+          readOnly: true
           nullable: true
           title: Kit ID
           description: Manufacturer-assigned identifier for this physical kit unit.
-          maxLength: 64
         lot_code:
           type: string
+          readOnly: true
           nullable: true
           description: Manufacturer lot/batch code for this physical kit unit.
-          maxLength: 64
         udi:
           type: string
+          readOnly: true
           nullable: true
           description: Full UDI carrier string for this physical unit — device identifier
             plus production identifiers (lot/serial/expiry). Distinct from the catalog-level
             Part.udi (DI only).
-          maxLength: 128
         parent_company_name:
           type: string
           readOnly: true
@@ -6301,9 +6622,12 @@ components:
           type: string
           readOnly: true
         ownership_type:
-          $ref: '#/components/schemas/OwnershipTypeEnum'
+          allOf:
+          - $ref: '#/components/schemas/OwnershipTypeEnum'
+          readOnly: true
         assigned_to_representative:
           type: integer
+          readOnly: true
           nullable: true
         assigned_to_name:
           type: string
@@ -6311,6 +6635,7 @@ components:
           nullable: true
         assigned_to_facility:
           type: integer
+          readOnly: true
           nullable: true
         assigned_to_facility_name:
           type: string
@@ -6318,36 +6643,45 @@ components:
           nullable: true
         physical_location:
           type: string
+          readOnly: true
           nullable: true
           description: Free-text description of where the kit physically is.
-          maxLength: 255
         loaner_due_date:
           type: string
           format: date
+          readOnly: true
           nullable: true
           description: Date a loaned kit is due back.
         expiration_date:
           type: string
           format: date
+          readOnly: true
           nullable: true
         last_sterilized_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
           title: Last sterilized
           description: When this physical unit last completed sterilization.
         is_complete:
           type: boolean
+          readOnly: true
         is_wrapped:
           type: boolean
+          readOnly: true
         is_signed_in:
           type: boolean
+          readOnly: true
         is_returned:
           type: boolean
+          readOnly: true
         is_lost:
           type: boolean
+          readOnly: true
         is_other:
           type: boolean
+          readOnly: true
         active_transfer_id:
           type: integer
           readOnly: true
@@ -6359,6 +6693,7 @@ components:
         photo:
           type: string
           format: uri
+          readOnly: true
           nullable: true
         photo_count:
           type: integer
@@ -6376,23 +6711,41 @@ components:
       required:
       - active_transfer_destination_name
       - active_transfer_id
+      - assigned_to_facility
       - assigned_to_facility_name
       - assigned_to_name
+      - assigned_to_representative
       - created_at
+      - expiration_date
       - id
+      - is_complete
+      - is_lost
+      - is_other
+      - is_returned
       - is_serialized
+      - is_signed_in
+      - is_wrapped
       - kit
       - kit_name
       - kit_uuid
+      - last_sterilized_at
+      - loaner_due_date
+      - lot_code
       - manufacturer_id
+      - manufacturer_kit_id
       - manufacturer_name
+      - ownership_type
       - parent_company_name
       - part
       - part_kind
       - part_name
       - part_uuid
+      - photo
       - photo_count
+      - physical_location
+      - quantity
       - tracker
+      - udi
     InventoryKitPhoto:
       type: object
       description: One photo of a kit. `image` is write-only; reads get a presigned
@@ -8178,6 +8531,16 @@ components:
       required:
       - password
       - token
+    StringFacetResponse:
+      type: object
+      description: Distinct free-text values, sorted.
+      properties:
+        results:
+          type: array
+          items:
+            type: string
+      required:
+      - results
     Surgeon:
       type: object
       properties:

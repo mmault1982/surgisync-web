@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import {
   ApiV1StockItemsListOrdering as Ordering,
@@ -45,14 +46,64 @@ interface Props {
   onChange: (patch: Partial<OnHandSearch>) => void;
 }
 
+/** Gap between the trigger and the panel, and the margin kept from any edge. */
+const MENU_OFFSET = 4;
+const VIEWPORT_MARGIN = 8;
+const MENU_WIDTH = 240;
+
 export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const container = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; maxHeight: number }>();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  /**
+   * The panel is portalled to <body> and positioned fixed.
+   *
+   * It cannot be absolutely positioned inside the header. The table sits in an
+   * `overflow-x-auto` wrapper for horizontal scrolling, and per the CSS spec,
+   * setting one overflow axis to a non-visible value computes the other to
+   * `auto` — so that container clips vertically too, and the panel was cut off
+   * by the table footer. No z-index fixes this: clipping is not a stacking
+   * question.
+   */
+  const reposition = useCallback(() => {
+    const rect = trigger.current?.getBoundingClientRect();
+    if (!rect) return;
+    setPosition({
+      top: rect.bottom + MENU_OFFSET,
+      // Keep the panel on screen when the column is near the right edge.
+      left: Math.max(
+        VIEWPORT_MARGIN,
+        Math.min(rect.left, window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN),
+      ),
+      // Cap the height rather than overflow the viewport; the Status menu is
+      // tall enough to need this on a short window.
+      maxHeight: Math.max(120, window.innerHeight - rect.bottom - MENU_OFFSET - VIEWPORT_MARGIN),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    reposition();
+    // Capture phase, so the table's own horizontal scroll moves the panel with
+    // its trigger rather than leaving it stranded.
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  }, [open, reposition]);
 
   useEffect(() => {
     if (!open) return;
     const onDocumentClick = (event: MouseEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      // The panel is no longer a DOM descendant of the trigger, so both have to
+      // be checked — otherwise clicking inside the menu closes it.
+      if (trigger.current?.contains(target) || panel.current?.contains(target)) return;
+      setOpen(false);
     };
     const onEscape = (event: KeyboardEvent) => {
       // The prototype has no keyboard dismissal at all.
@@ -70,8 +121,9 @@ export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
   const indicator = columnIndicator(columnKey, search, sortField);
 
   return (
-    <div ref={container} className="relative inline-block">
+    <>
       <button
+        ref={trigger}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
@@ -86,16 +138,27 @@ export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
         )}
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute left-0 top-full z-50 mt-1 min-w-60 rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
-        >
-          {sortField && <SortSection field={sortField} search={search} onChange={onChange} />}
-          <FilterSection columnKey={columnKey} search={search} onChange={onChange} />
-        </div>
-      )}
-    </div>
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={panel}
+            role="menu"
+            style={{
+              position: 'fixed',
+              top: position.top,
+              left: position.left,
+              width: MENU_WIDTH,
+              maxHeight: position.maxHeight,
+            }}
+            className="z-50 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
+          >
+            {sortField && <SortSection field={sortField} search={search} onChange={onChange} />}
+            <FilterSection columnKey={columnKey} search={search} onChange={onChange} />
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 

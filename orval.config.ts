@@ -25,6 +25,15 @@ const ALLOWED_OPERATIONS = new Set([
   // Manage On-Hand.
   'api_v1_stock_items_list',
   'api_v1_stock_items_retrieve',
+
+  // Value sources for the table's column filter menus. These return only what
+  // this organization actually holds — the global /manufacturers/ and
+  // /facilities/ endpoints are deliberately not used, since their schemas do
+  // not match what they return.
+  'list_stock_item_manufacturer_facets',
+  'list_stock_item_facility_facets',
+  'list_stock_item_physical_location_facets',
+  'list_inventory_kit_manufacturer_kit_ids',
 ]);
 
 const VERBS = ['get', 'put', 'post', 'delete', 'patch'] as const;

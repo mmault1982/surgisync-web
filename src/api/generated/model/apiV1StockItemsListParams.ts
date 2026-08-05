@@ -7,6 +7,8 @@
  */
 import type { ApiV1StockItemsListKind } from './apiV1StockItemsListKind';
 import type { ApiV1StockItemsListOrdering } from './apiV1StockItemsListOrdering';
+import type { ApiV1StockItemsListOwnershipTypeItem } from './apiV1StockItemsListOwnershipTypeItem';
+import type { ApiV1StockItemsListStatusItem } from './apiV1StockItemsListStatusItem';
 
 export type ApiV1StockItemsListParams = {
 /**
@@ -26,6 +28,14 @@ expiration_date_after?: string;
  */
 expiration_date_before?: string;
 /**
+ * true returns only stock with an expiration date; false only stock without one (the 'No Expiration' preset).
+ */
+has_expiration_date?: boolean;
+/**
+ * true returns only stock with a loaner due date.
+ */
+has_loaner_due_date?: boolean;
+/**
  * Filter by transit state. true returns only kits linked to a transfer (in transit); false returns only kits with no transfer link. Omit for no filter.
  */
 in_transit?: boolean;
@@ -37,6 +47,10 @@ is_complete?: boolean;
  * Filter by whether the unit is marked lost.
  */
 is_lost?: boolean;
+/**
+ * Filter by the catch-all 'other' status flag.
+ */
+is_other?: boolean;
 /**
  * Filter by whether the unit has been returned.
  */
@@ -78,13 +92,17 @@ manufacturer_id?: number[];
  */
 manufacturer_kit_id?: string[];
 /**
- * Sort column, optionally prefixed with '-' for descending. Defaults to '-created_at'. Any value outside the list is rejected with 400.
+ * Case-insensitive substring match on the manufacturer kit id, for the Kit ID column's type-to-filter box. Use `manufacturer_kit_id` for exact multi-select.
+ */
+manufacturer_kit_id_contains?: string;
+/**
+ * Sort column. Both directions are listed explicitly because an enum cannot express a prefix — and the default itself is descending, so a client restricted to the bare names could not even ask for it. Any other value is a 400.
  */
 ordering?: ApiV1StockItemsListOrdering;
 /**
- * Filter by ownership type (e.g. owned, consigned). Repeatable.
+ * Filter by ownership type. Repeatable.
  */
-ownership_type?: string[];
+ownership_type?: ApiV1StockItemsListOwnershipTypeItem[];
 /**
  * Page number.
  */
@@ -105,6 +123,10 @@ physical_location?: string[];
  * Case-insensitive search across kit name, manufacturer name, manufacturer_kit_id, udi, and physical_location.
  */
 search?: string;
+/**
+ * Filter by status label, repeatable and OR-ed together: ?status=lost&status=incomplete returns stock that is either. This is what the table's Status column needs — the individual is_* flags AND together instead, so they cannot express 'either'. Note some labels are the false side of a flag: `incomplete` is is_complete=false, `unwrapped` is is_wrapped=false, and `signed_out` is is_signed_in=false.
+ */
+status?: ApiV1StockItemsListStatusItem[];
 /**
  * Exact match on the unit's full UDI string.
  */

@@ -24,8 +24,12 @@ import type {
   ApiV1StockItemsList400,
   ApiV1StockItemsListParams,
   ErrorDetail,
+  FacetResponse,
   InventoryKitDetail,
-  PaginatedInventoryKitListList
+  ListInventoryKitManufacturerKitIds400,
+  ListInventoryKitManufacturerKitIdsParams,
+  PaginatedInventoryKitListList,
+  StringFacetResponse
 } from '../../model';
 
 import { apiRequest } from '../../../axios-instance';
@@ -235,6 +239,363 @@ export function useApiV1StockItemsRetrieve<TData = Awaited<ReturnType<typeof api
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApiV1StockItemsRetrieveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Facilities that the requesting user's organization currently has stock assigned to, for the Rep / Assigned To column's filter menu. Sorted by name.
+ */
+export const listStockItemFacilityFacets = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacetResponse>(
+      {url: `/api/v1/stock-items/facilities/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListStockItemFacilityFacetsQueryKey = () => {
+    return [
+    `/api/v1/stock-items/facilities/`
+    ] as const;
+    }
+
+
+export const getListStockItemFacilityFacetsQueryOptions = <TData = Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockItemFacilityFacetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockItemFacilityFacets>>> = ({ signal }) => listStockItemFacilityFacets(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListStockItemFacilityFacetsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockItemFacilityFacets>>>
+export type ListStockItemFacilityFacetsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListStockItemFacilityFacets<TData = Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemFacilityFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemFacilityFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemFacilityFacets<TData = Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemFacilityFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemFacilityFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemFacilityFacets<TData = Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListStockItemFacilityFacets<TData = Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemFacilityFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListStockItemFacilityFacetsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Return the distinct, non-null manufacturer_kit_id values across the requesting user's organization inventory kits. Intended to populate a filter/autocomplete control on the On-Hand Inventory screen. Pass manufacturer_id to scope the values to a single manufacturer.
+ */
+export const listInventoryKitManufacturerKitIds = (
+    params?: ListInventoryKitManufacturerKitIdsParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<StringFacetResponse>(
+      {url: `/api/v1/stock-items/manufacturer-kit-ids/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListInventoryKitManufacturerKitIdsQueryKey = (params?: ListInventoryKitManufacturerKitIdsParams,) => {
+    return [
+    `/api/v1/stock-items/manufacturer-kit-ids/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInventoryKitManufacturerKitIdsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>>(params?: ListInventoryKitManufacturerKitIdsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryKitManufacturerKitIdsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>> = ({ signal }) => listInventoryKitManufacturerKitIds(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListInventoryKitManufacturerKitIdsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>>
+export type ListInventoryKitManufacturerKitIdsQueryError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>
+
+
+export function useListInventoryKitManufacturerKitIds<TData = Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>>(
+ params: undefined |  ListInventoryKitManufacturerKitIdsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryKitManufacturerKitIds<TData = Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>>(
+ params?: ListInventoryKitManufacturerKitIdsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryKitManufacturerKitIds<TData = Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>>(
+ params?: ListInventoryKitManufacturerKitIdsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListInventoryKitManufacturerKitIds<TData = Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError = ErrorType<ListInventoryKitManufacturerKitIds400 | ErrorDetail>>(
+ params?: ListInventoryKitManufacturerKitIdsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitManufacturerKitIds>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListInventoryKitManufacturerKitIdsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Manufacturers that the requesting user's organization actually holds stock of, for the Manufacturer column's filter menu. Sorted by name. Not the global manufacturer catalog — see /api/v1/manufacturers/ for that.
+ */
+export const listStockItemManufacturerFacets = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacetResponse>(
+      {url: `/api/v1/stock-items/manufacturers/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListStockItemManufacturerFacetsQueryKey = () => {
+    return [
+    `/api/v1/stock-items/manufacturers/`
+    ] as const;
+    }
+
+
+export const getListStockItemManufacturerFacetsQueryOptions = <TData = Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockItemManufacturerFacetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>> = ({ signal }) => listStockItemManufacturerFacets(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListStockItemManufacturerFacetsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>>
+export type ListStockItemManufacturerFacetsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListStockItemManufacturerFacets<TData = Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemManufacturerFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemManufacturerFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemManufacturerFacets<TData = Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemManufacturerFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemManufacturerFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemManufacturerFacets<TData = Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListStockItemManufacturerFacets<TData = Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListStockItemManufacturerFacetsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Distinct physical_location values in the requesting user's organization stock, for the Physical Location column's filter menu. The field is free text, so this is the only way to offer a checklist of real values; the matching filter is case-insensitive exact per value.
+ */
+export const listStockItemPhysicalLocationFacets = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<StringFacetResponse>(
+      {url: `/api/v1/stock-items/physical-locations/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListStockItemPhysicalLocationFacetsQueryKey = () => {
+    return [
+    `/api/v1/stock-items/physical-locations/`
+    ] as const;
+    }
+
+
+export const getListStockItemPhysicalLocationFacetsQueryOptions = <TData = Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockItemPhysicalLocationFacetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>> = ({ signal }) => listStockItemPhysicalLocationFacets(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListStockItemPhysicalLocationFacetsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>>
+export type ListStockItemPhysicalLocationFacetsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListStockItemPhysicalLocationFacets<TData = Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemPhysicalLocationFacets<TData = Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListStockItemPhysicalLocationFacets<TData = Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListStockItemPhysicalLocationFacets<TData = Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockItemPhysicalLocationFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListStockItemPhysicalLocationFacetsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

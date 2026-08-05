@@ -10,6 +10,18 @@ export type ApiV1StockItemsListOrdering = typeof ApiV1StockItemsListOrdering[key
 
 
 export const ApiV1StockItemsListOrdering = {
+  '-assigned_to_name': '-assigned_to_name',
+  '-created_at': '-created_at',
+  '-expiration_date': '-expiration_date',
+  '-is_complete': '-is_complete',
+  '-last_sterilized_at': '-last_sterilized_at',
+  '-loaner_due_date': '-loaner_due_date',
+  '-manufacturer_kit_id': '-manufacturer_kit_id',
+  '-manufacturer_name': '-manufacturer_name',
+  '-ownership_type': '-ownership_type',
+  '-part_name': '-part_name',
+  '-physical_location': '-physical_location',
+  '-quantity': '-quantity',
   assigned_to_name: 'assigned_to_name',
   created_at: 'created_at',
   expiration_date: 'expiration_date',

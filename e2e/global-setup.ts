@@ -28,6 +28,15 @@ export default async function globalSetup() {
     );
   }
 
+  if (response.status === 429) {
+    throw new Error(
+      'The login endpoint is rate limited (web_login is 10/min and IP-keyed).\n' +
+        'This suite spends ~6 logins per run, so two runs inside a minute exhaust it.\n' +
+        'Wait a minute, or raise it for local development:\n' +
+        '  THROTTLE_RATE_WEB_LOGIN=100/min in the backend .env, then restart it.',
+    );
+  }
+
   if (!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD) {
     throw new Error(
       'Set E2E_EMAIL and E2E_PASSWORD to a seeded, approved user.\n' +

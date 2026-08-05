@@ -57,6 +57,9 @@ export default tseslint.config(
   {
     files: ['**/*.test.{ts,tsx}', 'src/test/**', 'e2e/**'],
     rules: {
+      // Playwright fixtures take a parameter named `use`, which the React
+      // plugin reads as the `use` hook being called outside a component.
+      'react-hooks/rules-of-hooks': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',

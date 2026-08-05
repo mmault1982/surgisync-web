@@ -21,14 +21,24 @@ import {
   OwnershipTypeEnum
 } from '../../model';
 import type {
+  FacetResponse,
   InventoryKitDetail,
-  PaginatedInventoryKitListList
+  PaginatedInventoryKitListList,
+  StringFacetResponse
 } from '../../model';
 
 
-export const getApiV1StockItemsListResponseMock = (overrideResponse: Partial<Extract<PaginatedInventoryKitListList, object>> = {}): PaginatedInventoryKitListList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), part: faker.number.int(), part_uuid: faker.string.uuid(), part_name: faker.string.alpha({length: {min: 10, max: 20}}), part_kind: faker.string.alpha({length: {min: 10, max: 20}}), is_serialized: faker.datatype.boolean(), kit: faker.number.int(), kit_uuid: faker.string.uuid(), kit_name: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.helpers.arrayElement([faker.number.int({min: 0, max: 2147483647}), undefined]), manufacturer_kit_id: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), lot_code: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), udi: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 128}}), null]), undefined]), parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), manufacturer_id: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), ownership_type: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(OwnershipTypeEnum)), undefined]), assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), physical_location: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), null]), undefined]), loaner_due_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), expiration_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), last_sterilized_at: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), is_complete: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_wrapped: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_signed_in: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_returned: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_lost: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_other: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), active_transfer_id: faker.helpers.arrayElement([faker.number.int(), null]), active_transfer_destination_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), photo_count: faker.number.int(), tracker: {...{id: faker.number.int(), beacon_id: faker.string.alpha({length: {min: 10, max: 20}}), is_active: faker.datatype.boolean()},}, created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
+export const getApiV1StockItemsListResponseMock = (overrideResponse: Partial<Extract<PaginatedInventoryKitListList, object>> = {}): PaginatedInventoryKitListList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), part: faker.number.int(), part_uuid: faker.string.uuid(), part_name: faker.string.alpha({length: {min: 10, max: 20}}), part_kind: faker.string.alpha({length: {min: 10, max: 20}}), is_serialized: faker.datatype.boolean(), kit: faker.number.int(), kit_uuid: faker.string.uuid(), kit_name: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), manufacturer_kit_id: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lot_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), udi: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), manufacturer_id: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), ownership_type: faker.helpers.arrayElement(Object.values(OwnershipTypeEnum)), assigned_to_representative: faker.helpers.arrayElement([faker.number.int(), null]), assigned_to_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), assigned_to_facility: faker.helpers.arrayElement([faker.number.int(), null]), assigned_to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), physical_location: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), loaner_due_date: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), expiration_date: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), last_sterilized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), is_complete: faker.datatype.boolean(), is_wrapped: faker.datatype.boolean(), is_signed_in: faker.datatype.boolean(), is_returned: faker.datatype.boolean(), is_lost: faker.datatype.boolean(), is_other: faker.datatype.boolean(), active_transfer_id: faker.helpers.arrayElement([faker.number.int(), null]), active_transfer_destination_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), photo: faker.helpers.arrayElement([faker.internet.url(), null]), photo_count: faker.number.int(), tracker: {...{id: faker.number.int(), beacon_id: faker.string.alpha({length: {min: 10, max: 20}}), is_active: faker.datatype.boolean()},}, created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), ...overrideResponse})
 
 export const getApiV1StockItemsRetrieveResponseMock = (overrideResponse: Partial<Extract<InventoryKitDetail, object>> = {}): InventoryKitDetail => ({id: faker.number.int(), parent_company: faker.helpers.arrayElement([faker.number.int(), null]), parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), part: faker.helpers.arrayElement([faker.number.int(), undefined]), part_uuid: faker.string.uuid(), part_name: faker.string.alpha({length: {min: 10, max: 20}}), part_kind: faker.string.alpha({length: {min: 10, max: 20}}), is_serialized: faker.datatype.boolean(), kit: faker.helpers.arrayElement([faker.number.int(), undefined]), kit_uuid: faker.string.uuid(), kit_name: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.helpers.arrayElement([faker.number.int({min: 0, max: 2147483647}), undefined]), manufacturer_kit_id: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), lot_code: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), udi: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 128}}), null]), undefined]), manufacturer_id: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), physical_location: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), null]), undefined]), ownership_type: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(OwnershipTypeEnum)), undefined]), loaner_due_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), expiration_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), last_sterilized_at: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), is_complete: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_wrapped: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_signed_in: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_returned: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_lost: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_other: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), active_transfer_id: faker.helpers.arrayElement([faker.number.int(), null]), active_transfer_destination_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), photos: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), url: faker.helpers.arrayElement([faker.internet.url(), null]), caption: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), photo_count: faker.number.int(), tracker: {...{id: faker.number.int(), beacon_id: faker.string.alpha({length: {min: 10, max: 20}}), is_active: faker.datatype.boolean()},}, notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getListStockItemFacilityFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getListInventoryKitManufacturerKitIdsResponseMock = (overrideResponse: Partial<Extract<StringFacetResponse, object>> = {}): StringFacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
+
+export const getListStockItemManufacturerFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getListStockItemPhysicalLocationFacetsResponseMock = (overrideResponse: Partial<Extract<StringFacetResponse, object>> = {}): StringFacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
 
 
 export const getApiV1StockItemsListMockHandler = (overrideResponse?: PaginatedInventoryKitListList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedInventoryKitListList> | PaginatedInventoryKitListList), options?: RequestHandlerOptions) => {
@@ -54,7 +64,59 @@ export const getApiV1StockItemsRetrieveMockHandler = (overrideResponse?: Invento
       })
   }, options)
 }
+
+export const getListStockItemFacilityFacetsMockHandler = (overrideResponse?: FacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<FacetResponse> | FacetResponse), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/stock-items/facilities/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStockItemFacilityFacetsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListInventoryKitManufacturerKitIdsMockHandler = (overrideResponse?: StringFacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StringFacetResponse> | StringFacetResponse), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/stock-items/manufacturer-kit-ids/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListInventoryKitManufacturerKitIdsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListStockItemManufacturerFacetsMockHandler = (overrideResponse?: FacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<FacetResponse> | FacetResponse), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/stock-items/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStockItemManufacturerFacetsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListStockItemPhysicalLocationFacetsMockHandler = (overrideResponse?: StringFacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StringFacetResponse> | StringFacetResponse), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/stock-items/physical-locations/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListStockItemPhysicalLocationFacetsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getInventoryMock = () => [
   getApiV1StockItemsListMockHandler(),
-  getApiV1StockItemsRetrieveMockHandler()
+  getApiV1StockItemsRetrieveMockHandler(),
+  getListStockItemFacilityFacetsMockHandler(),
+  getListInventoryKitManufacturerKitIdsMockHandler(),
+  getListStockItemManufacturerFacetsMockHandler(),
+  getListStockItemPhysicalLocationFacetsMockHandler()
 ]

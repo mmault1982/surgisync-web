@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   /* Brand palette from the Flutter app's app_colors_v2.dart */

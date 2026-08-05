@@ -1,0 +1,43 @@
+name: Schema drift
+
+# Notification, not a gate: opens a PR when the backend contract has moved on.
+# Deliberately not part of CI — staging is spun down between uses, so this can
+# be red without blocking anyone's work.
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      schema_url:
+        description: 'Schema URL to compare against'
+        required: false
+        default: 'https://www.surgisoftsolutions.com/schema/v1/'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pull the published contract
+        env:
+          SCHEMA_URL: ${{ inputs.schema_url || 'https://www.surgisoftsolutions.com/schema/v1/' }}
+        run: pnpm api:pull && pnpm api:gen
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/schema-drift
+          title: 'Backend contract has changed'
+          commit-message: 'Refresh the vendored API contract and regenerate the client'
+          body: |
+            The published backend schema differs from the vendored copy.
+
+            Review the `schema/openapi.yaml` diff first — it is the contract.
+            The `src/api/generated` changes follow from it mechanically.
+          delete-branch: true

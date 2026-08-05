@@ -4,61 +4,123 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**SurgiSync Web** — a React/Vite spike, and a deliberate port of the native Swift/SwiftUI spike at `../app` (read its `CLAUDE.md`; several files here name their iOS counterpart in a header comment). Both explore a replacement for the Flutter app at `../surgiscribe-mobile-app` and talk to the SurgiScribe Django backend at `../surgiscribe-backend` (REST spec: `../surgiscribe-backend/openapi.yaml`). Scope is deliberately small: login, a representatives list, and logout.
+**SurgiSync Web** — the desktop web client for the SurgiSync inventory module, talking to the
+SurgiScribe Django backend at `../surgiscribe-backend`. It replaced an earlier spike; none of the
+spike's API layer survives, because the backend added dedicated browser auth endpoints with a clean
+contract (see `../surgiscribe-backend/docs/tickets/surgisync-web-inventory.md`).
+
+The UI spec is `../SurgiSoft/SurgiSync Inventory WebAdmin.html` — the desktop prototype. Use that
+file, not `SurgiSync Desktop - Inventory.html`, which is superseded and has none of the column-filter
+behaviour.
 
 ## Commands
 
 ```sh
-npm run dev        # Vite dev server on :5173, with the /api proxy
-npm run build      # tsc --noEmit && vite build
-npm run preview    # serve the production build
-npm run test:e2e   # Playwright (starts the dev server itself)
+pnpm dev          # Vite on :5173 (pinned), proxying /api to the backend
+pnpm verify       # typecheck + lint + format:check + api:check + unit tests
+pnpm test         # Vitest only
+pnpm test:e2e     # Playwright (needs a seeded backend, see below)
+pnpm api:pull     # refresh the vendored schema from the backend
+pnpm api:gen      # regenerate the API client from the vendored schema
 ```
 
-Single test, by name or by file:line:
+`pnpm verify` is the one command to run before saying something works. Run a single unit test with
+`pnpm test src/auth/__tests__/auth-store.test.ts -t 'single-flight'`.
 
-```sh
-npx playwright test -g "wrong password shows inline error"
-npx playwright test e2e/login-flow.spec.ts:20
+**pnpm, not npm.** The lockfile is `pnpm-lock.yaml`.
+
+## The API client is generated — never hand-write a call
+
+`src/api/generated/**` is orval output from `schema/openapi.yaml`. Do not edit it; `pnpm api:check`
+fails the build if it differs from a fresh generation.
+
+- **Adding a screen means adding its operationId to `ALLOWED_OPERATIONS` in `orval.config.ts`.** The
+  contract has 143 operations; this app generates a handful, deliberately.
+- **If a screen needs something the generated client cannot express, that is a backend schema bug.**
+  Several endpoints outside `/stock-items/`, `/inventory-kits/`, `/inventory-transfers/` and
+  `/api/v1/web/` declare a bare array while actually returning `{message, data}` — a generated client
+  for those compiles and then fails at runtime, which is why they are not in the allowlist.
+- The schema is **vendored**, not fetched at build time. `pnpm api:pull` refreshes it; commit the
+  schema and the regenerated client together. Codegen must stay offline and deterministic.
+
+Two generated things, treated differently on purpose:
+
+|                        | committed? | why                                                                                                                                                                                                                                   |
+| ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/api/generated/**` | **yes**    | Derived from an _external_ contract. The diff is the point — when the backend changes, you want to see what it did to the client, in review.                                                                                          |
+| `src/routeTree.gen.ts` | **no**     | Derived from the local file tree. Its diff says nothing the route files do not already say, so committing it is pure noise. `pnpm typecheck` regenerates it first (`tsr generate`), so a fresh clone typechecks without a build step. |
+
+## Auth: four invariants, each with a test
+
+`src/auth/auth-store.ts` holds session state in **module scope, not React state** — the axios
+interceptor is not a component and would otherwise read a stale closure, and the single-flight guard
+has to be a true singleton. `auth-context.tsx` is a thin `useSyncExternalStore` subscriber.
+
+1. **Refresh is single-flight.** `POST /api/v1/web/refresh/` _rotates_ the cookie: it blacklists the
+   token it was given and sets the successor. Two concurrent refreshes present the same cookie, the
+   second is rejected, and the backend **clears the cookie** — ending a healthy session. Never call
+   the refresh endpoint outside `refreshAccessToken()`.
+2. **The 401 interceptor excludes `/api/v1/web/*`.** Login 401s on bad credentials and refresh 401s
+   on a dead cookie; routing either into the refresh path is an infinite loop that also burns the
+   10/min login bucket.
+3. **Boot restore is a real refresh call.** The cookie is httpOnly, so there is nothing readable to
+   guess from — no optimistic "we have a token, assume logged in". `ensureRestored()` is memoised so
+   the provider effect and every route guard share one request.
+4. **The access token lives in memory only.** Never localStorage, never a readable cookie. The
+   refresh token is never visible to JavaScript at all.
+
+`<StrictMode>` is on. It was off in the spike because double effects fired two concurrent refreshes;
+single-flight fixed that. Do not remove it.
+
+## Traps that have already bitten
+
+- **`paramsSerializer: { indexes: null }`** in `src/api/axios-instance.ts` is load-bearing. Array
+  query params (`manufacturer_id`, `ownership_type`, …) must serialize as repeated bare keys. In
+  axios, `null` does that; `false` produces `key[]` and `true` produces `key[0]`. With the wrong
+  value the server's `getlist()` sees nothing, the filter is **silently ignored**, and the user gets
+  an unfiltered page with no error. Regression-tested — do not "simplify" it away.
+- **The dev server port is pinned (`strictPort: true`).** The backend's trusted-origin allowlist
+  names `http://localhost:5173` exactly. Drifting to 5174 makes every `/api/v1/web/` call 403 with
+  no clue why.
+- **The Vite proxy is mandatory, not a CORS convenience.** The refresh cookie is host-only and
+  `SameSite=Lax`; a page on `:5173` talking directly to the API on `:8000` would never receive or
+  return it. The proxy makes the app same-origin with the API, as it will be when deployed.
+- **Trailing slashes are required** on every backend path.
+
+## Backend contract
+
+Browser auth is `/api/v1/web/{login,refresh,logout}` — flat, typed responses, correct status codes,
+and an httpOnly rotating refresh cookie. It is **not** the `{message, data, error}` envelope the
+mobile endpoints use; do not reintroduce envelope handling.
+
+Errors are `{code, detail, field_errors?}`. **Branch on `code`, never on the message** — `detail` is
+display text and may change. `src/api/errors.ts` maps every documented code to distinct copy;
+collapsing `account_pending` into "login failed" leaves a user retyping a password that was fine.
+
+Access tokens last 10 minutes and carry `expires_in`, so the client refreshes proactively at T−60s
+rather than waiting for a 401. Rate limits are IP-keyed: login 10/min, refresh 60/min.
+
+## Structure
+
+```
+schema/            vendored openapi.yaml + SOURCE.md (where it came from)
+src/routes/        file-based routing; _authenticated/ is the guarded layout
+src/api/           axios instance (interceptors), errors, generated client
+src/auth/          auth-store.ts (the invariants above) + a thin context
+src/features/      one directory per screen — the shape later screens copy
+src/components/    app shell and shared UI
+src/test/          Vitest setup and MSW server
 ```
 
-There is **no linter or unit-test runner** — `tsc --noEmit` (strict, plus `noUncheckedIndexedAccess`) is the only static gate, and Playwright is the only test suite. Run `npx tsc --noEmit` alone for a fast typecheck without the bundle.
+Conventions: kebab-case files, PascalCase exports, `@/` for imports from `src`. Tailwind v4 is
+CSS-first — the theme lives in `src/index.css` under `@theme`, and the `brand` / `brand-dark` /
+`surface` / `error` tokens come from the Flutter app. Use the tokens, not raw hex.
 
-**The e2e tests hit the live backend**, so the local Django instance at `http://nomad.local:8000` must be running (`../surgiscribe-backend`). Test credentials: `admin@example.com` / `Test@123`. Smoke-check first:
+## Testing
 
-```sh
-curl -X POST http://nomad.local:8000/api/v1/login/ -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.com","password":"Test@123"}'
-```
+**Vitest + MSW** for everything deterministic. **Playwright** only for what MSW cannot model:
+httpOnly cookies, `Path=` scoping, and rotation. That is the whole e2e budget — five specs, not fifty.
 
-Playwright runs **serially** (`workers: 1`, `fullyParallel: false`) because the backend's anonymous throttle is 10 req/min — parallelism turns into HTTP 429. `reuseExistingServer` is on, so an already-running `npm run dev` is reused.
-
-## Architecture
-
-**No router and no state library.** `App.tsx` switches `LoginPage` ⇄ `RepresentativesPage` on `session.state`; that is the entire navigation model. Adding real routing is a deliberate change, not a fill-in.
-
-**`SessionProvider` (`auth/SessionContext.tsx`) is the single source of auth truth**, mirroring the iOS `Session`. It owns the one `ApiClient` instance and wires `api.onAuthFailure` to a local `expire()` that clears tokens and flips to `loggedOut`. Init is **optimistic**: a stored refresh token counts as logged in, and the first API call either refreshes or bounces to login.
-
-**`ApiClient` (`api/client.ts`) centralizes the retry.** Authorized requests retry **once** after a 401 by calling `token/refresh/`; a failed refresh fires `onAuthFailure` and throws `sessionExpired`. The refresh call itself never enters the retry path. `logout/` failures are swallowed — local logout must succeed regardless.
-
-- **Refresh is not single-flight** (there's a TODO in the file). Today only one page fetches, so concurrent 401s can't happen; adding a second data-fetching page requires fixing this first, because the backend rotates and blacklists refresh tokens.
-- Relatedly, `main.tsx` **deliberately omits `<StrictMode>`** — its dev double-effects fire two concurrent refreshes and the second one 401s. Don't "restore" it without the single-flight fix.
-
-**Tokens live in `localStorage`** (`auth/tokens.ts`, both access and refresh, behind a `TokenStore` interface). This is weaker than the iOS spike, which persists only the refresh token and keeps it in the Keychain — a known spike trade-off worth flagging before this becomes production code.
-
-**Environment selection is compile-time, not env-var driven.** `config/env.ts` holds the local/staging/production table and `currentEnv` is a hardcoded reference — switching backends means editing that line. Local uses the **relative** base URL `/api/v1/`, routed through the Vite dev-server proxy (`vite.config.ts` → `nomad.local:8000`) because the backend's CORS config doesn't allow the Vite origin. Any new path constant must keep its trailing slash.
-
-**Styling is Tailwind v4 via `@tailwindcss/vite`** — there is no `tailwind.config.js`. The theme is CSS-first in `src/index.css` under `@theme`, and the `brand` / `brand-dark` / `surface` / `error` tokens are carried over from the Flutter app's `app_colors_v2.dart`. Use those tokens rather than raw hex.
-
-## Backend API gotchas
-
-All verified against the live backend — easy to get wrong:
-
-- **Trailing slashes are required** on every endpoint (`login/`, `representatives/`). A missing slash turns a POST into a redirect that drops the body.
-- Responses are wrapped in `{"message", "data"}` (`Envelope<T>` in `api/types.ts`). `data` must stay optional: some invalid-credential responses are **HTTP 200 with no `data`**, which is why `login()` accepts both 200 and 400 and decides on the presence of `data.token`.
-- Errors can also arrive as `{"message": "Error", "error": {field: [messages]}}` — the useful text is in the field map, not `message`. Use `bestMessage(envelope)`.
-- Login returns tokens nested at `data.token.{access_token,refresh_token}`; token refresh returns them at `data.{...}`.
-- Field-name mismatch: `token/refresh/` takes `{"refresh": ...}` but `logout/` takes `{"refresh_token": ...}`.
-- Access token TTL is 10 min (hence refresh-on-401 matters); refresh 12 h. Anon throttle 10 req/min → HTTP 429 during repeated login testing, so `serverMessage()` special-cases it.
-- Response parsing is lenient (`.catch(() => ({}))`) because 429s and proxy errors aren't necessarily JSON.
-- `representatives/` is unpaginated, but most other list endpoints use a custom paginator (`{total_data, next, previous, current_page, total_pages, results}`) — check `openapi.yaml` before adding endpoints.
+E2E needs a seeded backend and `E2E_EMAIL` / `E2E_PASSWORD`; `e2e/global-setup.ts` fails fast with
+instructions rather than letting specs time out. It is not in `pnpm verify` or CI yet, because
+inventory seeding is still being added backend-side.

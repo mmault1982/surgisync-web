@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # typecheck + lint + format + api:check + unit tests.
+      #
+      # api:check regenerates the client from the vendored schema and fails if
+      # the result differs from what is committed — catching both a hand-edited
+      # generated file and a schema bumped without regenerating.
+      #
+      # It deliberately does NOT fetch the live schema: generation must be
+      # offline and deterministic, and staging is spun down between uses, so a
+      # live-fetch gate would be red for reasons unrelated to the change under
+      # review. Drift against the backend is a separate scheduled job.
+      - run: pnpm verify

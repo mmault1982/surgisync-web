@@ -109,12 +109,72 @@ src/api/           axios instance (interceptors), errors, generated client
 src/auth/          auth-store.ts (the invariants above) + a thin context
 src/features/      one directory per screen — the shape later screens copy
 src/components/    app shell and shared UI
+src/components/ui/ shadcn primitives (see below)
 src/test/          Vitest setup and MSW server
 ```
 
-Conventions: kebab-case files, PascalCase exports, `@/` for imports from `src`. Tailwind v4 is
-CSS-first — the theme lives in `src/index.css` under `@theme`, and the `brand` / `brand-dark` /
-`surface` / `error` tokens come from the Flutter app. Use the tokens, not raw hex.
+Conventions: kebab-case files, PascalCase exports, `@/` for imports from `src`.
+
+## Design system: shadcn/ui on Radix
+
+Primitives live in `src/components/ui/`. Add one with:
+
+```sh
+pnpm dlx shadcn@latest add <component> && pnpm format
+```
+
+**The `pnpm format` is not optional** — shadcn emits double quotes at 80 columns, this repo is
+`singleQuote` at 100, and `format:check` is inside `pnpm verify`.
+
+`components.json` pins `style: "radix-nova"` and `baseColor: "neutral"`. **Neither can be changed
+without reinstalling every component.** Radix rather than the newer Base UI default because the
+backend ticket specifies it, and for the same reason `@tanstack/react-table` is pinned to v8: for a
+mostly-LLM-written codebase, near-zero training data is the wrong trade.
+
+`src/components/ui/**` is vendored but _ours to edit_ — that is the point of shadcn, and it is why
+`eslint.config.js` relaxes a rule there rather than ignoring the directory the way
+`src/api/generated` is ignored. The one relaxed rule is `react-refresh/only-export-components`:
+shadcn exports `buttonVariants`/`badgeVariants` (a `cva()` call, so not a literal, so
+`allowConstantExport` misses it) beside the component, and `pnpm lint` runs `--max-warnings 0`.
+
+`shadcn` is a **runtime** dependency now — `src/index.css` does `@import 'shadcn/tailwind.css'`.
+Do not run `shadcn eject`; it inlines that stylesheet and drops the dep, and it is irreversible.
+
+### Tokens
+
+Tailwind v4 is CSS-first; everything lives in `src/index.css`. **Use the tokens, not raw hex** —
+there are no arbitrary colour values left in `src/`, and adding one is a regression.
+
+The palette is the **prototype's** (`#C41E3A`), not the Flutter app's (`#C45149`). Those are
+visibly different reds and every semantic colour differs too, so **web and mobile are knowingly
+off-brand from each other**; the prototype wins here because it is the UI spec. `brand` /
+`brand-dark` / `surface` / `error` still resolve, but they are now aliases of `primary` /
+`brand-hover` / `background` / `destructive` so there is one source of truth. They are
+transitional: move screens onto the semantic names as you touch them.
+
+Beyond shadcn's set: `stripe-{red,amber,green,neutral}` for row stripes, and
+`{success,warning,info}` with `-container` / `-foreground` pairs for the prototype's tinted pills.
+
+Two deliberate divergences from the prototype, both of which look like bugs if you do not know:
+
+- **Focus rings are kept.** The prototype expresses focus only as a border-colour change, which is
+  not a visible focus indicator. shadcn's ring stays, tinted brand.
+- **One neutral ramp.** The prototype mixes `#333/#666/#ddd` with a slate scale; that was
+  collapsed rather than ported.
+
+Dark mode is **not** implemented. `@custom-variant dark` pins it to an explicit `.dark` class that
+nothing sets, so a stray `dark:` utility stays inert instead of firing on OS preference against
+tokens that do not exist. Adding it later means authoring one `.dark { … }` block.
+
+### Popovers: `Popover`, not `DropdownMenu`
+
+Filter panels hold checkboxes and text inputs. `DropdownMenu` implements typeahead that eats
+keystrokes meant for a field, and its children want `menuitem` semantics. `Popover` is the right
+primitive — it renders `role="dialog"`, which is what the e2e selectors match.
+
+`PopoverContent` portals by default, and that is load-bearing: the table's `overflow-x-auto`
+wrapper clips vertically too (one non-visible overflow axis computes the other to `auto`), so an
+inline panel gets cut off. `column-menu.tsx` carries the full note.
 
 ## Testing
 
@@ -122,5 +182,32 @@ CSS-first — the theme lives in `src/index.css` under `@theme`, and the `brand`
 httpOnly cookies, `Path=` scoping, and rotation. That is the whole e2e budget — five specs, not fifty.
 
 E2E needs a seeded backend and `E2E_EMAIL` / `E2E_PASSWORD`; `e2e/global-setup.ts` fails fast with
-instructions rather than letting specs time out. It is not in `pnpm verify` or CI yet, because
-inventory seeding is still being added backend-side.
+instructions rather than letting specs time out. It is not in `pnpm verify` or CI yet.
+
+**The specs assert exact counts against one specific fixture**, so they only pass against the org
+that command creates — pointed at any other user they fail on row counts in a way that looks like
+a UI regression and is not:
+
+```sh
+docker compose exec web python manage.py seed_inventory_demo   # in ../surgiscribe-backend
+# then, in .env:  E2E_EMAIL=e2e-0@surgisync.test  E2E_PASSWORD=E2E-seed-pw1!
+```
+
+Leave the `e2e-0` index in place — `e2e/fixtures.ts` rewrites the number per Playwright worker,
+which is what keeps workers from sharing a login.
+
+`playwright.config.ts` loads `.env` itself via `process.loadEnvFile`, because Playwright runs in
+its own Node process and never sees Vite's. It is loaded there rather than in `global-setup.ts` on
+purpose: global setup runs once in the runner, but the fixtures that need the credentials run in
+workers, and workers re-import the config. Real environment variables still win over the file.
+
+If a run dies with "Too many attempts", that is `web_login` at 10/min, IP-keyed. A full run spends
+about six logins, so two runs inside a minute exhaust it — wait, or set
+`THROTTLE_RATE_WEB_LOGIN=100/min` in the backend's `.env`.
+
+**Component tests against Radix primitives need jsdom stubs.** Radix's popper measures its trigger
+and calls pointer-capture methods on open; jsdom implements neither `ResizeObserver` nor
+`hasPointerCapture`/`setPointerCapture`. `column-menu.test.tsx` has the stub block to copy. Note
+what such a test can and cannot prove: it covers semantics (roles, label/control wiring, the
+callbacks) but **not positioning** — there is no layout engine in jsdom, so collision handling,
+flipping and clipping stay Playwright's job.

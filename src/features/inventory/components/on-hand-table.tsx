@@ -136,7 +136,8 @@ function Row({
         {row.expiration_date ? (
           <span
             className={cn(
-              expired && 'rounded-xl bg-[#FEE8EB] px-2 py-0.5 text-xs font-semibold text-[#C41E3A]',
+              expired &&
+                'rounded-xl bg-brand-container px-2 py-0.5 text-xs font-semibold text-primary',
             )}
           >
             {row.expiration_date}

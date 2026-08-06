@@ -182,8 +182,28 @@ inline panel gets cut off. `column-menu.tsx` carries the full note.
 httpOnly cookies, `Path=` scoping, and rotation. That is the whole e2e budget — five specs, not fifty.
 
 E2E needs a seeded backend and `E2E_EMAIL` / `E2E_PASSWORD`; `e2e/global-setup.ts` fails fast with
-instructions rather than letting specs time out. It is not in `pnpm verify` or CI yet, because
-inventory seeding is still being added backend-side.
+instructions rather than letting specs time out. It is not in `pnpm verify` or CI yet.
+
+**The specs assert exact counts against one specific fixture**, so they only pass against the org
+that command creates — pointed at any other user they fail on row counts in a way that looks like
+a UI regression and is not:
+
+```sh
+docker compose exec web python manage.py seed_inventory_demo   # in ../surgiscribe-backend
+# then, in .env:  E2E_EMAIL=e2e-0@surgisync.test  E2E_PASSWORD=E2E-seed-pw1!
+```
+
+Leave the `e2e-0` index in place — `e2e/fixtures.ts` rewrites the number per Playwright worker,
+which is what keeps workers from sharing a login.
+
+`playwright.config.ts` loads `.env` itself via `process.loadEnvFile`, because Playwright runs in
+its own Node process and never sees Vite's. It is loaded there rather than in `global-setup.ts` on
+purpose: global setup runs once in the runner, but the fixtures that need the credentials run in
+workers, and workers re-import the config. Real environment variables still win over the file.
+
+If a run dies with "Too many attempts", that is `web_login` at 10/min, IP-keyed. A full run spends
+about six logins, so two runs inside a minute exhaust it — wait, or set
+`THROTTLE_RATE_WEB_LOGIN=100/min` in the backend's `.env`.
 
 **Component tests against Radix primitives need jsdom stubs.** Radix's popper measures its trigger
 and calls pointer-capture methods on open; jsdom implements neither `ResizeObserver` nor

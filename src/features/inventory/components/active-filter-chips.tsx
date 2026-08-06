@@ -24,7 +24,7 @@ export function ActiveFilterChips({
   if (keys.length === 0 && !search.search) return null;
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#FEE8EB] bg-[#fff5f6] px-3 py-2">
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand-container bg-accent px-3 py-2">
       <span className="text-[11px] font-bold uppercase tracking-wide text-brand">
         Active filters
       </span>

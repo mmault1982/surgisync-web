@@ -42,7 +42,7 @@ test('two statuses return the union, not the intersection', async ({ page }) => 
 test('changing a filter updates the URL and the rows', async ({ page }) => {
   await page.goto(ON_HAND);
   await page.locator('thead').getByRole('button', { name: 'Type' }).click();
-  await page.getByRole('menu').getByText('loaned', { exact: true }).click();
+  await page.getByRole('dialog').getByText('loaned', { exact: true }).click();
 
   // The router URL-encodes its arrays, so assert on the decoded URL rather
   // than the literal — otherwise the test pins an encoding detail, not intent.
@@ -95,7 +95,7 @@ test('a filter menu is fully visible, not clipped by the table', async ({ page }
   await expect(page.locator('tbody tr')).toHaveCount(1);
 
   await page.locator('thead').getByRole('button', { name: 'Status' }).click();
-  const menu = page.getByRole('menu');
+  const menu = page.getByRole('dialog');
   await expect(menu).toBeVisible();
 
   const hit = await menu.evaluate((element) => {
@@ -120,7 +120,7 @@ test('a filter menu near the right edge stays on screen', async ({ page }) => {
   // Last Seen is the rightmost column, so its menu would overflow if the
   // position were not clamped.
   await page.locator('thead').getByRole('button', { name: 'Last Seen' }).click();
-  const box = await page.getByRole('menu').boundingBox();
+  const box = await page.getByRole('dialog').boundingBox();
 
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);

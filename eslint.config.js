@@ -55,6 +55,18 @@ export default tseslint.config(
     rules: { 'react-refresh/only-export-components': 'off' },
   },
   {
+    // shadcn primitives export their `cva` variant object beside the component
+    // — `buttonVariants` in button.tsx, `badgeVariants` in badge.tsx — so the
+    // rest of the app can reuse a variant without rendering one. A `cva(...)`
+    // call is not a literal, so `allowConstantExport` does not cover it, and
+    // `pnpm lint` runs `--max-warnings 0`.
+    //
+    // Relaxed rather than ignored: unlike src/api/generated, these files ARE
+    // ours to edit — that is the whole point of shadcn.
+    files: ['src/components/ui/**'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['**/*.test.{ts,tsx}', 'src/test/**', 'e2e/**'],
     rules: {
       // Playwright fixtures take a parameter named `use`, which the React

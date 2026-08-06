@@ -61,10 +61,10 @@ export function stripeTone(row: InventoryKitList, today = new Date()): StripeTon
  * invisible thing teaches nothing, so the visible one wins.
  */
 export const STRIPE_CLASSES: Record<StripeTone, string> = {
-  red: 'bg-[#C41E3A]',
-  amber: 'bg-[#F59E0B]',
-  green: 'bg-[#1DB954]',
-  neutral: 'bg-[#D1D5DB]',
+  red: 'bg-stripe-red',
+  amber: 'bg-stripe-amber',
+  green: 'bg-stripe-green',
+  neutral: 'bg-stripe-neutral',
 };
 
 export const STRIPE_LEGEND: { tone: StripeTone; label: string }[] = [

@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, useState } from 'react';
 
 import {
   ApiV1StockItemsListOrdering as Ordering,
   ApiV1StockItemsListOwnershipTypeItem as OwnershipType,
   ApiV1StockItemsListStatusItem as StatusLabel,
 } from '@/api/generated/model';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { facetQueries } from '../on-hand.queries';
 import type { OnHandSearch } from '../on-hand.search';
@@ -46,119 +51,49 @@ interface Props {
   onChange: (patch: Partial<OnHandSearch>) => void;
 }
 
-/** Gap between the trigger and the panel, and the margin kept from any edge. */
-const MENU_OFFSET = 4;
-const VIEWPORT_MARGIN = 8;
-const MENU_WIDTH = 240;
-
 export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<{ top: number; left: number; maxHeight: number }>();
-  const trigger = useRef<HTMLButtonElement>(null);
-  const panel = useRef<HTMLDivElement>(null);
-
-  /**
-   * The panel is portalled to <body> and positioned fixed.
-   *
-   * It cannot be absolutely positioned inside the header. The table sits in an
-   * `overflow-x-auto` wrapper for horizontal scrolling, and per the CSS spec,
-   * setting one overflow axis to a non-visible value computes the other to
-   * `auto` — so that container clips vertically too, and the panel was cut off
-   * by the table footer. No z-index fixes this: clipping is not a stacking
-   * question.
-   */
-  const reposition = useCallback(() => {
-    const rect = trigger.current?.getBoundingClientRect();
-    if (!rect) return;
-    setPosition({
-      top: rect.bottom + MENU_OFFSET,
-      // Keep the panel on screen when the column is near the right edge.
-      left: Math.max(
-        VIEWPORT_MARGIN,
-        Math.min(rect.left, window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN),
-      ),
-      // Cap the height rather than overflow the viewport; the Status menu is
-      // tall enough to need this on a short window.
-      maxHeight: Math.max(120, window.innerHeight - rect.bottom - MENU_OFFSET - VIEWPORT_MARGIN),
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    reposition();
-    // Capture phase, so the table's own horizontal scroll moves the panel with
-    // its trigger rather than leaving it stranded.
-    window.addEventListener('scroll', reposition, true);
-    window.addEventListener('resize', reposition);
-    return () => {
-      window.removeEventListener('scroll', reposition, true);
-      window.removeEventListener('resize', reposition);
-    };
-  }, [open, reposition]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDocumentClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      // The panel is no longer a DOM descendant of the trigger, so both have to
-      // be checked — otherwise clicking inside the menu closes it.
-      if (trigger.current?.contains(target) || panel.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const onEscape = (event: KeyboardEvent) => {
-      // The prototype has no keyboard dismissal at all.
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDocumentClick);
-    document.addEventListener('keydown', onEscape);
-    return () => {
-      document.removeEventListener('mousedown', onDocumentClick);
-      document.removeEventListener('keydown', onEscape);
-    };
-  }, [open]);
 
   const sortField = SORT_FIELD[columnKey];
   const indicator = columnIndicator(columnKey, search, sortField);
 
   return (
-    <>
-      <button
-        ref={trigger}
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide hover:text-brand"
-      >
-        {label}
-        {indicator && (
-          <span className="rounded-full bg-brand px-1.5 text-[10px] font-bold text-white">
-            {indicator}
-          </span>
-        )}
-      </button>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase hover:text-primary"
+        >
+          {label}
+          {indicator && <Badge className="h-4 px-1.5 text-[10px] font-bold">{indicator}</Badge>}
+        </button>
+      </PopoverTrigger>
 
-      {open &&
-        position &&
-        createPortal(
-          <div
-            ref={panel}
-            role="menu"
-            style={{
-              position: 'fixed',
-              top: position.top,
-              left: position.left,
-              width: MENU_WIDTH,
-              maxHeight: position.maxHeight,
-            }}
-            className="z-50 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
-          >
-            {sortField && <SortSection field={sortField} search={search} onChange={onChange} />}
-            <FilterSection columnKey={columnKey} search={search} onChange={onChange} />
-          </div>,
-          document.body,
-        )}
-    </>
+      {/*
+       * Portalled, which PopoverContent does by default — and that is
+       * load-bearing, not incidental. The table sits in an `overflow-x-auto`
+       * wrapper for horizontal scrolling, and per the CSS spec setting one
+       * overflow axis to a non-visible value computes the other to `auto`. So
+       * that container clips vertically too, and a panel rendered inline is cut
+       * off by the table footer. No z-index fixes this: clipping is not a
+       * stacking question. `e2e/on-hand.spec.ts` hit-tests the panel's bottom
+       * edge to guard it.
+       *
+       * `collisionPadding` replaces the hand-rolled viewport clamping, and the
+       * available-height variable replaces the hand-rolled max-height. Radix
+       * also flips the panel above the trigger when there is no room below,
+       * which the hand-rolled version never did.
+       */}
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        collisionPadding={8}
+        className="max-h-(--radix-popover-content-available-height) w-60 gap-3 overflow-y-auto p-3"
+      >
+        {sortField && <SortSection field={sortField} search={search} onChange={onChange} />}
+        <FilterSection columnKey={columnKey} search={search} onChange={onChange} />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -208,6 +143,12 @@ function filterCount(columnKey: ColumnKey, search: OnHandSearch): number {
   }
 }
 
+function MenuLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1 text-[10px] font-semibold text-muted-foreground uppercase">{children}</p>
+  );
+}
+
 function SortSection({
   field,
   search,
@@ -223,23 +164,20 @@ function SortSection({
   ];
 
   return (
-    <div className="mb-3">
-      <p className="mb-1 text-[10px] font-semibold uppercase text-gray-500">Sort</p>
+    <div>
+      <MenuLabel>Sort</MenuLabel>
       <div className="flex gap-1">
         {options.map((option) => (
-          <button
+          <Button
             key={option.value}
             type="button"
+            size="sm"
+            variant={search.ordering === option.value ? 'default' : 'outline'}
             onClick={() => onChange({ ordering: option.value })}
-            className={cn(
-              'flex-1 rounded border px-2 py-1 text-xs',
-              search.ordering === option.value
-                ? 'border-brand bg-brand text-white'
-                : 'border-gray-200 hover:bg-gray-50',
-            )}
+            className="flex-1"
           >
             {option.label}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -288,21 +226,16 @@ function FilterSection({
       );
     case 'transit':
       return (
-        <Radio
+        <TransitFilter
           value={search.in_transit}
           onChange={(value) => onChange({ in_transit: value })}
-          options={[
-            { label: 'Both', value: undefined },
-            { label: 'In Transit', value: true },
-            { label: 'Not In Transit', value: false },
-          ]}
         />
       );
     case 'expiration':
       return <ExpirationFilter onChange={onChange} />;
     default:
       return (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           {columnKey === 'last_seen'
             ? 'Tracker state only — sorting and time filters need tracking data.'
             : 'No filter for this column.'}
@@ -318,19 +251,24 @@ function TextFilter({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
+  const id = useId();
+
   return (
-    <label className="block">
-      <span className="mb-1 block text-[10px] font-semibold uppercase text-gray-500">
+    <div>
+      <Label
+        htmlFor={id}
+        className="mb-1 text-[10px] font-semibold text-muted-foreground uppercase"
+      >
         Filter (contains)
-      </span>
-      <input
+      </Label>
+      <Input
+        id={id}
         type="text"
         defaultValue={value ?? ''}
         placeholder="Type to filter…"
         onChange={(event) => onChange(event.target.value.trim() || undefined)}
-        className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
       />
-    </label>
+    </div>
   );
 }
 
@@ -426,14 +364,16 @@ function ExpirationFilter({ onChange }: { onChange: (patch: Partial<OnHandSearch
   return (
     <div className="flex flex-wrap gap-1">
       {presets.map((preset) => (
-        <button
+        <Button
           key={preset.label}
           type="button"
+          size="xs"
+          variant="outline"
           onClick={() => onChange(preset.patch)}
-          className="rounded-full border border-gray-200 px-2 py-1 text-xs hover:border-brand hover:text-brand"
+          className="rounded-full"
         >
           {preset.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -448,65 +388,86 @@ function Checklist<T extends string | number>({
   selected: readonly T[];
   onToggle: (next: T[]) => void;
 }) {
+  const id = useId();
+
   if (options.length === 0) {
-    return <p className="text-xs text-gray-500">No values in your inventory yet.</p>;
+    return <p className="text-xs text-muted-foreground">No values in your inventory yet.</p>;
   }
 
   return (
     <div className="max-h-56 overflow-y-auto">
       {options.map((option) => {
         const checked = selected.includes(option.value);
+        const optionId = `${id}-${String(option.value)}`;
         return (
-          <label
-            key={String(option.value)}
-            className="flex cursor-pointer items-center gap-2 py-1 text-sm capitalize"
-          >
-            <input
-              type="checkbox"
+          <div key={String(option.value)} className="flex items-center gap-2 py-1">
+            <Checkbox
+              id={optionId}
               checked={checked}
-              onChange={() =>
+              onCheckedChange={() =>
                 onToggle(
                   checked
                     ? selected.filter((value) => value !== option.value)
                     : [...selected, option.value],
                 )
               }
-              className="size-4 accent-brand"
             />
-            {option.label}
-          </label>
+            <Label htmlFor={optionId} className="cursor-pointer text-sm font-normal capitalize">
+              {option.label}
+            </Label>
+          </div>
         );
       })}
     </div>
   );
 }
 
-function Radio({
+/**
+ * Tri-state, so it cannot be a plain boolean.
+ *
+ * RadioGroup speaks strings, so the three states are encoded on the way in and
+ * decoded on the way out rather than leaking a sentinel into the search schema.
+ */
+const TRANSIT_OPTIONS = [
+  { label: 'Both', key: 'both', value: undefined },
+  { label: 'In Transit', key: 'yes', value: true },
+  { label: 'Not In Transit', key: 'no', value: false },
+] as const;
+
+function TransitFilter({
   value,
-  options,
   onChange,
 }: {
   value: boolean | undefined;
-  options: { label: string; value: boolean | undefined }[];
   onChange: (value: boolean | undefined) => void;
 }) {
+  const id = useId();
+  const current = TRANSIT_OPTIONS.find((option) => option.value === value) ?? TRANSIT_OPTIONS[0];
+
   return (
-    <div className="flex flex-col gap-1">
-      {options.map((option) => (
-        <label key={option.label} className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="radio"
-            checked={value === option.value}
-            onChange={() => onChange(option.value)}
-            className="size-4 accent-brand"
-          />
-          {option.label}
-        </label>
-      ))}
-    </div>
+    <RadioGroup
+      value={current.key}
+      onValueChange={(key) => {
+        const next = TRANSIT_OPTIONS.find((option) => option.key === key);
+        if (next) onChange(next.value);
+      }}
+      className="gap-1"
+    >
+      {TRANSIT_OPTIONS.map((option) => {
+        const optionId = `${id}-${option.key}`;
+        return (
+          <div key={option.key} className="flex items-center gap-2">
+            <RadioGroupItem id={optionId} value={option.key} />
+            <Label htmlFor={optionId} className="cursor-pointer text-sm font-normal">
+              {option.label}
+            </Label>
+          </div>
+        );
+      })}
+    </RadioGroup>
   );
 }
 
 function MenuLoading() {
-  return <p className="text-xs text-gray-500">Loading options…</p>;
+  return <p className="text-xs text-muted-foreground">Loading options…</p>;
 }

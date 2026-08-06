@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh bg-surface">
       <aside className="flex w-64 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="flex items-center gap-3 px-5 py-4">
-          <img src={logo} alt="SurgiScribe" className="h-8" />
+          <img src={logo} alt="SurgiSync" className="h-8" />
         </div>
         <nav className="flex flex-col gap-1 px-3 py-2">
           <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">

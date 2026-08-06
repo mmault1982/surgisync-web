@@ -51,7 +51,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
     <div className="min-h-dvh bg-surface">
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5">
         <header className="flex flex-col items-center gap-4 pt-12">
-          <img src={logo} alt="SurgiScribe logo" className="h-[60px]" />
+          <img src={logo} alt="SurgiSync logo" className="h-[60px]" />
           <EnvironmentBadge />
         </header>
 

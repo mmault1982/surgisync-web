@@ -29,8 +29,20 @@ export type ColumnKey =
   | 'expiration'
   | 'last_seen';
 
+/**
+ * The ascending half of the ordering enum.
+ *
+ * `Ordering` carries both directions — `part_name` and `-part_name` — so typing
+ * the map below as `keyof typeof Ordering` would happily accept a descending
+ * value, and the Desc lookup in `SortSection` would then resolve to `undefined`
+ * at runtime with nothing failing at compile time. Excluding the `-` forms
+ * makes that unrepresentable, and because the enum is symmetric it also lets
+ * that lookup drop the cast that was hiding the hole.
+ */
+type AscendingOrdering = Exclude<keyof typeof Ordering, `-${string}`>;
+
 /** Which ordering values a column sorts by, if any. */
-const SORT_FIELD: Partial<Record<ColumnKey, keyof typeof Ordering>> = {
+const SORT_FIELD: Partial<Record<ColumnKey, AscendingOrdering>> = {
   kit_id: 'manufacturer_kit_id',
   part_name: 'part_name',
   manufacturer: 'manufacturer_name',
@@ -106,7 +118,7 @@ export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
 function columnIndicator(
   columnKey: ColumnKey,
   search: OnHandSearch,
-  sortField: keyof typeof Ordering | undefined,
+  sortField: AscendingOrdering | undefined,
 ): string | null {
   const parts: string[] = [];
   const count = filterCount(columnKey, search);
@@ -154,13 +166,13 @@ function SortSection({
   search,
   onChange,
 }: {
-  field: keyof typeof Ordering;
+  field: AscendingOrdering;
   search: OnHandSearch;
   onChange: (patch: Partial<OnHandSearch>) => void;
 }) {
   const options = [
     { label: '↑ Asc', value: Ordering[field] },
-    { label: '↓ Desc', value: Ordering[`-${field}` as keyof typeof Ordering] },
+    { label: '↓ Desc', value: Ordering[`-${field}`] },
   ];
 
   return (

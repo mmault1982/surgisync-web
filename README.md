@@ -30,3 +30,20 @@ pnpm verify   # typecheck + lint + format + api:check + unit tests
 
 See `CLAUDE.md` — it covers the auth invariants, the generated API client, and the
 handful of traps that have already cost time.
+
+## Deploying to staging
+
+`app-staging.surgisoftsolutions.com` is one CloudFront distribution with two origins: the SPA from a
+private S3 bucket, and `/api/*` + `/health/*` proxied to the staging ALB. The two-origin shape is not
+a convenience — the refresh cookie is httpOnly, host-only and `SameSite=Lax`, so the app has to be
+same-origin with the API for the cookie to be sent at all.
+
+```sh
+just deploy          # build, upload, invalidate /index.html
+just smoke           # verify the live surface (works before DNS exists)
+just diff-distribution   # is the live distribution still what infra/ says?
+```
+
+`infra/cloudfront-staging.json` and `infra/spa-router.js` are the source of truth for the
+distribution and the SPA fallback; both carry the reasoning inline. Provisioning is AWS CLI in the
+justfile, not IaC.

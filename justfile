@@ -121,17 +121,40 @@ apply-distribution:
         --distribution-config "file://$tmp/config.json" \
         --query 'Distribution.Status' --output text
 
-# Show whether the committed JSON still matches what is deployed
+# A plain diff is useless here: CloudFront returns the method arrays in its own
+# order and fills in every field it has a default for (GrpcConfig,
+# TrustedSigners, ...). So compare in one direction only — every value the
+# committed file declares must match live — and sort the method arrays first.
+# Fields AWS adds and we do not manage are correctly ignored.
+
+# Report drift between infra/cloudfront-staging.json and the live distribution
 diff-distribution:
     #!/usr/bin/env bash
     set -euo pipefail
     export AWS_PROFILE={{aws_profile}}
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+    norm='walk(if type == "object" then del(._comment) else . end)
+          | (.DefaultCacheBehavior, (.CacheBehaviors.Items // [])[])
+            |= (.AllowedMethods.Items |= sort
+               | .AllowedMethods.CachedMethods.Items |= sort)'
     aws cloudfront get-distribution-config --id {{distribution}} \
-        --query DistributionConfig --output json | jq -S . > "$tmp/live.json"
-    jq -S 'walk(if type == "object" then del(._comment) else . end)' \
-        infra/cloudfront-staging.json > "$tmp/want.json"
-    diff "$tmp/want.json" "$tmp/live.json" && echo "distribution matches infra/cloudfront-staging.json"
+        --query DistributionConfig --output json | jq "$norm" > "$tmp/live.json"
+    jq "$norm" infra/cloudfront-staging.json > "$tmp/want.json"
+    # Leaves are selected by type, NOT with paths(scalars): that builtin selects
+    # on truthiness, so it silently skips every field whose value is `false` --
+    # Compress, SmoothStreaming, Logging.Enabled, Staging. Drift on those would
+    # never be reported.
+    jq -n --slurpfile w "$tmp/want.json" --slurpfile l "$tmp/live.json" '
+        ($w[0]) as $want | ($l[0]) as $live
+        | [ $want | paths as $p
+            | select(($want | getpath($p) | type) | . != "object" and . != "array")
+            | select(($live | getpath($p)) != ($want | getpath($p)))
+            | { field: ($p | map(tostring) | join(".")),
+                want:  ($want | getpath($p)),
+                live:  ($live | getpath($p)) } ]
+        | if length == 0
+          then "distribution matches infra/cloudfront-staging.json"
+          else . end'
 
 # Deployment state of the distribution
 status:

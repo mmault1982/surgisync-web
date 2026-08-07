@@ -83,4 +83,13 @@ export default tseslint.config(
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },
   },
+  {
+    // CloudFront Functions are neither browser nor Node: the runtime is a
+    // constrained ES5.1 sandbox that calls a top-level `handler` nothing in
+    // this repo imports. Linted rather than ignored — it is ours to edit, and
+    // it is the piece that decides which URIs are routes and which are files.
+    files: ['infra/**/*.js'],
+    languageOptions: { globals: {}, sourceType: 'script' },
+    rules: { 'no-unused-vars': ['error', { varsIgnorePattern: '^handler$' }] },
+  },
 );

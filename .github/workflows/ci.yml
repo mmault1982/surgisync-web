@@ -16,7 +16,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Must match web-deploy.yml. If they drift, this gate can pass on a
+          # Node that never builds the artifact that ships.
+          node-version: 22.12.x
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

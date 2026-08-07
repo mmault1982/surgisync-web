@@ -1,0 +1,134 @@
+name: Deploy to staging
+
+# Push to main deploys staging. This differs from surgiscribe-backend, where
+# every deploy is a manual dispatch — that repo's prod deploy is a real outage
+# (minimumHealthyPercent 0, one task), so it is gated on a human. Publishing a
+# static bundle to S3 has no such window, and the value of continuous staging is
+# that main is always the thing you are looking at.
+#
+# Rollback is `workflow_dispatch` with an older sha. That works only because the
+# upload never passes --delete, so an older commit's chunks are still in the
+# bucket. See the upload step.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit to deploy. Leave blank for the tip of main; set it to roll back.'
+        required: false
+        type: string
+
+# Queue rather than cancel. A cancelled run can land assets without the
+# index.html that names them (harmless) or, if two runs interleave, an older
+# index.html after a newer one (not harmless). Deploys are ~2 minutes; waiting
+# is cheaper than reasoning about the interleaving.
+concurrency:
+  group: web-deploy-staging
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  BUCKET: surgisync-web-staging-211125702709
+  DISTRIBUTION: E2KKUWKHRV4BW4
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Empty string is falsy in this expression, so a blank dispatch input
+          # correctly falls through to the triggering commit.
+          ref: ${{ inputs.sha || github.sha }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Pinned to a minor rather than bare `22`, so a Node major/minor bump
+          # is a visible commit here instead of arriving silently between two
+          # deploys of the same source. Keep in step with ci.yml.
+          node-version: 22.12.x
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The same gate as ci.yml. Duplicated on purpose: ci.yml proves a PR is
+      # sound, this proves the exact tree being uploaded is. They diverge when a
+      # dispatch deploys an older sha, which is precisely when you want it
+      # re-checked rather than assumed.
+      - run: pnpm verify
+
+      - run: pnpm build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # surgisync-web-ci: write to the one bucket, invalidate the one
+          # distribution, explicitly denied delete. Not the backend's
+          # hoosier-s3-user-prod, which carries RDS snapshot/delete rights.
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Assets first, always. The reverse order publishes a shell naming chunks
+      # that are not in the bucket yet, and every viewer in that window gets a
+      # ChunkLoadError.
+      #
+      # NEVER add --delete. autoCodeSplitting means routes are separately hashed
+      # chunks, so removing superseded assets strands anyone holding an older
+      # index.html, and it destroys the rollback path above. The bucket's
+      # lifecycle rule prunes noncurrent versions after 30 days, and the CI
+      # user is denied s3:DeleteObject outright so this cannot regress quietly.
+      - name: Upload assets
+        run: |
+          aws s3 sync dist/assets/ "s3://$BUCKET/assets/" \
+            --cache-control 'public, max-age=31536000, immutable' --no-progress
+          aws s3 cp dist/favicon.png "s3://$BUCKET/favicon.png" \
+            --cache-control 'public, max-age=86400' --no-progress
+
+      - name: Upload the shell
+        run: |
+          aws s3 cp dist/index.html "s3://$BUCKET/index.html" \
+            --cache-control 'no-cache' --no-progress
+
+      # Only the shell. Assets are content-hashed, and the viewer-request
+      # function collapses every route onto the /index.html cache key.
+      - name: Invalidate
+        run: |
+          id=$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" \
+                 --paths /index.html --query 'Invalidation.Id' --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$DISTRIBUTION" --id "$id"
+
+      # Catches the failure this ordering exists to prevent: a shell naming a
+      # chunk that is not fetchable. Goes through the distribution domain rather
+      # than app-staging, so it does not depend on DNS existing.
+      - name: Verify the deployed shell and its chunks
+        # `shell: bash` rather than the default, for pipefail: without it a
+        # curl failure feeding a successful grep is scored as success.
+        shell: bash
+        run: |
+          domain=$(aws cloudfront get-distribution --id "$DISTRIBUTION" \
+                     --query 'Distribution.DomainName' --output text)
+          shell=$(curl -fsS "https://$domain/index.html")
+          # Collected into a variable first. Piping into `while read` runs the
+          # loop body in a subshell, where `exit 1` ends the subshell and the
+          # step still passes — a check that cannot fail is worse than none.
+          assets=$(printf '%s' "$shell" | grep -oE '/assets/[A-Za-z0-9_.-]+\.(js|css)' | sort -u)
+          [ -n "$assets" ] || { echo "::error::index.html references no /assets/ chunks"; exit 1; }
+          for a in $assets; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://$domain$a")
+            echo "  $code  $a"
+            [ "$code" = "200" ] || { echo "::error::$a is referenced by index.html but returns $code"; exit 1; }
+          done
+          # The shell served by CloudFront must be the one just built, or the
+          # invalidation did not take.
+          diff <(echo "$shell") dist/index.html \
+            || { echo "::error::served index.html differs from the build"; exit 1; }
+          echo "shell matches the build and every referenced chunk is fetchable"

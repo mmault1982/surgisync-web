@@ -1,0 +1,67 @@
+import type { LinkProps } from '@tanstack/react-router';
+import {
+  LayoutDashboardIcon,
+  PackageIcon,
+  PackageOpenIcon,
+  PackagePlusIcon,
+  type LucideIcon,
+} from 'lucide-react';
+
+/**
+ * The sidebar's nav tree, as data.
+ *
+ * Kept out of the components so the two things that can silently drift — which
+ * item is current, and what the breadcrumb says — are pure functions over one
+ * source of truth, testable without mounting a router.
+ *
+ * `to` is typed as a router path, so a typo or a deleted route fails
+ * `pnpm typecheck` rather than rendering a dead link.
+ */
+
+export interface NavItem {
+  title: string;
+  to: NonNullable<LinkProps['to']>;
+  icon: LucideIcon;
+}
+
+export interface NavSection {
+  title: string;
+  icon: LucideIcon;
+  items: NavItem[];
+}
+
+/**
+ * Only Inventory for now. The prototype has seven more sections (Directory
+ * Profiles, Cases / Restocks, Ordering, Quotes, Pricing, Reports, Setup); each
+ * arrives with the screens behind it rather than as a row of dead links.
+ */
+export const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Inventory',
+    icon: PackageIcon,
+    items: [
+      { title: 'Dashboard', to: '/inventory/dashboard', icon: LayoutDashboardIcon },
+      { title: 'Manage On-Hand', to: '/inventory/on-hand', icon: PackageOpenIcon },
+      { title: 'Receive / Load', to: '/inventory/receive', icon: PackagePlusIcon },
+    ],
+  },
+];
+
+export interface NavTrail {
+  section: NavSection;
+  item: NavItem;
+}
+
+/**
+ * The section and item a pathname belongs to, or null for anything not in the
+ * nav (the login screen, a 404). Exact match: every nav target is a leaf, and a
+ * prefix match would light up `/inventory/on-hand` for a future
+ * `/inventory/on-hand/123`, which is a detail view, not this screen.
+ */
+export function findNavTrail(pathname: string): NavTrail | null {
+  for (const section of NAV_SECTIONS) {
+    const item = section.items.find((candidate) => candidate.to === pathname);
+    if (item) return { section, item };
+  }
+  return null;
+}

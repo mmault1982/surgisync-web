@@ -26,8 +26,10 @@ import type {
   ErrorDetail,
   FacetResponse,
   InventoryKitDetail,
+  ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
+  PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   StringFacetResponse
 } from '../../model';
@@ -239,6 +241,103 @@ export function useApiV1StockItemsRetrieve<TData = Awaited<ReturnType<typeof api
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApiV1StockItemsRetrieveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Paginated change log (django-simple-history) for one inventory kit, newest first. Each entry lists the fields that changed (old/new values, foreign keys as display strings) and a human-readable summary. history_user is null for changes recorded before user tracking was enabled or made outside a request (shell, background jobs).
+ */
+export const listInventoryKitHistory = (
+    id: number,
+    params?: ListInventoryKitHistoryParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedInventoryKitHistoryList>(
+      {url: `/api/v1/stock-items/${id}/history/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListInventoryKitHistoryQueryKey = (id: number,
+    params?: ListInventoryKitHistoryParams,) => {
+    return [
+    `/api/v1/stock-items/${id}/history/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInventoryKitHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryKitHistory>>, TError = ErrorType<ErrorDetail>>(id: number,
+    params?: ListInventoryKitHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryKitHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryKitHistory>>> = ({ signal }) => listInventoryKitHistory(id,params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListInventoryKitHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryKitHistory>>>
+export type ListInventoryKitHistoryQueryError = ErrorType<ErrorDetail>
+
+
+export function useListInventoryKitHistory<TData = Awaited<ReturnType<typeof listInventoryKitHistory>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params: undefined |  ListInventoryKitHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryKitHistory>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryKitHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryKitHistory<TData = Awaited<ReturnType<typeof listInventoryKitHistory>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListInventoryKitHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryKitHistory>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryKitHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryKitHistory<TData = Awaited<ReturnType<typeof listInventoryKitHistory>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListInventoryKitHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListInventoryKitHistory<TData = Awaited<ReturnType<typeof listInventoryKitHistory>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListInventoryKitHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryKitHistory>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListInventoryKitHistoryQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

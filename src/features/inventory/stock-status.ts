@@ -1,4 +1,4 @@
-import type { InventoryKitList } from '@/api/generated/model';
+import type { KitTracker } from '@/api/generated/model';
 
 /**
  * Presentation logic for a stock row: its status labels and its stripe colour.
@@ -11,8 +11,37 @@ import type { InventoryKitList } from '@/api/generated/model';
 
 export type StripeTone = 'red' | 'amber' | 'green' | 'neutral';
 
+/**
+ * The fields these helpers actually read.
+ *
+ * A structural minimum rather than `InventoryKitList`, so the same rules serve
+ * the list row and the detail record. The detail serializer declares the same
+ * booleans as *optional* (they are writable there), which an
+ * `InventoryKitList`-typed parameter rejects outright. Optional-and-undefined
+ * reads as false, which is exactly what an omitted flag means and what the
+ * labels below already want.
+ *
+ * `readonly` does not affect assignability, so `InventoryKitList` still
+ * satisfies this unchanged.
+ *
+ * `active_transfer_id` and `tracker` stay required: both are non-optional on
+ * both models, and making `active_transfer_id` optional would silently flip
+ * `!== null` to true for an absent field.
+ */
+export interface StockStatusFields {
+  expiration_date?: string | null;
+  is_complete?: boolean;
+  is_wrapped?: boolean;
+  is_signed_in?: boolean;
+  is_returned?: boolean;
+  is_lost?: boolean;
+  is_other?: boolean;
+  active_transfer_id: number | null;
+  tracker: KitTracker | null;
+}
+
 /** The labels the Status column shows, in the order the prototype lists them. */
-export function statusLabels(row: InventoryKitList): string[] {
+export function statusLabels(row: StockStatusFields): string[] {
   const labels: string[] = [];
   if (row.is_complete) labels.push('Complete');
   else labels.push('Incomplete');
@@ -24,7 +53,10 @@ export function statusLabels(row: InventoryKitList): string[] {
   return labels;
 }
 
-export function isExpired(row: InventoryKitList, today = new Date()): boolean {
+export function isExpired(
+  row: Pick<StockStatusFields, 'expiration_date'>,
+  today = new Date(),
+): boolean {
   if (!row.expiration_date) return false;
   // Compare dates, not instants: an item expiring today is not yet expired, and
   // the API sends a plain YYYY-MM-DD with no timezone.
@@ -46,7 +78,7 @@ export function isExpired(row: InventoryKitList, today = new Date()): boolean {
  *   green  Complete · Ready
  *   gray   Signed Out · No status
  */
-export function stripeTone(row: InventoryKitList, today = new Date()): StripeTone {
+export function stripeTone(row: StockStatusFields, today = new Date()): StripeTone {
   if (isExpired(row, today) || row.is_lost || !row.is_complete) return 'red';
   if (row.active_transfer_id !== null || row.is_other) return 'amber';
   if (!row.is_signed_in) return 'neutral';
@@ -77,7 +109,7 @@ export const STRIPE_LEGEND: { tone: StripeTone; label: string }[] = [
 /** Tracker state for the Last Seen column. */
 export type TrackerState = 'tracked' | 'pairing' | 'untracked';
 
-export function trackerState(row: InventoryKitList): TrackerState {
+export function trackerState(row: Pick<StockStatusFields, 'tracker'>): TrackerState {
   if (!row.tracker) return 'untracked';
   return row.tracker.is_active ? 'tracked' : 'pairing';
 }

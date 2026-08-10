@@ -8,21 +8,8 @@ import {
   listStockItemPhysicalLocationFacets,
 } from '@/api/generated/endpoints/inventory/inventory';
 
+import { stockItemKeys } from './inventory.keys';
 import { toListParams, type OnHandSearch } from './on-hand.search';
-
-/**
- * The only place stock-item query keys are constructed.
- *
- * Keeping them here means a filter change cannot accidentally reuse another
- * screen's cache entry, and there is one place to look when a refetch does not
- * happen.
- */
-export const stockItemKeys = {
-  all: ['stock-items'] as const,
-  list: (search: OnHandSearch) => [...stockItemKeys.all, 'list', search] as const,
-  facets: () => [...stockItemKeys.all, 'facets'] as const,
-  facet: (name: string) => [...stockItemKeys.facets(), name] as const,
-};
 
 export function onHandListQuery(search: OnHandSearch) {
   return queryOptions({

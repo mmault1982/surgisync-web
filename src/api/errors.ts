@@ -51,3 +51,15 @@ export function errorMessage(error: unknown): string {
 
 /** The codes this app knows how to explain. Used by tests to assert coverage. */
 export const KNOWN_ERROR_CODES = Object.keys(MESSAGES);
+
+/**
+ * A 404 from a resource endpoint.
+ *
+ * Separate from `errorMessage` because it is a routing outcome, not an error to
+ * display: a kit that does not exist and a kit belonging to another
+ * organization are deliberately indistinguishable here, and both want the
+ * not-found screen rather than "Something went wrong".
+ */
+export function isNotFound(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}

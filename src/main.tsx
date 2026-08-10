@@ -31,6 +31,19 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+
+  interface StaticDataRouteOption {
+    /**
+     * The trailing breadcrumb for a screen that is not itself a nav target, so
+     * `AppBreadcrumb` can say `Inventory › Manage On-Hand › Kit Detail`.
+     *
+     * Optional, and it has to stay that way: TanStack resolves `staticData` to
+     * `RequiredStaticDataRouteOption` the moment this interface has one
+     * required key, which would make `staticData` mandatory on every route in
+     * the app and fail `tsc` in all of them at once.
+     */
+    breadcrumb?: string;
+  }
 }
 
 function InnerApp() {

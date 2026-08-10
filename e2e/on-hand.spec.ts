@@ -125,3 +125,61 @@ test('a filter menu near the right edge stays on screen', async ({ page }) => {
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
+
+test('clicking a row opens its kit detail', async ({ page }) => {
+  await page.goto(ON_HAND);
+
+  // The Kit Name cell, not the Kit ID one: that column holds the <Link>, so
+  // clicking it would pass even if the row handler were broken. This is the
+  // "clicking on any row" behaviour.
+  const firstRow = page.locator('tbody tr').first();
+  const kitName = await firstRow.locator('td').nth(2).textContent();
+  await firstRow.locator('td').nth(2).click();
+
+  await expect(page).toHaveURL(/\/inventory\/on-hand\/\d+$/);
+  await expect(page.getByRole('heading', { name: 'Kit Detail' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: kitName!.trim() })).toBeVisible();
+
+  // The detail route is not in the nav, so both of these come from
+  // findNavSubtree plus the route's staticData rather than from a nav entry.
+  await expect(page.getByRole('link', { name: 'Manage On-Hand' }).first()).toBeVisible();
+  await expect(page.getByText('Kit Detail', { exact: true }).last()).toBeVisible();
+});
+
+test('a row click does not fire when selecting the row', async ({ page }) => {
+  // The checkbox cell stops propagation; without it, ticking a row to bulk-act
+  // on it navigates away from the table instead.
+  await page.goto(ON_HAND);
+  await page.locator('tbody tr').first().getByRole('checkbox').check();
+
+  await expect(page).toHaveURL(new RegExp(`${ON_HAND}$`));
+  await expect(page.getByText('1 selected')).toBeVisible();
+});
+
+test('the actions block moves below the kit info on a narrow layout', async ({ page }) => {
+  // jsdom has no layout engine, so a container query is only ever provable
+  // here — the same reason the filter-menu clipping test lives in this file.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto(ON_HAND);
+  await page.locator('tbody tr').first().locator('td').nth(2).click();
+  await expect(page.getByRole('heading', { name: 'Kit Detail' })).toBeVisible();
+
+  const activity = page.getByRole('heading', { name: 'Recent Activity' });
+  const actions = page.getByRole('heading', { name: 'Actions' });
+
+  // Wide: a second column, so Actions starts a long way to the right.
+  const wideActivity = (await activity.boundingBox())!;
+  const wideActions = (await actions.boundingBox())!;
+  expect(wideActions.x - wideActivity.x).toBeGreaterThan(200);
+
+  // Narrow: one column, with Actions between the kit info and Recent Activity.
+  await page.setViewportSize({ width: 800, height: 900 });
+  const narrowActivity = (await activity.boundingBox())!;
+  const narrowActions = (await actions.boundingBox())!;
+
+  // Not exactly equal: the Actions label sits at the column edge while the
+  // Recent Activity heading is inset by CardHeader's padding. What matters is
+  // that the gap is padding-sized rather than column-sized.
+  expect(Math.abs(narrowActions.x - narrowActivity.x)).toBeLessThan(32);
+  expect(narrowActions.y).toBeLessThan(narrowActivity.y);
+});

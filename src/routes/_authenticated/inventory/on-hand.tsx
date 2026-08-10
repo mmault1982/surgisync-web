@@ -59,6 +59,15 @@ function OnHandPage() {
     void navigate({ search: () => ({ ...ON_HAND_DEFAULTS }), replace: true });
   };
 
+  // Navigation lives here rather than in the table, so the table stays
+  // presentational — the same split every other component on this screen makes.
+  const openRow = (id: number) => {
+    void navigate({
+      to: '/inventory/on-hand/$stockItemId',
+      params: { stockItemId: String(id) },
+    });
+  };
+
   const rows = query.data?.results ?? [];
 
   const toggleRow = (id: number) =>
@@ -119,6 +128,7 @@ function OnHandPage() {
               onToggleRow={toggleRow}
               onToggleAll={toggleAllVisible}
               onSearchChange={setFilters}
+              onOpenRow={openRow}
             />
             <Pagination
               page={query.data.current_page}

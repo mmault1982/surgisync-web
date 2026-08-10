@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Slot } from 'radix-ui';
 
 import { cn } from '@/lib/utils';
 
@@ -33,9 +34,21 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
+/**
+ * `asChild` added to the stock shadcn component, the way `Badge` already ships
+ * it: a card that titles a region wants a real heading inside it, and a `<div>`
+ * gives a screen reader nothing to navigate by. Styling stays here so the
+ * heading level is the only thing a caller decides.
+ */
+function CardTitle({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<'div'> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : 'div';
+
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn(
         'font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm',

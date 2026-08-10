@@ -110,10 +110,26 @@ src/auth/          auth-store.ts (the invariants above) + a thin context
 src/features/      one directory per screen — the shape later screens copy
 src/components/    app shell and shared UI
 src/components/ui/ shadcn primitives (see below)
+src/hooks/         hooks shadcn's components expect at `@/hooks` (currently just use-mobile)
 src/test/          Vitest setup and MSW server
 ```
 
 Conventions: kebab-case files, PascalCase exports, `@/` for imports from `src`.
+
+### The app shell
+
+`app-shell.tsx` → `app-sidebar.tsx` → `nav-main.tsx` / `nav-user.tsx`, with `nav-config.ts` as the
+single source for both the nav links and the breadcrumb (`app-breadcrumb.tsx`), so the two cannot
+disagree. Two things there are load-bearing:
+
+- **`AppShell` owns sign-out, `NavUser` does not.** The logout → `router.invalidate()` →
+  `navigate('/login')` ordering is an auth invariant; keeping it in the shell makes the menu a
+  presentational component that tests with no auth store, no router and no MSW.
+- **Active state comes from `useRouterState(pathname)`, compared in `nav-config.ts`.** Not
+  `useMatchRoute`, which defaults to `includeSearch: true` and partially deep-equals the search
+  params — on-hand has six of them, so the nav item would quietly stop looking active once you
+  filtered. Not `Link`'s `activeProps` either: `SidebarMenuButton` owns `data-active`, and two
+  sources of truth for one class is how they drift.
 
 ## Design system: shadcn/ui on Radix
 
@@ -155,26 +171,44 @@ transitional: move screens onto the semantic names as you touch them.
 Beyond shadcn's set: `stripe-{red,amber,green,neutral}` for row stripes, and
 `{success,warning,info}` with `-container` / `-foreground` pairs for the prototype's tinted pills.
 
-Two deliberate divergences from the prototype, both of which look like bugs if you do not know:
+Four deliberate divergences from the prototype, all of which look like bugs if you do not know:
 
 - **Focus rings are kept.** The prototype expresses focus only as a border-colour change, which is
   not a visible focus indicator. shadcn's ring stays, tinted brand.
 - **One neutral ramp.** The prototype mixes `#333/#666/#ddd` with a slate scale; that was
   collapsed rather than ported.
+- **Nav hover is the brand tint, not `#f5f5f5`.** shadcn hovers to `sidebar-accent`; overriding it
+  to the prototype's grey means the hover fights the active state on the active row.
+- **No `#fafafa` strip behind the sub-nav.** Matching it means dropping `SidebarMenuSub`'s
+  `mx-3.5 border-l px-2.5` for a hand-rolled full-bleed `pl-[42px]`. The indent guide is the better
+  affordance; revisit if the fidelity matters.
+
+The `--sidebar-*` tokens were picked for this nav and land on it exactly: `sidebar-accent` is
+`.nav-parent.active`, `sidebar-primary` is `.nav-child.active`. shadcn applies the _accent_ pair to
+both, so `nav-main.tsx` overrides the child to the primary pair — including
+`[&>svg]:text-current`, because the base pins sub-icons to brand red and a brand-red icon on the
+brand-red active row is invisible.
 
 Dark mode is **not** implemented. `@custom-variant dark` pins it to an explicit `.dark` class that
 nothing sets, so a stray `dark:` utility stays inert instead of firing on OS preference against
 tokens that do not exist. Adding it later means authoring one `.dark { … }` block.
 
-### Popovers: `Popover`, not `DropdownMenu`
+### `Popover` vs `DropdownMenu`
 
-Filter panels hold checkboxes and text inputs. `DropdownMenu` implements typeahead that eats
-keystrokes meant for a field, and its children want `menuitem` semantics. `Popover` is the right
-primitive — it renders `role="dialog"`, which is what the e2e selectors match.
+**Filter panels are `Popover`.** They hold checkboxes and text inputs. `DropdownMenu` implements
+typeahead that eats keystrokes meant for a field, and its children want `menuitem` semantics.
+`Popover` is the right primitive — it renders `role="dialog"`, which is what the e2e selectors match.
 
 `PopoverContent` portals by default, and that is load-bearing: the table's `overflow-x-auto`
 wrapper clips vertically too (one non-visible overflow axis computes the other to `auto`), so an
 inline panel gets cut off. `column-menu.tsx` carries the full note.
+
+**That rule is about filter panels, not menus in general.** Where the content is a list of commands
+with no form controls, `DropdownMenu` is right and `menuitem` is the correct role. Two places use
+it: the sidebar's user menu (`nav-user.tsx`), and the collapsed icon rail's submenu flyouts
+(`nav-main.tsx`, which needs it because `SidebarMenuSub` is `display:none` in icon mode). Both are
+matched in tests by `role="menuitem"` after opening the trigger — `e2e/auth.spec.ts` can no longer
+see a bare `Sign out` button, which is why it opens the menu first.
 
 ## Testing
 
@@ -211,3 +245,8 @@ and calls pointer-capture methods on open; jsdom implements neither `ResizeObser
 what such a test can and cannot prove: it covers semantics (roles, label/control wiring, the
 callbacks) but **not positioning** — there is no layout engine in jsdom, so collision handling,
 flipping and clipping stay Playwright's job.
+
+`window.matchMedia` is the exception: it is stubbed once in `src/test/setup.ts`, not per file.
+jsdom implements none of it, and the sidebar's `useIsMobile()` calls it on mount, so _anything_
+rendered inside the app shell needs it. jsdom's window is 1024px, so the desktop branch is what
+renders and the mobile `Sheet` is Playwright's problem.

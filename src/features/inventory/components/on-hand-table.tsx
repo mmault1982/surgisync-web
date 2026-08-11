@@ -11,7 +11,7 @@ import { ColumnMenu, type ColumnKey } from './column-menu';
 interface Props {
   rows: InventoryKitList[];
   search: OnHandSearch;
-  selected: Set<number>;
+  selected: ReadonlySet<number>;
   onToggleRow: (id: number) => void;
   onToggleAll: () => void;
   onSearchChange: (patch: Partial<OnHandSearch>) => void;

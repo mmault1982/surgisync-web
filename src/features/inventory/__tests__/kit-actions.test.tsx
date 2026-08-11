@@ -6,9 +6,14 @@ import { KitActions } from '../components/kit-actions';
 import { kitFixture } from './kit-fixture';
 
 /**
- * Every action is a no-op in this build, so what is worth testing is not what
- * they do but *which of them appear and in what state* — all four of those
- * decisions come from the kit's real data.
+ * Only Update Status does anything in this build, and what it opens is tested
+ * in `update-status-dialog.test.tsx` — which already has the query provider,
+ * the Radix jsdom stubs and the facet handler that testing it needs. What is
+ * worth testing here is *which actions appear and in what state*, all four of
+ * which come from the kit's real data.
+ *
+ * The dialog is mounted only while open, so nothing extra renders here and
+ * this file stays prop-driven: no provider, no stubs, no MSW.
  */
 describe('KitActions', () => {
   it('offers the three kit actions plus pairing for an untracked kit', () => {

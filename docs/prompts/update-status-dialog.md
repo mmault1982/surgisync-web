@@ -19,7 +19,7 @@ that were **explicitly decided against**).
 
 Status is **six independent booleans** on the stock item: `is_complete`, `is_wrapped`,
 `is_signed_in`, `is_returned`, `is_lost`, `is_other`. There is no `is_incomplete`, `is_unwrapped`,
-or `is_signed_out` — those are the *false* side of the first three. The dialog renders eight chips,
+or `is_signed_out` — those are the _false_ side of the first three. The dialog renders eight chips,
 but they are views onto the six booleans:
 
 - **Complete / Incomplete** — poles of `is_complete`. Clicking Complete sets it true; clicking
@@ -48,10 +48,10 @@ content scrolls inside the dialog. Match the app's tokens (`CLAUDE.md` → Token
    - Row 1: Complete (check), Wrapped (package), Signed In (arrow right), Lost (question mark)
    - Row 2: Incomplete (warning triangle, `text-warning`), Unwrapped (open package),
      Signed Out (arrow left), Other (file/document)
-   Lucide icons are fine. Selected chip: `success-container` background, `success` border, small
-   check badge top-right (see the mockup screenshot / prototype `.stb-btn.sel`). Unselected:
-   `border` + `card`. Chips are `<button type="button" aria-pressed={selected}>`.
-   Below the grid, the legend bullets (muted, small — exactly these five, from mobile):
+     Lucide icons are fine. Selected chip: `success-container` background, `success` border, small
+     check badge top-right (see the mockup screenshot / prototype `.stb-btn.sel`). Unselected:
+     `border` + `card`. Chips are `<button type="button" aria-pressed={selected}>`.
+     Below the grid, the legend bullets (muted, small — exactly these five, from mobile):
    - `Complete - All items present and accounted for`
    - `Wrapped - Sterile-wrapped and ready`
    - `Signed In - Signed-in to SPD`
@@ -66,7 +66,7 @@ content scrolls inside the dialog. Match the app's tokens (`CLAUDE.md` → Token
 6. **Photos** — label `Photos *` with a muted `(n of 10)` count. A wrap of ~96px square tiles:
    - Existing photos from `kit.photos` (oldest first — the server orders them; render `url`, which
      is nullable → placeholder tile when null). Badge the **first tile** with a "Primary" caption
-     bar. Primary is *positional* — the server treats the oldest photo as primary; there is no
+     bar. Primary is _positional_ — the server treats the oldest photo as primary; there is no
      set-primary API, so no set-primary UI.
    - Each tile has a remove X. Removals of server photos are **staged** (collected for deletion at
      save time), not immediate. New photos come from a trailing dashed **Add** tile → hidden
@@ -103,8 +103,7 @@ Then, in this order (the ordering is mobile's, and it is deliberate):
    passes through zero; sequential (not `Promise.all`) because every request shares the same
    100/min per-user throttle. Upload: `POST /api/v1/stock-items/{id}/photos/`
    (`create_inventory_kit_photo`) — **multipart only**, field `image`, one file per request.
-   Delete: `DELETE /api/v1/stock-items/{id}/photos/{photo_id}/` (`delete_inventory_kit_photo`),
-   204.
+   Delete: `DELETE /api/v1/stock-items/{id}/photos/{photo_id}/` (`delete_inventory_kit_photo`), 204.
 3. **On full success**: close the dialog and invalidate the `stockItemKeys.all` prefix
    (`src/features/inventory/inventory.keys.ts`) — that one prefix covers the detail query, the
    history feed (which will now narrate the change), and the on-hand list.
@@ -142,6 +141,7 @@ Patterns to copy: `src/features/inventory/__tests__/column-menu.test.tsx` (jsdom
 `URL.createObjectURL`/`revokeObjectURL` — jsdom lacks them.
 
 Cover at least:
+
 - Pole-pair semantics: clicking Incomplete lights it and unlights Complete (one boolean, two
   faces); Lost/Other toggle independently; nothing disables anything.
 - Notes required iff Lost or Other; location required; photo min-1/max-10 enforcement.

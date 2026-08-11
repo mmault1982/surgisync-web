@@ -52,6 +52,37 @@ export function errorMessage(error: unknown): string {
 /** The codes this app knows how to explain. Used by tests to assert coverage. */
 export const KNOWN_ERROR_CODES = Object.keys(MESSAGES);
 
+/** DRF's default 400: one array of messages per rejected field. */
+export type FieldErrors = Record<string, string[]>;
+
+/**
+ * The *other* error contract.
+ *
+ * `{code, detail}` above is `/api/v1/web/*` only. Every other write in the
+ * contract rejects a 400 with DRF's bare `{field: ["msg", …]}` map, which
+ * `errorMessage` cannot read — it has no `code`, so it falls through to the
+ * generic string. Screens that own a form want the per-field text instead.
+ *
+ * Not typed as the generated `ApiV1StockItemsPartialUpdate400`: that name is
+ * scoped to one operation, and this shape is declared identically on every
+ * write endpoint in the schema.
+ *
+ * The value check is what keeps the two contracts apart. A web error's values
+ * are strings, not arrays of them, so `{code: 'validation_error', detail: '…'}`
+ * fails here and is still caught by `asWebError`.
+ */
+export function asFieldErrors(error: unknown): FieldErrors | null {
+  if (!axios.isAxiosError(error) || error.response?.status !== 400) return null;
+  const data: unknown = error.response.data;
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return null;
+  const entries = Object.entries(data);
+  if (entries.length === 0) return null;
+  const isMessageList = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every((message) => typeof message === 'string');
+  if (!entries.every(([, value]) => isMessageList(value))) return null;
+  return Object.fromEntries(entries);
+}
+
 /**
  * A 404 from a resource endpoint.
  *

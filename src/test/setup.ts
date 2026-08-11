@@ -4,6 +4,7 @@ import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
 import { __resetAuthStoreForTests } from '@/auth/auth-store';
+import { clearSelection } from '@/features/inventory/selection-store';
 
 import { server } from './msw/server';
 
@@ -39,8 +40,9 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   server.resetHandlers();
-  // The auth store is module scope, so state leaks between tests unless reset.
+  // Both stores are module scope, so state leaks between tests unless reset.
   __resetAuthStoreForTests();
+  clearSelection();
 });
 
 afterAll(() => server.close());

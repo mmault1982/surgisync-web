@@ -183,3 +183,34 @@ test('the actions block moves below the kit info on a narrow layout', async ({ p
   expect(Math.abs(narrowActions.x - narrowActivity.x)).toBeLessThan(32);
   expect(narrowActions.y).toBeLessThan(narrowActivity.y);
 });
+
+test('a selection survives opening a kit and coming back', async ({ page }) => {
+  // The reason selection lives in a module-scope store rather than useState.
+  // Opening a kit unmounts the on-hand route, so component state would take the
+  // selection with it — select seven kits, click one to check its detail, lose
+  // all seven. MSW cannot model this: it needs a real unmount and remount.
+  await page.goto(ON_HAND);
+  const rows = page.locator('tbody tr');
+
+  await rows.nth(0).getByRole('checkbox').check();
+  await rows.nth(1).getByRole('checkbox').check();
+  await expect(page.getByText('2 selected')).toBeVisible();
+
+  // A third row, so the navigation is not itself one of the selected ones.
+  await rows.nth(2).locator('td').nth(2).click();
+  await expect(page).toHaveURL(/\/inventory\/on-hand\/\d+$/);
+
+  // Waiting for the detail content, not just the URL, is load-bearing. The URL
+  // changes at the *start* of the navigation, so asserting only on it and
+  // immediately going back reverses the transition before React commits the
+  // unmount — the list component is never torn down, and the test passes
+  // against the very bug it exists to catch. Verified: with the selection back
+  // in useState, this line is the difference between a green run and a red one.
+  await expect(page.getByRole('heading', { name: 'Kit Detail' })).toBeVisible();
+  await expect(page.locator('tbody tr')).toHaveCount(0);
+
+  await page.goBack();
+  await expect(rows.nth(0).getByRole('checkbox')).toBeChecked();
+  await expect(rows.nth(1).getByRole('checkbox')).toBeChecked();
+  await expect(page.getByText('2 selected')).toBeVisible();
+});

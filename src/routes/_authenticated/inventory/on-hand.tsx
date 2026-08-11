@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, retainSearchParams, stripSearchParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { ActiveFilterChips } from '@/features/inventory/components/active-filter-chips';
 import { OnHandTable } from '@/features/inventory/components/on-hand-table';
@@ -13,6 +13,12 @@ import {
   onHandSearchSchema,
   type OnHandSearch,
 } from '@/features/inventory/on-hand.search';
+import {
+  getSelectedIds,
+  subscribe,
+  toggleSelected,
+  toggleSelectedAll,
+} from '@/features/inventory/selection-store';
 import { STRIPE_CLASSES, STRIPE_LEGEND } from '@/features/inventory/stock-status';
 
 export const Route = createFileRoute('/_authenticated/inventory/on-hand')({
@@ -37,9 +43,10 @@ function OnHandPage() {
   const navigate = Route.useNavigate();
   const query = useQuery(onHandListQuery(search));
 
-  // Keyed by id and deliberately independent of the current page, so a
-  // selection survives paging and filtering.
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Held in a module-scope store, not useState: opening a kit unmounts this
+  // route, and component state would take the selection with it. See the
+  // docblock in selection-store.ts.
+  const selected = useSyncExternalStore(subscribe, getSelectedIds);
 
   /**
    * Any filter change resets to page 1 — page 4 of the old filter set is not
@@ -70,24 +77,11 @@ function OnHandPage() {
 
   const rows = query.data?.results ?? [];
 
-  const toggleRow = (id: number) =>
-    setSelected((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleRow = (id: number) => toggleSelected(id);
 
-  const toggleAllVisible = () =>
-    setSelected((current) => {
-      const next = new Set(current);
-      const allSelected = rows.every((row) => next.has(row.id));
-      for (const row of rows) {
-        if (allSelected) next.delete(row.id);
-        else next.add(row.id);
-      }
-      return next;
-    });
+  // Scoped to the rows on screen — the store is deliberately ignorant of paging
+  // and filtering, so the visible ids have to come from here.
+  const toggleAllVisible = () => toggleSelectedAll(rows.map((row) => row.id));
 
   return (
     <div className="p-6">

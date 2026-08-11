@@ -6,19 +6,22 @@ import {
   Undo2Icon,
   type LucideIcon,
 } from 'lucide-react';
+import { useState } from 'react';
 
 import type { InventoryKitDetail } from '@/api/generated/model';
 import { cn } from '@/lib/utils';
 
 import { isExpired } from '../stock-status';
 
+import { UpdateStatusDialog } from './update-status-dialog';
+
 /**
  * What you can do to a kit.
  *
- * Every action is a no-op in this build — the flows behind them (status,
- * transfer, returns, beacon pairing) land as their own screens. They render
- * now because the layout and the affordances are what this change is for, and
- * because each one is enabled or disabled by the kit's real state.
+ * Update Status opens its dialog; transfer, returns and beacon pairing are
+ * still no-ops, and land as their own screens. They render now because the
+ * layout and the affordances are what this change is for, and because each one
+ * is enabled or disabled by the kit's real state.
  *
  * These are plain `<button>`s rather than shadcn `Button`s on purpose: its cva
  * base pins `h-8`, `px-2.5` and a single inline row, and an action card is a
@@ -36,6 +39,12 @@ interface Action {
   annotation?: string;
   description: string;
   disabled?: boolean;
+  /**
+   * Absent for the flows that do not exist yet, so the card visibly does
+   * nothing. Deliberately not a toast: a "coming soon" popup on every click is
+   * worse than a button that plainly has no effect.
+   */
+  onClick?: () => void;
   /** The prototype's tinted "you probably want this one" treatment. */
   highlight?: string;
 }
@@ -43,6 +52,7 @@ interface Action {
 export function KitActions({ kit, className }: { kit: InventoryKitDetail; className?: string }) {
   const expired = isExpired(kit);
   const inTransit = kit.active_transfer_id !== null;
+  const [statusOpen, setStatusOpen] = useState(false);
 
   const actions: Action[] = [
     {
@@ -52,6 +62,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       title: 'Update Status',
       description: 'Complete, incomplete, wrapped, signed in…',
       disabled: inTransit,
+      onClick: () => setStatusOpen(true),
     },
     {
       key: 'transfer',
@@ -99,6 +110,13 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       {actions.map((action) => (
         <ActionCard key={action.key} action={action} />
       ))}
+
+      {/*
+        Mounted only while open, so the dialog's lifetime is the edit session:
+        its staged changes and its "already PATCHed" latch cannot outlive a
+        close, and every field reseeds from the kit on the next open.
+      */}
+      {statusOpen && <UpdateStatusDialog kit={kit} onClose={() => setStatusOpen(false)} />}
     </div>
   );
 }
@@ -108,10 +126,7 @@ function ActionCard({ action }: { action: Action }) {
     <button
       type="button"
       disabled={action.disabled}
-      // No-op until the flow behind it exists. Deliberately not wired to a
-      // toast: a "coming soon" popup on every click is worse than a button
-      // that visibly does nothing.
-      onClick={() => {}}
+      onClick={action.onClick}
       className={cn(
         'flex w-full items-center gap-3.5 rounded-lg border border-border bg-card p-4 text-left transition-colors',
         'hover:border-primary hover:shadow-sm',

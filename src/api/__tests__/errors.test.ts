@@ -1,18 +1,22 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import { errorMessage, KNOWN_ERROR_CODES } from '@/api/errors';
+import { asFieldErrors, errorMessage, KNOWN_ERROR_CODES } from '@/api/errors';
 
-function webError(code: string, detail = 'server text') {
+function axiosError(data: unknown, status: number) {
   const error = new AxiosError('failed');
   error.response = {
-    data: { code, detail },
-    status: 401,
+    data,
+    status,
     statusText: '',
     headers: {},
     config: { headers: new AxiosHeaders() },
   };
   return error;
+}
+
+function webError(code: string, detail = 'server text') {
+  return axiosError({ code, detail }, 401);
 }
 
 describe('error copy', () => {
@@ -38,5 +42,29 @@ describe('error copy', () => {
   it('explains a network failure rather than showing a generic error', () => {
     const offline = new AxiosError('Network Error');
     expect(errorMessage(offline)).toMatch(/could not reach the server/i);
+  });
+});
+
+describe('asFieldErrors', () => {
+  it('reads DRF field errors off a 400', () => {
+    const error = axiosError({ physical_location: ['Unknown location.'] }, 400);
+    expect(asFieldErrors(error)).toEqual({ physical_location: ['Unknown location.'] });
+  });
+
+  it('leaves the web contract to asWebError', () => {
+    // `{code, detail}` has string values, not arrays of them. Reading it here
+    // would give a form two conflicting messages for the same failure.
+    expect(asFieldErrors(axiosError({ code: 'validation_error', detail: 'Bad.' }, 400))).toBeNull();
+    expect(errorMessage(axiosError({ code: 'validation_error', detail: 'Bad.' }, 400))).toBe(
+      'Check the details you entered and try again.',
+    );
+  });
+
+  it('ignores anything that is not a 400 field map', () => {
+    expect(asFieldErrors(axiosError({ notes: ['Required.'] }, 500))).toBeNull();
+    expect(asFieldErrors(axiosError(['Required.'], 400))).toBeNull();
+    expect(asFieldErrors(axiosError({}, 400))).toBeNull();
+    expect(asFieldErrors(axiosError({ notes: [1, 2] }, 400))).toBeNull();
+    expect(asFieldErrors(new Error('not axios'))).toBeNull();
   });
 });

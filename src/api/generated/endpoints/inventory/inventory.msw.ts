@@ -24,6 +24,7 @@ import {
 import type {
   FacetResponse,
   InventoryKitDetail,
+  InventoryKitPhoto,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   StringFacetResponse
@@ -34,7 +35,11 @@ export const getApiV1StockItemsListResponseMock = (overrideResponse: Partial<Ext
 
 export const getApiV1StockItemsRetrieveResponseMock = (overrideResponse: Partial<Extract<InventoryKitDetail, object>> = {}): InventoryKitDetail => ({id: faker.number.int(), parent_company: faker.helpers.arrayElement([faker.number.int(), null]), parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), part: faker.helpers.arrayElement([faker.number.int(), undefined]), part_uuid: faker.string.uuid(), part_name: faker.string.alpha({length: {min: 10, max: 20}}), part_kind: faker.string.alpha({length: {min: 10, max: 20}}), is_serialized: faker.datatype.boolean(), kit: faker.helpers.arrayElement([faker.number.int(), undefined]), kit_uuid: faker.string.uuid(), kit_name: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.helpers.arrayElement([faker.number.int({min: 0, max: 2147483647}), undefined]), manufacturer_kit_id: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), lot_code: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), udi: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 128}}), null]), undefined]), manufacturer_id: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), physical_location: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), null]), undefined]), ownership_type: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(OwnershipTypeEnum)), undefined]), loaner_due_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), expiration_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), last_sterilized_at: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), is_complete: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_wrapped: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_signed_in: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_returned: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_lost: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_other: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), active_transfer_id: faker.helpers.arrayElement([faker.number.int(), null]), active_transfer_destination_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), photos: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), url: faker.helpers.arrayElement([faker.internet.url(), null]), caption: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), photo_count: faker.number.int(), tracker: {...{id: faker.number.int(), beacon_id: faker.string.alpha({length: {min: 10, max: 20}}), is_active: faker.datatype.boolean()},}, notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
+export const getApiV1StockItemsPartialUpdateResponseMock = (overrideResponse: Partial<Extract<InventoryKitDetail, object>> = {}): InventoryKitDetail => ({id: faker.number.int(), parent_company: faker.helpers.arrayElement([faker.number.int(), null]), parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), part: faker.helpers.arrayElement([faker.number.int(), undefined]), part_uuid: faker.string.uuid(), part_name: faker.string.alpha({length: {min: 10, max: 20}}), part_kind: faker.string.alpha({length: {min: 10, max: 20}}), is_serialized: faker.datatype.boolean(), kit: faker.helpers.arrayElement([faker.number.int(), undefined]), kit_uuid: faker.string.uuid(), kit_name: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.helpers.arrayElement([faker.number.int({min: 0, max: 2147483647}), undefined]), manufacturer_kit_id: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), lot_code: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 64}}), null]), undefined]), udi: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 128}}), null]), undefined]), manufacturer_id: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), assigned_to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), physical_location: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), null]), undefined]), ownership_type: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(OwnershipTypeEnum)), undefined]), loaner_due_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), expiration_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), last_sterilized_at: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), undefined]), is_complete: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_wrapped: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_signed_in: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_returned: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_lost: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), is_other: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), active_transfer_id: faker.helpers.arrayElement([faker.number.int(), null]), active_transfer_destination_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), photos: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), url: faker.helpers.arrayElement([faker.internet.url(), null]), caption: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), photo_count: faker.number.int(), tracker: {...{id: faker.number.int(), beacon_id: faker.string.alpha({length: {min: 10, max: 20}}), is_active: faker.datatype.boolean()},}, notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
 export const getListInventoryKitHistoryResponseMock = (overrideResponse: Partial<Extract<PaginatedInventoryKitHistoryList, object>> = {}): PaginatedInventoryKitHistoryList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({history_id: faker.number.int(), history_date: faker.date.past().toISOString().slice(0, 19) + 'Z', history_type: faker.helpers.arrayElement(Object.values(HistoryTypeEnum)), history_user: {...{id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})},}, changes: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({field: faker.string.alpha({length: {min: 10, max: 20}}), old: faker.helpers.arrayElement([{}, null]), new: faker.helpers.arrayElement([{}, null])})), history_summary: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getCreateInventoryKitPhotoResponseMock = (overrideResponse: Partial<Extract<InventoryKitPhoto, object>> = {}): InventoryKitPhoto => ({id: faker.number.int(), url: faker.helpers.arrayElement([faker.internet.url(), null]), caption: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 255}}), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
 export const getListStockItemFacilityFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
@@ -69,6 +74,18 @@ export const getApiV1StockItemsRetrieveMockHandler = (overrideResponse?: Invento
   }, options)
 }
 
+export const getApiV1StockItemsPartialUpdateMockHandler = (overrideResponse?: InventoryKitDetail | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<InventoryKitDetail> | InventoryKitDetail), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/stock-items/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getApiV1StockItemsPartialUpdateResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListInventoryKitHistoryMockHandler = (overrideResponse?: PaginatedInventoryKitHistoryList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedInventoryKitHistoryList> | PaginatedInventoryKitHistoryList), options?: RequestHandlerOptions) => {
   return http.get('/api/v1/stock-items/:id/history/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -77,6 +94,28 @@ export const getListInventoryKitHistoryMockHandler = (overrideResponse?: Paginat
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getListInventoryKitHistoryResponseMock(),
       { status: 200
+      })
+  }, options)
+}
+
+export const getCreateInventoryKitPhotoMockHandler = (overrideResponse?: InventoryKitPhoto | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InventoryKitPhoto> | InventoryKitPhoto), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/stock-items/:id/photos/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateInventoryKitPhotoResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getDeleteInventoryKitPhotoMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/stock-items/:id/photos/:photoId/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
       })
   }, options)
 }
@@ -131,7 +170,10 @@ export const getListStockItemPhysicalLocationFacetsMockHandler = (overrideRespon
 export const getInventoryMock = () => [
   getApiV1StockItemsListMockHandler(),
   getApiV1StockItemsRetrieveMockHandler(),
+  getApiV1StockItemsPartialUpdateMockHandler(),
   getListInventoryKitHistoryMockHandler(),
+  getCreateInventoryKitPhotoMockHandler(),
+  getDeleteInventoryKitPhotoMockHandler(),
   getListStockItemFacilityFacetsMockHandler(),
   getListInventoryKitManufacturerKitIdsMockHandler(),
   getListStockItemManufacturerFacetsMockHandler(),

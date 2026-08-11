@@ -40,6 +40,13 @@ const ALLOWED_OPERATIONS = new Set([
   // Worth asking the backend to extend its gate to /trackers/.
   'tracker_tracking_events',
 
+  // Kit Detail's Update Status dialog. All three hang off /stock-items/, so
+  // they are inside the response accuracy gate. The PATCH is the app's first
+  // write; the photo pair is multipart in, 204 out.
+  'api_v1_stock_items_partial_update',
+  'create_inventory_kit_photo',
+  'delete_inventory_kit_photo',
+
   // Value sources for the table's column filter menus. These return only what
   // this organization actually holds — the global /manufacturers/ and
   // /facilities/ endpoints are deliberately not used, since their schemas do

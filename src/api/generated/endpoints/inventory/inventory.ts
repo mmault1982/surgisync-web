@@ -23,19 +23,25 @@ import type {
 import type {
   ApiV1StockItemsList400,
   ApiV1StockItemsListParams,
+  ApiV1StockItemsPartialUpdate400,
+  Conflict,
+  CreateInventoryKitPhoto400,
   ErrorDetail,
   FacetResponse,
   InventoryKitDetail,
+  InventoryKitPhoto,
+  InventoryKitPhotoRequest,
   ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
+  PatchedInventoryKitDetailRequest,
   StringFacetResponse
 } from '../../model';
 
 import { apiRequest } from '../../../axios-instance';
-import type { ErrorType } from '../../../axios-instance';
+import type { ErrorType , BodyType } from '../../../axios-instance';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -253,6 +259,120 @@ export function useApiV1StockItemsRetrieve<TData = Awaited<ReturnType<typeof api
 
 
 /**
+ * ViewSet for managing physical inventory kits.
+ *
+ * list: Get all inventory kits for the user's organization
+ * create: Register a new physical kit
+ * retrieve: Get a single inventory kit by ID
+ * update / partial_update: Update an inventory kit (assignment, flags, photo)
+ * destroy: Soft-delete an inventory kit
+ * photos: List / add photos of a kit
+ * photo_detail: Remove one photo of a kit
+ *
+ * The create endpoint documents multipart/form-data automatically because the
+ * serializer exposes an ImageField (photo); spectacular infers it.
+ *
+ * A kit holds many photos (InventoryKitPhoto). The single `photo` field
+ * predates that and is maintained for existing clients: it mirrors the
+ * primary (oldest) photo, and writing it replaces that photo rather than
+ * appending one.
+ */
+export const apiV1StockItemsPartialUpdate = (
+    id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<InventoryKitDetail>(
+      {url: `/api/v1/stock-items/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedInventoryKitDetailRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getApiV1StockItemsPartialUpdateQueryKey = (id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>,) => {
+    return [
+    'PATCH', `/api/v1/stock-items/${id}/`, patchedInventoryKitDetailRequest
+    ] as const;
+    }
+
+
+export const getApiV1StockItemsPartialUpdateQueryOptions = <TData = Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>>(id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getApiV1StockItemsPartialUpdateQueryKey(id,patchedInventoryKitDetailRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>> = ({ signal }) => apiV1StockItemsPartialUpdate(id,patchedInventoryKitDetailRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiV1StockItemsPartialUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>>
+export type ApiV1StockItemsPartialUpdateQueryError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>
+
+
+export function useApiV1StockItemsPartialUpdate<TData = Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>>(
+ id: number,
+    patchedInventoryKitDetailRequest: undefined |  BodyType<PatchedInventoryKitDetailRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>,
+          TError,
+          Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiV1StockItemsPartialUpdate<TData = Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>>(
+ id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>,
+          TError,
+          Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiV1StockItemsPartialUpdate<TData = Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>>(
+ id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useApiV1StockItemsPartialUpdate<TData = Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError = ErrorType<ApiV1StockItemsPartialUpdate400 | ErrorDetail | Conflict>>(
+ id: number,
+    patchedInventoryKitDetailRequest?: BodyType<PatchedInventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1StockItemsPartialUpdate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getApiV1StockItemsPartialUpdateQueryOptions(id,patchedInventoryKitDetailRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * Paginated change log (django-simple-history) for one inventory kit, newest first. Each entry lists the fields that changed (old/new values, foreign keys as display strings) and a human-readable summary. history_user is null for changes recorded before user tracking was enabled or made outside a request (shell, background jobs).
  */
 export const listInventoryKitHistory = (
@@ -338,6 +458,205 @@ export function useListInventoryKitHistory<TData = Awaited<ReturnType<typeof lis
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListInventoryKitHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Attach one photo to an inventory kit. Send as multipart/form-data with the file in `image` and an optional `caption`. The first photo of a kit also becomes its primary photo (the kit's `photo` field); later ones do not displace it.
+ */
+export const createInventoryKitPhoto = (
+    id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`image`, inventoryKitPhotoRequest.image);
+if(inventoryKitPhotoRequest.caption !== undefined) {
+ formData.append(`caption`, inventoryKitPhotoRequest.caption);
+ }
+
+      return apiRequest<InventoryKitPhoto>(
+      {url: `/api/v1/stock-items/${id}/photos/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateInventoryKitPhotoQueryKey = (id: number,
+    inventoryKitPhotoRequest?: BodyType<InventoryKitPhotoRequest>,) => {
+    return [
+    'POST', `/api/v1/stock-items/${id}/photos/`, inventoryKitPhotoRequest
+    ] as const;
+    }
+
+
+export const getCreateInventoryKitPhotoQueryOptions = <TData = Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>>(id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateInventoryKitPhotoQueryKey(id,inventoryKitPhotoRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createInventoryKitPhoto>>> = ({ signal }) => createInventoryKitPhoto(id,inventoryKitPhotoRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateInventoryKitPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof createInventoryKitPhoto>>>
+export type CreateInventoryKitPhotoQueryError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>
+
+
+export function useCreateInventoryKitPhoto<TData = Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>>(
+ id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryKitPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryKitPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryKitPhoto<TData = Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>>(
+ id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryKitPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryKitPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryKitPhoto<TData = Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>>(
+ id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateInventoryKitPhoto<TData = Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError = ErrorType<CreateInventoryKitPhoto400 | ErrorDetail>>(
+ id: number,
+    inventoryKitPhotoRequest: BodyType<InventoryKitPhotoRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateInventoryKitPhotoQueryOptions(id,inventoryKitPhotoRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Soft-delete one photo of an inventory kit. If it was the primary photo, the kit's `photo` field re-points at the next-oldest photo (or null when none remain).
+ */
+export const deleteInventoryKitPhoto = (
+    id: number,
+    photoId: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<void>(
+      {url: `/api/v1/stock-items/${id}/photos/${photoId}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteInventoryKitPhotoQueryKey = (id: number,
+    photoId: number,) => {
+    return [
+    'DELETE', `/api/v1/stock-items/${id}/photos/${photoId}/`
+    ] as const;
+    }
+
+
+export const getDeleteInventoryKitPhotoQueryOptions = <TData = Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError = ErrorType<ErrorDetail>>(id: number,
+    photoId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteInventoryKitPhotoQueryKey(id,photoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>> = ({ signal }) => deleteInventoryKitPhoto(id,photoId, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && photoId !== null && photoId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeleteInventoryKitPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>>
+export type DeleteInventoryKitPhotoQueryError = ErrorType<ErrorDetail>
+
+
+export function useDeleteInventoryKitPhoto<TData = Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    photoId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteInventoryKitPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof deleteInventoryKitPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteInventoryKitPhoto<TData = Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    photoId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteInventoryKitPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof deleteInventoryKitPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteInventoryKitPhoto<TData = Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    photoId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeleteInventoryKitPhoto<TData = Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    photoId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteInventoryKitPhoto>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteInventoryKitPhotoQueryOptions(id,photoId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InventoryKitList } from '@/api/generated/model';
+import type { InventoryKitDetail, InventoryKitList } from '@/api/generated/model';
 
 import { isExpired, statusLabels, stripeTone, trackerState } from '../stock-status';
 
@@ -127,5 +127,28 @@ describe('tracker state', () => {
     expect(trackerState(row({ tracker: { id: 1, beacon_id: 'HM-1', is_active: false } }))).toBe(
       'pairing',
     );
+  });
+});
+
+describe('the detail record', () => {
+  /**
+   * Kit Detail runs these same rules over `InventoryKitDetail`, which declares
+   * the status booleans and `expiration_date` as *optional* because the same
+   * serializer handles writes. A parameter typed as `InventoryKitList` rejects
+   * it, which is why `StockStatusFields` exists.
+   *
+   * This case is the guard: narrowing the helpers back to a list row stops the
+   * detail screen compiling, for a reason that is not obvious from the error.
+   */
+  it('is accepted, reading an absent flag as false', () => {
+    const detail = {
+      is_complete: undefined,
+      active_transfer_id: null,
+      tracker: null,
+    } satisfies Partial<InventoryKitDetail> as InventoryKitDetail;
+
+    expect(statusLabels(detail)).toEqual(['Incomplete']);
+    expect(stripeTone(detail, TODAY)).toBe('red');
+    expect(isExpired(detail, TODAY)).toBe(false);
   });
 });

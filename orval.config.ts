@@ -26,6 +26,20 @@ const ALLOWED_OPERATIONS = new Set([
   'api_v1_stock_items_list',
   'api_v1_stock_items_retrieve',
 
+  // Kit Detail. The history endpoint hangs off /stock-items/, so it is inside
+  // the backend's response accuracy gate like the two above.
+  'list_inventory_kit_history',
+
+  // Kit Detail's Live Location panel. This one is /trackers/, which is
+  // *outside* that gate — the hazard this allowlist exists to guard against.
+  // Verified two ways before adding it, so nobody has to repeat the dig:
+  // tracking/views.py returns get_paginated_response() through the house
+  // CustomPagination, and tests/tracking/test_tracker_api.py asserts the
+  // {total_data, total_pages, current_page, results} keys. It is a real
+  // paginated envelope, not one of the bare-array-vs-{message,data} liars.
+  // Worth asking the backend to extend its gate to /trackers/.
+  'tracker_tracking_events',
+
   // Value sources for the table's column filter menus. These return only what
   // this organization actually holds — the global /manufacturers/ and
   // /facilities/ endpoints are deliberately not used, since their schemas do
@@ -47,7 +61,11 @@ export default defineConfig({
 
       // Coarse pre-filter. With tags set, orval prunes components to just what
       // the surviving operations reference (108 -> a handful).
-      filters: { mode: 'include', tags: ['Inventory', 'Authentication'] },
+      //
+      // This runs *after* the transformer below, not before, so widening it is
+      // safe: `Tracking` is here only for `tracker_tracking_events` (its sole
+      // operation), and the transformer has already deleted anything else.
+      filters: { mode: 'include', tags: ['Inventory', 'Authentication', 'Tracking'] },
 
       override: {
         // Tags alone are far too coarse — `Inventory` is 42 operations

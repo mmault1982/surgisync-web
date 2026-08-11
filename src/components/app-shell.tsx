@@ -7,6 +7,7 @@ import { EnvironmentBadge } from '@/components/environment-badge';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { clearSelection } from '@/features/inventory/selection-store';
 
 /**
  * The authenticated chrome: the nav sidebar plus a slim header.
@@ -27,6 +28,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function handleSignOut() {
     await auth.logout();
+    // Module-scope state outlives the session. Left behind, the next user to
+    // sign in on this tab sees "7 selected" against another organization's ids
+    // — every checkbox unchecked, and no way to clear the count. Cleared here
+    // rather than in auth-store.ts, which must not import a feature.
+    clearSelection();
     await router.invalidate();
     await navigate({ to: '/login' });
   }

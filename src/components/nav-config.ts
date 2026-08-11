@@ -65,3 +65,26 @@ export function findNavTrail(pathname: string): NavTrail | null {
   }
   return null;
 }
+
+/**
+ * The nav item a pathname belongs *under* — including screens that are not nav
+ * targets themselves. `/inventory/on-hand/123` is Kit Detail, and it lives
+ * under Manage On-Hand, which should stay highlighted while you are there.
+ *
+ * Deliberately a second function rather than a loosening of `findNavTrail`.
+ * The two answer different questions — "is this pathname *this screen*?" versus
+ * "does it live *under* this item?" — and collapsing them is how a sidebar
+ * starts lighting up for routes that merely share a prefix.
+ *
+ * The trailing slash in the prefix test is what does that work: it keeps a
+ * future `/inventory/on-hand-archive` from matching `/inventory/on-hand`.
+ */
+export function findNavSubtree(pathname: string): NavTrail | null {
+  for (const section of NAV_SECTIONS) {
+    const item = section.items.find(
+      (candidate) => pathname === candidate.to || pathname.startsWith(`${candidate.to}/`),
+    );
+    if (item) return { section, item };
+  }
+  return null;
+}

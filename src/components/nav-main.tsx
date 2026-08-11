@@ -1,7 +1,7 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 import { ChevronDownIcon } from 'lucide-react';
 
-import { NAV_SECTIONS, type NavSection } from '@/components/nav-config';
+import { NAV_SECTIONS, findNavSubtree, type NavSection } from '@/components/nav-config';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -70,7 +70,11 @@ export function NavMain() {
 }
 
 function CollapsibleSection({ section, pathname }: { section: NavSection; pathname: string }) {
-  const hasActiveChild = section.items.some((item) => item.to === pathname);
+  // `findNavSubtree`, not an equality check, so a detail screen keeps its
+  // parent item highlighted and its section open — /inventory/on-hand/123 is
+  // still Manage On-Hand as far as the nav is concerned.
+  const trail = findNavSubtree(pathname);
+  const hasActiveChild = trail?.section === section;
 
   return (
     // Uncontrolled on purpose: it opens for a deep-linked child, survives moves
@@ -95,7 +99,7 @@ function CollapsibleSection({ section, pathname }: { section: NavSection; pathna
               <SidebarMenuSubItem key={item.to}>
                 <SidebarMenuSubButton
                   asChild
-                  isActive={item.to === pathname}
+                  isActive={trail?.item === item}
                   className={ACTIVE_CHILD}
                 >
                   <Link to={item.to}>
@@ -113,7 +117,7 @@ function CollapsibleSection({ section, pathname }: { section: NavSection; pathna
 }
 
 function FlyoutSection({ section, pathname }: { section: NavSection; pathname: string }) {
-  const hasActiveChild = section.items.some((item) => item.to === pathname);
+  const hasActiveChild = findNavSubtree(pathname)?.section === section;
 
   return (
     <SidebarMenuItem>

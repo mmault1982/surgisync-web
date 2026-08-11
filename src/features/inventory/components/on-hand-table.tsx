@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
 import type { InventoryKitList } from '@/api/generated/model';
@@ -10,10 +11,11 @@ import { ColumnMenu, type ColumnKey } from './column-menu';
 interface Props {
   rows: InventoryKitList[];
   search: OnHandSearch;
-  selected: Set<number>;
+  selected: ReadonlySet<number>;
   onToggleRow: (id: number) => void;
   onToggleAll: () => void;
   onSearchChange: (patch: Partial<OnHandSearch>) => void;
+  onOpenRow: (id: number) => void;
 }
 
 /**
@@ -45,7 +47,22 @@ const COLUMNS: Column[] = [
     label: 'Kit ID',
     headerClassName: 'w-[150px] font-mono text-xs font-semibold',
     cellClassName: 'font-mono text-xs font-semibold text-gray-800',
-    cell: (row) => row.manufacturer_kit_id || '—',
+    // A real anchor, not just the row's click handler. It is the keyboard path
+    // (a tabbable `<tr>` would make every row a tab stop and wreck the table's
+    // row/gridcell semantics), it gives cmd-click and "open in new tab", and
+    // `defaultPreload: 'intent'` prefetches the detail route on hover.
+    cell: (row) => (
+      <Link
+        to="/inventory/on-hand/$stockItemId"
+        params={{ stockItemId: String(row.id) }}
+        // Only when there is no visible kit id, so the common case does not
+        // violate WCAG 2.5.3: an accessible name that omits the visible label.
+        aria-label={row.manufacturer_kit_id ? undefined : `Open ${row.part_name}`}
+        className="rounded-sm hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        {row.manufacturer_kit_id || '—'}
+      </Link>
+    ),
   },
   {
     key: 'part_name',
@@ -140,6 +157,7 @@ export function OnHandTable({
   onToggleRow,
   onToggleAll,
   onSearchChange,
+  onOpenRow,
 }: Props) {
   // Scoped to the rows actually on screen. The prototype's header checkbox
   // iterates every row rather than the filtered set, so with a filter applied
@@ -189,6 +207,7 @@ export function OnHandTable({
               row={row}
               selected={selected.has(row.id)}
               onToggle={() => onToggleRow(row.id)}
+              onOpen={() => onOpenRow(row.id)}
             />
           ))}
         </tbody>
@@ -197,18 +216,50 @@ export function OnHandTable({
   );
 }
 
+/**
+ * The whole row opens the kit, but the Kit ID cell's `<Link>` is what carries
+ * the semantics — see the note on that column.
+ *
+ * Deliberately no `tabIndex` or `role="button"` here: that would make every row
+ * a tab stop and replace the `row`/`gridcell` roles a screen reader navigates
+ * the table with. Deliberately not a stretched-link overlay either — one sits
+ * above every cell and makes text selection impossible, and people copy lot
+ * codes out of these rows.
+ */
 function Row({
   row,
   selected,
   onToggle,
+  onOpen,
 }: {
   row: InventoryKitList;
   selected: boolean;
   onToggle: () => void;
+  onOpen: () => void;
 }) {
   return (
-    <tr className="relative border-b border-gray-100 even:bg-gray-50/60 hover:bg-gray-50">
-      <td className="relative w-11 px-3 py-2">
+    <tr
+      className="relative cursor-pointer border-b border-gray-100 even:bg-gray-50/60 hover:bg-gray-50"
+      onClick={(event) => {
+        // A modified click belongs to the Kit ID link — new tab, new window,
+        // add-to-selection. Navigating programmatically would swallow the
+        // modifier and do the one thing the user did not ask for.
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        // Anything interactive in the row owns its own click.
+        if (event.target instanceof Element && event.target.closest('a,button,input,label')) return;
+        // Dragging across a lot code to copy it should not navigate away from
+        // it. `=== false` rather than `!`, because getSelection() can be null
+        // and `!undefined` would swallow every click.
+        if (window.getSelection()?.isCollapsed === false) return;
+        onOpen();
+      }}
+    >
+      <td
+        className="relative w-11 px-3 py-2"
+        // The guard above catches the checkbox itself; this catches the padding
+        // around it, which is most of the cell.
+        onClick={(event) => event.stopPropagation()}
+      >
         <span
           aria-hidden
           className={cn('absolute inset-y-0 left-0 w-[3px]', STRIPE_CLASSES[stripeTone(row)])}

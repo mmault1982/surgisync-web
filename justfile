@@ -57,6 +57,28 @@ _staging-only:
 # Build and upload to staging, then invalidate the shell
 deploy: _staging-only build upload invalidate
 
+# The one recipe that touches production, and it needs no _staging-only guard.
+# `deploy` and `upload` refuse because they push a LOCAL WORKING TREE; this only
+# asks GitHub to run web-deploy-prod.yml, which ships nothing that has not
+# landed on main and passed `pnpm verify`. Nothing here is trusted with
+# production -- the workflow does its own ancestry check.
+#
+# It ignores {{env}} on purpose: the workflow hardcodes the production bucket
+# and distribution, so there is no staging counterpart for it to name. Staging
+# deploys itself on push and needs no recipe.
+#
+# No --ref, so this runs the workflow as it exists on the default branch and
+# deploys the tip of main -- the same thing the dispatch UI does with a blank
+# input. To roll back, name an older commit instead:
+#     gh workflow run web-deploy-prod.yml -f sha=<sha>
+
+# Trigger the production deploy workflow (tip of main)
+deploy-production:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    gh workflow run web-deploy-prod.yml
+    echo "dispatched. watch it with: gh run watch"
+
 # Typecheck and bundle into dist/
 build:
     pnpm build

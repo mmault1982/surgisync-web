@@ -112,16 +112,16 @@
   },
 
   "CustomErrorResponses": {
-    "_comment": "TTL-0 only, deliberately NO ResponsePagePath. CloudFront caches 4xx/5xx for 10s even under Managed-CachingDisabled, and that policy excludes the query string from the cache key - so a 503 on ?page=1 could be replayed for ?page=2. A ResponsePagePath here would be worse: CustomErrorResponses is distribution-wide, so it would also turn the API's genuine 403s and 404s into a 200 serving index.html. The SPA fallback lives in the viewer-request function instead (infra/spa-router.js). 504 is included because OriginReadTimeout is 60s and gateway timeouts are reachable; Quantity must match the array length.",
+    "_comment": "TTL-0 only, and deliberately no custom error PAGE - ResponsePagePath is the empty string on every entry, which is CloudFront's way of saying there is none. CloudFront caches 4xx/5xx for 10s even under Managed-CachingDisabled, and that policy excludes the query string from the cache key, so a 503 on ?page=1 could be replayed for ?page=2. An actual response page would be worse than the caching: CustomErrorResponses is distribution-wide, so it would also turn the API's genuine 403s and 404s into a 200 serving index.html. The SPA fallback lives in the viewer-request function instead (infra/spa-router.js). 504 is included because OriginReadTimeout is 60s and gateway timeouts are reachable. Quantity must match the array length. ResponsePagePath and ResponseCode are spelled out rather than omitted: create-distribution defaults them, but update-distribution rejects a partially-specified member of this list with 'The specified list of custom error responses does not exist or is not valid' - so omitting them makes a newly added error code impossible to apply to an existing distribution.",
     "Quantity": 7,
     "Items": [
-      { "ErrorCode": 400, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 403, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 404, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 500, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 502, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 503, "ErrorCachingMinTTL": 0 },
-      { "ErrorCode": 504, "ErrorCachingMinTTL": 0 }
+      { "ErrorCode": 400, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 403, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 404, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 500, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 502, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 503, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 504, "ResponsePagePath": "", "ResponseCode": "", "ErrorCachingMinTTL": 0 }
     ]
   },
 

@@ -8,6 +8,18 @@
  * var, moving to MapTiler / Stadia / Carto before this is in front of many orgs
  * costs one variable rather than a refactor.
  *
+ * PRODUCTION SHIPS THIS DEFAULT TODAY, deliberately, because production is
+ * currently used only for testing. That acceptance expires before the first
+ * user account outside SurgiSoft/Hoosier staff is approved on production, or
+ * before any customer-facing demo of Live Location — whichever comes first.
+ * `web-deploy-prod.yml` warns on every production deploy until it is resolved.
+ *
+ * Both workflows already read VITE_MAP_TILE_URL / VITE_MAP_TILE_ATTRIBUTION as
+ * repository variables, so resolving it is one variable — but set it for BOTH,
+ * or staging and production stop building the same artifact. Note the workflows
+ * export them only when non-empty, because the `??` below does not treat an
+ * empty string as absent and would happily bake in a blank tile URL.
+ *
  * Attribution is not optional and must stay visible: styling the control down
  * is fine, hiding it is a licence violation. Whoever adds a CSP later needs the
  * tile host in `img-src`.

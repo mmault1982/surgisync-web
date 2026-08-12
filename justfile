@@ -1,14 +1,43 @@
 set shell := ["bash", "-uc"]
 
-# Staging infrastructure. Mirrors ../surgiscribe-backend/justfile: one profile
-# variable at the top, and every AWS recipe opts in with `export AWS_PROFILE`.
-# Region comes from the profile (us-east-1).
+# Staging and production infrastructure. Mirrors ../surgiscribe-backend/justfile:
+# one profile variable at the top, and every AWS recipe opts in with
+# `export AWS_PROFILE`. Region comes from the profile (us-east-1).
+#
+# Every recipe is env-aware:  just env=prod <recipe>
+#
+# `env` is a top-level variable rather than a recipe parameter on purpose. An
+# override on the command line is visible to every recipe in the invocation,
+# including ones reached as dependencies. A parameter would not be: just does
+# not forward parameters down a dependency chain, so `deploy` could never pass
+# it on to `upload` and `invalidate`.
+env := "staging"
+
 aws_profile := "surgiscribe"
-bucket := "surgisync-web-staging-211125702709"
-distribution := "E2KKUWKHRV4BW4"
-function_name := "surgisync-web-staging-spa-router"
-oac_id := "E30UI095EXKE3O"
-host := "app-staging.surgisoftsolutions.com"
+
+# The error() arm is load-bearing. Without it `env=prd` would fall through to
+# the staging values, or compose a plausible-but-wrong name like
+# surgisync-web-prd-spa-router, and fail somewhere far from the typo.
+bucket := if env == "prod" { "surgisync-web-prod-211125702709" } else if env == "staging" { "surgisync-web-staging-211125702709" } else { error("env must be staging or prod") }
+distribution := if env == "prod" { "E37ETH47YB2TB7" } else { "E2KKUWKHRV4BW4" }
+function_name := "surgisync-web-" + env + "-spa-router"
+host := if env == "prod" { "app.surgisoftsolutions.com" } else { "app-staging.surgisoftsolutions.com" }
+
+# The ALB host this distribution proxies /api/* to. `smoke` compares
+# via-CloudFront against direct-to-ALB and needs the matching one; hardcoding
+# it there is how you end up comparing prod-via-CloudFront to staging-direct.
+api_host := if env == "prod" { "www.surgisoftsolutions.com" } else { "staging.surgisoftsolutions.com" }
+
+# What /health/data/ must report. `smoke` asserts on this rather than printing
+# it: it is the only cheap check standing between production users and the
+# staging database, and the expectation is per-env, not a constant.
+expect_env := if env == "prod" { "production" } else { "staging" }
+
+config_file := "infra/cloudfront-" + env + ".json"
+
+# There is no oac_id variable. It was declared and never referenced, and a
+# second env-conditional copy of a value that already lives in the distribution
+# JSON is one more thing to keep in sync. The JSON is the source of truth.
 
 default:
     @just --list
@@ -17,8 +46,16 @@ default:
 # Deploy
 # ---------------------------------------------------------------------------
 
+# Refuse anything that ships a local working tree to production. This must be a
+# DEPENDENCY, not a check in the recipe body: dependencies run first, so a body
+# check inside `deploy` would only fire after `upload` had already run. `upload`
+# carries it independently so `just env=prod upload` refuses on its own; just
+# runs a recipe at most once per invocation, so the duplicate costs nothing.
+_staging-only:
+    @[ "{{env}}" = "staging" ] || { echo "refusing: env={{env}}. Production deploys go through .github/workflows/web-deploy-prod.yml (workflow_dispatch), so that what ships has a commit behind it and has passed 'pnpm verify'." >&2; exit 1; }
+
 # Build and upload to staging, then invalidate the shell
-deploy: build upload invalidate
+deploy: _staging-only build upload invalidate
 
 # Typecheck and bundle into dist/
 build:
@@ -33,7 +70,7 @@ build:
 # Pruning is the bucket's lifecycle rule (noncurrent versions, 30 days).
 
 # Push dist/ to the bucket, assets first
-upload:
+upload: _staging-only
     #!/usr/bin/env bash
     set -euo pipefail
     export AWS_PROFILE={{aws_profile}}
@@ -101,6 +138,26 @@ publish-function: test-function
     aws cloudfront publish-function --name {{function_name}} --if-match "$etag" \
         --query 'FunctionSummary.FunctionMetadata.Stage' --output text
 
+# One source file now feeds two published functions. Nothing else notices when
+# a change is published to one environment and not the other, and the failure
+# mode is a routing difference between staging and prod that no test covers.
+# Run it for both:  just check-function && just env=prod check-function
+
+# Does the LIVE function still match infra/spa-router.js?
+check-function:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export AWS_PROFILE={{aws_profile}}
+    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+    aws cloudfront get-function --name {{function_name}} --stage LIVE "$tmp/live.js" >/dev/null
+    if diff -q infra/spa-router.js "$tmp/live.js" >/dev/null; then
+        echo "{{function_name}} (LIVE) matches infra/spa-router.js"
+    else
+        echo "{{function_name}} (LIVE) DIFFERS from infra/spa-router.js:" >&2
+        diff infra/spa-router.js "$tmp/live.js" >&2 || true
+        exit 1
+    fi
+
 # ---------------------------------------------------------------------------
 # Distribution
 # ---------------------------------------------------------------------------
@@ -108,7 +165,7 @@ publish-function: test-function
 # The _comment keys in infra/cloudfront-staging.json are documentation for the
 # reader; the API rejects them, so strip them before sending.
 
-# Apply infra/cloudfront-staging.json to the live distribution
+# Apply this env's infra/cloudfront-<env>.json to its live distribution
 apply-distribution:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -116,7 +173,7 @@ apply-distribution:
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
     etag=$(aws cloudfront get-distribution-config --id {{distribution}} --query ETag --output text)
     jq 'walk(if type == "object" then del(._comment) else . end)' \
-        infra/cloudfront-staging.json > "$tmp/config.json"
+        {{config_file}} > "$tmp/config.json"
     aws cloudfront update-distribution --id {{distribution}} --if-match "$etag" \
         --distribution-config "file://$tmp/config.json" \
         --query 'Distribution.Status' --output text
@@ -126,20 +183,29 @@ apply-distribution:
 # TrustedSigners, ...). So compare in one direction only — every value the
 # committed file declares must match live — and sort the method arrays first.
 # Fields AWS adds and we do not manage are correctly ignored.
+#
+# Origins.Items is sorted by Id for the same reason. create-distribution returns
+# the origins in its own order, not the submitted one (it put alb-prod ahead of
+# s3-spa when the prod distribution was created), and this comparison walks by
+# index path — so without the sort the whole of one origin reads as drift
+# against the other. Ordering carries no meaning here because behaviours
+# reference origins by TargetOriginId. CacheBehaviors.Items is deliberately NOT
+# sorted: there, order IS precedence.
 
-# Report drift between infra/cloudfront-staging.json and the live distribution
+# Report drift between this env's infra/cloudfront-<env>.json and its live distribution
 diff-distribution:
     #!/usr/bin/env bash
     set -euo pipefail
     export AWS_PROFILE={{aws_profile}}
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
     norm='walk(if type == "object" then del(._comment) else . end)
+          | .Origins.Items |= sort_by(.Id)
           | (.DefaultCacheBehavior, (.CacheBehaviors.Items // [])[])
             |= (.AllowedMethods.Items |= sort
                | .AllowedMethods.CachedMethods.Items |= sort)'
     aws cloudfront get-distribution-config --id {{distribution}} \
         --query DistributionConfig --output json | jq "$norm" > "$tmp/live.json"
-    jq "$norm" infra/cloudfront-staging.json > "$tmp/want.json"
+    jq "$norm" {{config_file}} > "$tmp/want.json"
     # Leaves are selected by type, NOT with paths(scalars): that builtin selects
     # on truthiness, so it silently skips every field whose value is `false` --
     # Compress, SmoothStreaming, Logging.Enabled, Staging. Drift on those would
@@ -153,7 +219,7 @@ diff-distribution:
                 want:  ($want | getpath($p)),
                 live:  ($live | getpath($p)) } ]
         | if length == 0
-          then "distribution matches infra/cloudfront-staging.json"
+          then "distribution matches {{config_file}}"
           else . end'
 
 # Deployment state of the distribution
@@ -187,9 +253,22 @@ smoke:
     echo "pinning {{host}} -> $ip ($domain)"
     c() { curl -s --resolve {{host}}:443:"$ip" "$@"; }
 
+    # Asserted, not printed. The expectation is per-env and inverts between the
+    # two: on staging, "production" means the /api origin reaches the prod
+    # database; on prod, "staging" means production users are reading and
+    # writing the STAGING database. Either way it is the cheapest detector for a
+    # wrong /api origin, and it is the one check whose failure everything else
+    # can survive looking healthy. Do not turn this back into a bare print.
     echo
-    echo "== /health/data/ (env MUST be staging - production means the /api origin is wrong) =="
-    c "https://{{host}}/health/data/" | jq '{status,env,db_connected,data_version}'
+    echo "== /health/data/ (env MUST be {{expect_env}}) =="
+    health=$(c "https://{{host}}/health/data/")
+    echo "$health" | jq '{status,env,db_connected,data_version}'
+    got=$(echo "$health" | jq -r '.env // "MISSING"')
+    if [ "$got" != "{{expect_env}}" ]; then
+        echo "  FAIL: env is '$got', want '{{expect_env}}' — the /api origin is wrong" >&2
+        exit 1
+    fi
+    echo "  ok   env={{expect_env}}"
 
     echo
     echo "== deep link collapses onto the index.html cache key =="
@@ -230,8 +309,8 @@ smoke:
         "$(c -o /dev/null -w '%{http_code}' "https://{{host}}/api/v1/stock-items/")" \
         "$(c "https://{{host}}/api/v1/stock-items/" | head -c 80)"
     printf '  direct to ALB  : %s %s\n' \
-        "$(curl -s -o /dev/null -w '%{http_code}' https://staging.surgisoftsolutions.com/api/v1/stock-items/)" \
-        "$(curl -s https://staging.surgisoftsolutions.com/api/v1/stock-items/ | head -c 80)"
+        "$(curl -s -o /dev/null -w '%{http_code}' https://{{api_host}}/api/v1/stock-items/)" \
+        "$(curl -s https://{{api_host}}/api/v1/stock-items/ | head -c 80)"
 
     echo
     echo "== a disallowed Origin must 403 (proves Origin is forwarded unmodified) =="
@@ -239,12 +318,19 @@ smoke:
         -H 'Origin: https://evil.example.com' -H 'Content-Type: application/json' \
         -d '{"email":"nobody@example.com","password":"wrong"}'
 
+    # Throttle cost: this is the only probe in `smoke` that spends anything.
+    # WebAuthView.initial raises DisallowedOrigin BEFORE super().initial() runs
+    # check_throttles, so the disallowed-Origin probe above is free -- but this
+    # one consumes one of the 10/min IP-keyed web_login slots. Eleven runs
+    # inside a minute and you 429 yourself for 60s, which is why 429 is a pass
+    # here: it means the guard let the request through to the throttle, which is
+    # exactly what this check is asking.
     echo
-    echo "== an allowed Origin must NOT 403 (400/401 is the pass) =="
+    echo "== an allowed Origin must NOT 403 (400/401/429 is the pass) =="
     c -o /dev/null -w '  %{http_code}\n' -X POST "https://{{host}}/api/v1/web/login/" \
         -H 'Origin: https://{{host}}' -H 'Content-Type: application/json' \
         -d '{"email":"nobody@example.com","password":"wrong"}'
-    echo "  (404 on both of the last two means the staging image predates the"
+    echo "  (404 on both of the last two means the deployed image predates the"
     echo "   browser-auth endpoints - deploy the backend, it is not a CDN fault)"
 
 # Print the /etc/hosts line for the browser checks, which curl --resolve cannot cover

@@ -36,6 +36,30 @@ const MESSAGES: Record<string, string> = {
   refresh_token_invalid: 'Your session has expired. Please sign in again.',
 };
 
+/**
+ * Gateway failures, which are not the backend's error contract.
+ *
+ * A 502/503/504 comes from CloudFront or the ALB, not Django, so the body is an
+ * HTML error page with no `code` and no `detail` — `asWebError` returns null and
+ * `error.response` exists, so without this the user gets the same generic string
+ * as a client-side bug. These are not in MESSAGES because that map is keyed on
+ * the backend's `code`, and a gateway error has none; adding them there would
+ * also break the KNOWN_ERROR_CODES coverage test, which asserts on documented
+ * backend codes only.
+ *
+ * It matters more in production than it looks. `hoosier-service-prod` runs one
+ * task at `minimumHealthyPercent: 0`, so every backend deploy kills the running
+ * container before starting its replacement — the SPA keeps serving from S3 and
+ * the API returns 5xx for a few minutes. "Something went wrong. Please try
+ * again." tells a user to retry immediately and blame themselves; naming the
+ * cause tells them to wait.
+ */
+const GATEWAY_MESSAGES: Record<number, string> = {
+  502: 'The server is temporarily unavailable, usually during a deployment. Try again in a minute.',
+  503: 'The server is temporarily unavailable, usually during a deployment. Try again in a minute.',
+  504: 'The server took too long to respond. Try again in a minute.',
+};
+
 export function errorMessage(error: unknown): string {
   const webError = asWebError(error);
   if (webError) {
@@ -43,8 +67,12 @@ export function errorMessage(error: unknown): string {
     // Fall back to the server's own text for a code this build predates.
     return known ?? webError.detail;
   }
-  if (axios.isAxiosError(error) && !error.response) {
-    return 'Could not reach the server. Check your connection and try again.';
+  if (axios.isAxiosError(error)) {
+    if (!error.response) {
+      return 'Could not reach the server. Check your connection and try again.';
+    }
+    const gateway = GATEWAY_MESSAGES[error.response.status];
+    if (gateway) return gateway;
   }
   return 'Something went wrong. Please try again.';
 }

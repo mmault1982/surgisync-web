@@ -1,0 +1,226 @@
+name: Deploy to production
+
+# Production is a SEPARATE FILE from web-deploy.yml, not an `environment` input
+# on it, and the difference matters: a workflow with no `push:` trigger is
+# structurally incapable of being fired by a push. An `if:` guard on a shared
+# workflow is only ever *usually* correct, and this is the one pipeline that
+# writes production. It also keeps the dispatch UI unambiguous — there is no
+# environment dropdown to mis-click — and lets each file own its concurrency
+# group at the top level.
+#
+# The cost is a duplicated build/upload/verify body. THAT DUPLICATION IS
+# DELIBERATE, AND IT MUST BE KEPT IN STEP WITH web-deploy.yml BY HAND. When a
+# third consumer appears (PR preview deploys are the likely trigger), convert
+# both to a `workflow_call` reusable workflow rather than adding a third copy.
+#
+# Rollback is a dispatch with an older sha. That works only because the upload
+# never passes --delete, so an older commit's chunks are still in the bucket.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit to deploy. Must be on main. Leave blank for the tip of main; set it to roll back.'
+        required: false
+        type: string
+
+# A different group from staging on purpose. The two environments are
+# independent and must not queue behind each other, but two production runs
+# must never interleave — a cancelled run can land assets without the
+# index.html that names them (harmless) or an older index.html after a newer
+# one (not harmless).
+concurrency:
+  group: web-deploy-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  BUCKET: surgisync-web-prod-211125702709
+  DISTRIBUTION: E37ETH47YB2TB7
+
+jobs:
+  deploy:
+    name: Build and deploy to production
+    runs-on: ubuntu-latest
+    # Not for scoped secrets — the credentials are repo-level and shared with
+    # staging. It is here because it makes every production deploy attributable
+    # in the Deployments UI, and it turns "require a reviewer before production"
+    # into a settings toggle rather than a workflow change.
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Empty string is falsy in this expression, so a blank dispatch input
+          # correctly falls through to the triggering commit.
+          ref: ${{ inputs.sha || github.sha }}
+          # Full history: the ancestry guard below cannot run on a shallow clone.
+          fetch-depth: 0
+
+      # Mirrors the backend's deploy.yml branch guard, but stronger. Checking
+      # `github.ref == main` is not enough here: the `sha` input can name any
+      # commit in the repo, including one that only ever existed on a branch.
+      # Ancestry is the property that actually matters — production only ships
+      # what has landed on main and therefore passed CI and review.
+      - name: Refuse anything that is not on main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD FETCH_HEAD; then
+            echo "::error::$(git rev-parse HEAD) is not an ancestor of origin/main. Production deploys only ship commits that have landed on main."
+            exit 1
+          fi
+          echo "$(git rev-parse --short HEAD) is on main"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Keep in step with ci.yml and web-deploy.yml.
+          node-version: 22.12.x
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The same gate as ci.yml, duplicated on purpose: ci.yml proves a PR is
+      # sound, this proves the exact tree being uploaded is. They diverge when a
+      # dispatch deploys an older sha, which is precisely when you want it
+      # re-checked rather than assumed.
+      - run: pnpm verify
+
+      # The tile variables are exported only when non-empty. Vite defines
+      # import.meta.env.VITE_X whenever the variable is *present*, and
+      # map-tiles.ts uses `??`, which does not treat an empty string as absent —
+      # so passing VITE_MAP_TILE_URL="" would bake an empty tile URL into the
+      # bundle and render a blank map. Absent is not the same as empty here.
+      - name: Build
+        run: |
+          if [ -n "${TILE_URL}" ]; then
+            export VITE_MAP_TILE_URL="$TILE_URL"
+            export VITE_MAP_TILE_ATTRIBUTION="$TILE_ATTRIBUTION"
+          fi
+          pnpm build
+        env:
+          TILE_URL: ${{ vars.VITE_MAP_TILE_URL }}
+          TILE_ATTRIBUTION: ${{ vars.VITE_MAP_TILE_ATTRIBUTION }}
+
+      # A tripwire, not a note in a document. It fires on every production
+      # deploy until the variables are set, and then disappears by itself.
+      #
+      # OpenStreetMap's tile usage policy names distributing an app that draws
+      # from their servers as forbidden heavy use, and SurgiSync is a commercial
+      # product. Shipping the default was accepted deliberately while production
+      # is test-only; it stops being acceptable the moment real users arrive.
+      - name: Tile provider tripwire
+        if: ${{ vars.VITE_MAP_TILE_URL == '' }}
+        run: |
+          MSG="Built with the OpenStreetMap default tile server. Acceptable only while production is test-only. Set VITE_MAP_TILE_URL and VITE_MAP_TILE_ATTRIBUTION as repository variables BEFORE the first non-staff user, and set them for BOTH web-deploy.yml and web-deploy-prod.yml — setting them on production alone means staging and production stop building the same artifact."
+          echo "::warning::$MSG"
+          { echo "### Tile provider"; echo ""; echo "$MSG"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # surgisync-web-ci, which now carries surgisync-web-ci-prod-deploy in
+          # addition to the staging policy: write the one bucket, invalidate the
+          # one distribution, explicitly denied delete.
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # BUCKET and DISTRIBUTION are hardcoded above, which is safe only if
+      # something checks they belong to each other. The failure this prevents is
+      # a copy-paste that pairs staging's BUCKET with production's DISTRIBUTION:
+      # the run goes green, the invalidation succeeds, and nothing whatsoever
+      # was deployed to production.
+      - name: Preflight — the bucket and the distribution must be the same environment
+        run: |
+          origin=$(aws cloudfront get-distribution --id "$DISTRIBUTION" \
+            --query "Distribution.DistributionConfig.Origins.Items[?Id=='s3-spa'].DomainName | [0]" --output text)
+          alias=$(aws cloudfront get-distribution --id "$DISTRIBUTION" \
+            --query 'Distribution.DistributionConfig.Aliases.Items[0]' --output text)
+          echo "  distribution $DISTRIBUTION -> origin $origin, alias $alias"
+          if [ "$origin" != "$BUCKET.s3.$AWS_REGION.amazonaws.com" ]; then
+            echo "::error::$DISTRIBUTION serves $origin, not $BUCKET. Refusing to upload."
+            exit 1
+          fi
+          if [ "$alias" != "app.surgisoftsolutions.com" ]; then
+            echo "::error::$DISTRIBUTION is aliased to $alias, not app.surgisoftsolutions.com. Refusing to upload."
+            exit 1
+          fi
+
+      # Assets first, always. The reverse order publishes a shell naming chunks
+      # that are not in the bucket yet, and every viewer in that window gets a
+      # ChunkLoadError.
+      #
+      # NEVER add --delete. autoCodeSplitting means routes are separately hashed
+      # chunks, so removing superseded assets strands anyone holding an older
+      # index.html, and it destroys the rollback path above. The bucket's
+      # lifecycle rule prunes noncurrent versions after 30 days, and the CI user
+      # is denied s3:DeleteObject outright so this cannot regress quietly.
+      - name: Upload assets
+        run: |
+          aws s3 sync dist/assets/ "s3://$BUCKET/assets/" \
+            --cache-control 'public, max-age=31536000, immutable' --no-progress
+          aws s3 cp dist/favicon.png "s3://$BUCKET/favicon.png" \
+            --cache-control 'public, max-age=86400' --no-progress
+
+      - name: Upload the shell
+        run: |
+          aws s3 cp dist/index.html "s3://$BUCKET/index.html" \
+            --cache-control 'no-cache' --no-progress
+
+      # Only the shell. Assets are content-hashed, and the viewer-request
+      # function collapses every route onto the /index.html cache key.
+      - name: Invalidate
+        run: |
+          id=$(aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" \
+                 --paths /index.html --query 'Invalidation.Id' --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$DISTRIBUTION" --id "$id"
+
+      # Catches the failure the upload ordering exists to prevent: a shell
+      # naming a chunk that is not fetchable. Goes through the distribution
+      # domain rather than the alias, so it does not depend on DNS existing.
+      - name: Verify the deployed shell and its chunks
+        # `shell: bash` rather than the default, for pipefail: without it a
+        # curl failure feeding a successful grep is scored as success.
+        shell: bash
+        run: |
+          domain=$(aws cloudfront get-distribution --id "$DISTRIBUTION" \
+                     --query 'Distribution.DomainName' --output text)
+          shell=$(curl -fsS "https://$domain/index.html")
+          # Collected into a variable first. Piping into `while read` runs the
+          # loop body in a subshell, where `exit 1` ends the subshell and the
+          # step still passes — a check that cannot fail is worse than none.
+          assets=$(printf '%s' "$shell" | grep -oE '/assets/[A-Za-z0-9_.-]+\.(js|css)' | sort -u)
+          [ -n "$assets" ] || { echo "::error::index.html references no /assets/ chunks"; exit 1; }
+          for a in $assets; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://$domain$a")
+            echo "  $code  $a"
+            [ "$code" = "200" ] || { echo "::error::$a is referenced by index.html but returns $code"; exit 1; }
+          done
+          diff <(echo "$shell") dist/index.html \
+            || { echo "::error::served index.html differs from the build"; exit 1; }
+          echo "shell matches the build and every referenced chunk is fetchable"
+
+      # The check with no staging equivalent, and the one that catches the
+      # trap this topology is shaped around. /api/* is proxied to the ALB, whose
+      # DEFAULT rule forwards to the production target group — so an origin
+      # pointing at the wrong host still answers, still looks healthy, and
+      # quietly serves production users from the staging database. The env field
+      # is the only cheap detector. Runs through the distribution domain so it
+      # works before DNS exists.
+      - name: Verify /api is wired to production, not staging
+        shell: bash
+        run: |
+          domain=$(aws cloudfront get-distribution --id "$DISTRIBUTION" \
+                     --query 'Distribution.DomainName' --output text)
+          body=$(curl -fsS "https://$domain/health/data/")
+          echo "  $body"
+          got=$(printf '%s' "$body" | jq -r '.env // "MISSING"')
+          if [ "$got" != "production" ]; then
+            echo "::error::/health/data/ reports env=$got, want production. The /api origin is wrong — this distribution is serving production users from the $got database."
+            exit 1
+          fi
+          echo "env=production"

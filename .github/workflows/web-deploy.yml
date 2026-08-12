@@ -9,6 +9,12 @@ name: Deploy to staging
 # Rollback is `workflow_dispatch` with an older sha. That works only because the
 # upload never passes --delete, so an older commit's chunks are still in the
 # bucket. See the upload step.
+#
+# Production is web-deploy-prod.yml, a separate file rather than an environment
+# input here — a workflow with no `push:` trigger cannot be fired by a push,
+# which an `if:` guard only approximates. The build/upload/verify body is
+# DUPLICATED between the two files and must be kept in step by hand; when a
+# third consumer appears, convert both to a `workflow_call` reusable workflow.
 
 on:
   push:
@@ -64,7 +70,26 @@ jobs:
       # re-checked rather than assumed.
       - run: pnpm verify
 
-      - run: pnpm build
+      # Kept identical to web-deploy-prod.yml's Build step. The tile variables
+      # are exported only when non-empty: Vite defines import.meta.env.VITE_X
+      # whenever the variable is *present*, and map-tiles.ts uses `??`, which
+      # does not treat an empty string as absent — so passing an empty
+      # VITE_MAP_TILE_URL would bake a blank tile URL into the bundle.
+      #
+      # It lives here as well as in production so that setting the repository
+      # variable changes BOTH environments at once. Setting it on production
+      # alone would end the property that the same artifact is deployable to
+      # either environment.
+      - name: Build
+        run: |
+          if [ -n "${TILE_URL}" ]; then
+            export VITE_MAP_TILE_URL="$TILE_URL"
+            export VITE_MAP_TILE_ATTRIBUTION="$TILE_ATTRIBUTION"
+          fi
+          pnpm build
+        env:
+          TILE_URL: ${{ vars.VITE_MAP_TILE_URL }}
+          TILE_ATTRIBUTION: ${{ vars.VITE_MAP_TILE_ATTRIBUTION }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

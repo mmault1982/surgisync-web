@@ -43,6 +43,32 @@ describe('error copy', () => {
     const offline = new AxiosError('Network Error');
     expect(errorMessage(offline)).toMatch(/could not reach the server/i);
   });
+
+  it('names a gateway failure instead of blaming the user', () => {
+    // 502/503/504 come from CloudFront or the ALB, so the body is an HTML error
+    // page with no `code` — the web-contract branch cannot see them. Every
+    // backend deploy produces this window, because the prod service runs one
+    // task at minimumHealthyPercent 0.
+    for (const status of [502, 503, 504]) {
+      const message = errorMessage(axiosError('<html>gateway</html>', status));
+      expect(message).not.toBe('Something went wrong. Please try again.');
+      expect(message).toMatch(/try again in a minute/i);
+    }
+  });
+
+  it('still shows the generic message for a 500, which is the app failing', () => {
+    // A 500 is Django raising, not a gateway gap; there is nothing useful to
+    // tell the user about timescale, so it must not claim a deploy is underway.
+    expect(errorMessage(axiosError('<html>oops</html>', 500))).toBe(
+      'Something went wrong. Please try again.',
+    );
+  });
+
+  it('keeps gateway statuses out of the documented-code contract', () => {
+    // GATEWAY_MESSAGES is keyed on HTTP status, MESSAGES on the backend's
+    // `code`. Merging them would break the coverage assertion above.
+    expect(KNOWN_ERROR_CODES).not.toContain('502');
+  });
 });
 
 describe('asFieldErrors', () => {

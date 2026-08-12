@@ -162,8 +162,23 @@ check-function:
 # Distribution
 # ---------------------------------------------------------------------------
 
-# The _comment keys in infra/cloudfront-staging.json are documentation for the
-# reader; the API rejects them, so strip them before sending.
+# The _comment keys in the config files are documentation for the reader; the
+# API rejects them, so strip them before sending.
+#
+# The committed file is deliberately a SUBSET of the live config -- it declares
+# only what we manage, and lets CloudFront default the ~35 leaf fields it adds
+# (GrpcConfig, TrustedSigners, TrustedKeyGroups, OriginShield,
+# ContinuousDeploymentPolicyId, the empty ResponsePagePath/ResponseCode on each
+# error response, ...). create-distribution accepts a subset and fills the rest
+# in. update-distribution does NOT: it wants the complete config, and rejects a
+# partial one with errors that name whichever gap it happens to hit first.
+#
+# So this MERGES the committed file over the live config rather than sending it
+# alone: objects recursively, arrays element-wise with the file authoritative on
+# length. The result is a complete config carrying every value the file
+# declares, which is exactly the semantics diff-distribution already compares
+# by. Sending the file raw worked only because both distributions were created
+# from their files and never updated.
 
 # Apply this env's infra/cloudfront-<env>.json to its live distribution
 apply-distribution:
@@ -172,8 +187,21 @@ apply-distribution:
     export AWS_PROFILE={{aws_profile}}
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
     etag=$(aws cloudfront get-distribution-config --id {{distribution}} --query ETag --output text)
+    aws cloudfront get-distribution-config --id {{distribution}} \
+        --query DistributionConfig --output json > "$tmp/live.json"
     jq 'walk(if type == "object" then del(._comment) else . end)' \
-        {{config_file}} > "$tmp/config.json"
+        {{config_file}} > "$tmp/want.json"
+    cat > "$tmp/merge.jq" <<'JQ'
+    def merge($a; $b):
+      if ($b|type) == "object" and ($a|type) == "object" then
+        reduce ($b|keys_unsorted[]) as $k ($a; .[$k] = merge($a[$k]? // null; $b[$k]))
+      elif ($b|type) == "array" and ($a|type) == "array" then
+        [ $b | to_entries[] | merge($a[.key]? // null; .value) ]
+      else $b end;
+    merge($live[0]; $want[0])
+    JQ
+    jq -n --slurpfile live "$tmp/live.json" --slurpfile want "$tmp/want.json" \
+        -f "$tmp/merge.jq" > "$tmp/config.json"
     aws cloudfront update-distribution --id {{distribution}} --if-match "$etag" \
         --distribution-config "file://$tmp/config.json" \
         --query 'Distribution.Status' --output text

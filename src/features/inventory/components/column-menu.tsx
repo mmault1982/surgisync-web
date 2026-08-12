@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  FunnelIcon,
+  ListFilterIcon,
+} from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 
 import {
   ApiV1StockItemsListOrdering as Ordering,
@@ -13,48 +20,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 
+import { SORT_FIELD, activeDirection, type AscendingOrdering, type ColumnKey } from '../columns';
 import { facetQueries } from '../on-hand.queries';
 import type { OnHandSearch } from '../on-hand.search';
 
-export type ColumnKey =
-  | 'kit_id'
-  | 'part_name'
-  | 'manufacturer'
-  | 'ownership_type'
-  | 'status'
-  | 'transit'
-  | 'assigned'
-  | 'physical_location'
-  | 'expiration'
-  | 'last_seen';
-
-/**
- * The ascending half of the ordering enum.
- *
- * `Ordering` carries both directions — `part_name` and `-part_name` — so typing
- * the map below as `keyof typeof Ordering` would happily accept a descending
- * value, and the Desc lookup in `SortSection` would then resolve to `undefined`
- * at runtime with nothing failing at compile time. Excluding the `-` forms
- * makes that unrepresentable, and because the enum is symmetric it also lets
- * that lookup drop the cast that was hiding the hole.
- */
-type AscendingOrdering = Exclude<keyof typeof Ordering, `-${string}`>;
-
-/** Which ordering values a column sorts by, if any. */
-const SORT_FIELD: Partial<Record<ColumnKey, AscendingOrdering>> = {
-  kit_id: 'manufacturer_kit_id',
-  part_name: 'part_name',
-  manufacturer: 'manufacturer_name',
-  ownership_type: 'ownership_type',
-  status: 'is_complete',
-  assigned: 'assigned_to_name',
-  physical_location: 'physical_location',
-  expiration: 'expiration_date',
-  // `transit` and `last_seen` are absent on purpose: neither is sortable
-  // server-side. Offering a control that silently does nothing is worse than
-  // not offering it.
-};
+export type { ColumnKey };
 
 interface Props {
   columnKey: ColumnKey;
@@ -67,17 +39,26 @@ export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
   const [open, setOpen] = useState(false);
 
   const sortField = SORT_FIELD[columnKey];
-  const indicator = columnIndicator(columnKey, search, sortField);
+  // Both the indicator and the panel read this one call, so the header cannot
+  // advertise a filter the panel does not offer.
+  const filter = filterControl(columnKey, search, onChange);
+  const count = filterCount(columnKey, search);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase hover:text-primary"
+          className="group flex items-center gap-1.5 rounded-sm text-xs font-semibold tracking-wide uppercase hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           {label}
-          {indicator && <Badge className="h-4 px-1.5 text-[10px] font-bold">{indicator}</Badge>}
+          <ColumnIndicator
+            search={search}
+            sortField={sortField}
+            filterable={filter !== null}
+            filtered={count > 0}
+          />
+          {count > 0 && <Badge className="h-4 px-1.5 text-[10px] font-bold">{count}</Badge>}
         </button>
       </PopoverTrigger>
 
@@ -103,29 +84,76 @@ export function ColumnMenu({ columnKey, label, search, onChange }: Props) {
         className="max-h-(--radix-popover-content-available-height) w-60 gap-3 overflow-y-auto p-3"
       >
         {sortField && <SortSection field={sortField} search={search} onChange={onChange} />}
-        <FilterSection columnKey={columnKey} search={search} onChange={onChange} />
+        {filter ?? (
+          <p className="text-xs text-muted-foreground">
+            {columnKey === 'last_seen'
+              ? 'Tracker state only — sorting and time filters need tracking data.'
+              : 'No filter for this column.'}
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );
 }
 
 /**
- * One glyph per column, showing filter count *and* sort direction.
+ * What a header is asking to be clicked for.
  *
- * The prototype shows only one or the other — a column that is both filtered
- * and sorted hides its sort direction entirely — so this concatenates them.
+ * At rest the icon names the column's capability, because it is not uniform:
+ * six columns sort and filter, two only sort, `transit` only filters, and
+ * `last_seen` does neither. The prototype puts the same funnel on all ten,
+ * which promises `last_seen` a filter it has never had — so that column gets no
+ * icon, and its panel says why.
+ *
+ * Once a column is the active sort the glyph becomes the direction, replacing
+ * the ▲/▼ that used to share the count badge. The badge then carries only the
+ * count, which is the one thing an arrow cannot express.
  */
-function columnIndicator(
-  columnKey: ColumnKey,
-  search: OnHandSearch,
-  sortField: AscendingOrdering | undefined,
-): string | null {
-  const parts: string[] = [];
-  const count = filterCount(columnKey, search);
-  if (count) parts.push(String(count));
-  if (sortField && search.ordering === sortField) parts.push('▲');
-  if (sortField && search.ordering === `-${sortField}`) parts.push('▼');
-  return parts.length ? parts.join(' ') : null;
+function ColumnIndicator({
+  search,
+  sortField,
+  filterable,
+  filtered,
+}: {
+  search: OnHandSearch;
+  sortField: AscendingOrdering | undefined;
+  filterable: boolean;
+  filtered: boolean;
+}) {
+  const direction = activeDirection(sortField, search);
+
+  const [Icon, state] = direction
+    ? direction === 'ascending'
+      ? ([ArrowUpIcon, 'sort-asc'] as const)
+      : ([ArrowDownIcon, 'sort-desc'] as const)
+    : sortField && filterable
+      ? ([ListFilterIcon, 'sort-filter'] as const)
+      : sortField
+        ? ([ArrowUpDownIcon, 'sort'] as const)
+        : filterable
+          ? ([FunnelIcon, 'filter'] as const)
+          : ([null, 'none'] as const);
+
+  if (!Icon) return null;
+
+  const active = direction !== undefined || filtered;
+
+  return (
+    <Icon
+      aria-hidden
+      // Read by the unit tests, which would otherwise have to match on lucide's
+      // own class names.
+      data-column-indicator={state}
+      className={cn(
+        'size-3.5 shrink-0',
+        // The prototype's .4 → .9 → 1 opacity ramp: a hint at rest, legible on
+        // hover, and unmissable once the column is actually doing something.
+        active
+          ? 'text-primary'
+          : 'text-muted-foreground opacity-50 group-hover:opacity-100 group-data-[state=open]:opacity-100',
+      )}
+    />
+  );
 }
 
 function filterCount(columnKey: ColumnKey, search: OnHandSearch): number {
@@ -196,15 +224,23 @@ function SortSection({
   );
 }
 
-function FilterSection({
-  columnKey,
-  search,
-  onChange,
-}: {
-  columnKey: ColumnKey;
-  search: OnHandSearch;
-  onChange: (patch: Partial<OnHandSearch>) => void;
-}) {
+/**
+ * The filter control for a column, or `null` where there is none.
+ *
+ * A plain function rather than a component on purpose: `ColumnMenu` needs to
+ * know whether a filter exists in order to pick the header icon, and deriving
+ * that from the same switch that renders it is the only arrangement where the
+ * two cannot drift. A parallel `FILTERABLE` set would compile fine while
+ * quietly promising a filter this switch does not implement.
+ *
+ * Safe to call during render: every branch returns an element, and the hooks
+ * (`useId`, `useQuery`) live inside those child components, not here.
+ */
+function filterControl(
+  columnKey: ColumnKey,
+  search: OnHandSearch,
+  onChange: (patch: Partial<OnHandSearch>) => void,
+): ReactNode | null {
   switch (columnKey) {
     case 'kit_id':
       return (
@@ -246,13 +282,7 @@ function FilterSection({
     case 'expiration':
       return <ExpirationFilter onChange={onChange} />;
     default:
-      return (
-        <p className="text-xs text-muted-foreground">
-          {columnKey === 'last_seen'
-            ? 'Tracker state only — sorting and time filters need tracking data.'
-            : 'No filter for this column.'}
-        </p>
-      );
+      return null;
   }
 }
 

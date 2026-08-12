@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 
 import { STRIPE_CLASSES, isExpired, statusLabels, stripeTone, trackerState } from '../stock-status';
 import type { OnHandSearch } from '../on-hand.search';
-import { ColumnMenu, type ColumnKey } from './column-menu';
+import { columnAriaSort, type ColumnKey } from '../columns';
+import { ColumnMenu } from './column-menu';
 
 interface Props {
   rows: InventoryKitList[];
@@ -188,6 +189,11 @@ export function OnHandTable({
             {COLUMNS.map((column) => (
               <th
                 key={column.key}
+                scope="col"
+                // The header icon shows the sort direction visually; this is the
+                // same fact for a screen reader, which the icon cannot carry
+                // because it is aria-hidden.
+                aria-sort={columnAriaSort(column.key, search)}
                 className={cn('px-3 py-2 font-semibold', column.headerClassName)}
               >
                 <ColumnMenu

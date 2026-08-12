@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { ColumnMenu } from '../components/column-menu';
+import { ColumnMenu, type ColumnKey } from '../components/column-menu';
 import { ON_HAND_DEFAULTS, type OnHandSearch } from '../on-hand.search';
 
 /**
@@ -24,22 +24,27 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
-function renderMenu(search: Partial<OnHandSearch> = {}) {
+function renderMenu(
+  search: Partial<OnHandSearch> = {},
+  column: { key: ColumnKey; label: string } = { key: 'ownership_type', label: 'Type' },
+) {
   const onChange = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-  render(
+  const { container } = render(
     <QueryClientProvider client={client}>
       <ColumnMenu
-        columnKey="ownership_type"
-        label="Type"
+        columnKey={column.key}
+        label={column.label}
         search={{ ...ON_HAND_DEFAULTS, ...search }}
         onChange={onChange}
       />
     </QueryClientProvider>,
   );
 
-  return { onChange, user: userEvent.setup() };
+  const indicator = () => container.querySelector('[data-column-indicator]');
+
+  return { onChange, user: userEvent.setup(), indicator };
 }
 
 describe('ColumnMenu', () => {
@@ -94,5 +99,48 @@ describe('ColumnMenu', () => {
     // The badge is inside the trigger, so it becomes part of the accessible
     // name — which is why the e2e selectors match on a substring.
     expect(screen.getByRole('button', { name: /Type/ })).toHaveTextContent('2');
+  });
+
+  describe('the header indicator', () => {
+    // Capability is not uniform across the ten columns, and the icon is the
+    // only thing that says so before the panel opens. Each case here pairs with
+    // a branch of the switch in `filterControl`, so a column that loses or
+    // gains a filter control fails here rather than shipping a header that
+    // advertises the wrong thing.
+    it.each([
+      ['sorts and filters', { key: 'ownership_type', label: 'Type' }, 'sort-filter'],
+      ['only sorts', { key: 'part_name', label: 'Kit Name' }, 'sort'],
+      ['only filters', { key: 'transit', label: 'Transit' }, 'filter'],
+    ] as const)('marks a column that %s', (_name, column, state) => {
+      const { indicator } = renderMenu({}, column);
+
+      expect(indicator()).toHaveAttribute('data-column-indicator', state);
+    });
+
+    it('shows nothing on a column that neither sorts nor filters', () => {
+      // The prototype puts the same funnel here as everywhere else, promising a
+      // filter Last Seen has never had.
+      const { indicator } = renderMenu({}, { key: 'last_seen', label: 'Last Seen' });
+
+      expect(indicator()).toBeNull();
+    });
+
+    it.each([
+      ['ownership_type', 'sort-asc'],
+      ['-ownership_type', 'sort-desc'],
+    ] as const)('becomes the direction when ordering is %s', (ordering, state) => {
+      const { indicator } = renderMenu({ ordering });
+
+      expect(indicator()).toHaveAttribute('data-column-indicator', state);
+    });
+
+    it('stays out of the trigger, and so out of its accessible name', () => {
+      // Four e2e selectors and three above match the trigger by exact name. An
+      // icon that announced itself would break all seven at once.
+      const { indicator } = renderMenu();
+
+      expect(indicator()).toHaveAttribute('aria-hidden');
+      expect(screen.getByRole('button', { name: 'Type' })).toBeInTheDocument();
+    });
   });
 });

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 import { isExpired } from '../stock-status';
 
+import { AddTrackerDialog } from './add-tracker-dialog';
 import { ReturnToManufacturerDialog } from './return-to-manufacturer-dialog';
 import { TransferDialog } from './transfer-dialog';
 import { UpdateStatusDialog } from './update-status-dialog';
@@ -20,10 +21,10 @@ import { UpdateStatusDialog } from './update-status-dialog';
 /**
  * What you can do to a kit.
  *
- * Update Status, Transfer and Return to Manufacturer each open a dialog. Beacon
- * pairing is still a no-op and lands as its own screen; it renders now because
- * the affordance is worth showing, and because it is enabled or disabled by the
- * kit's real state like the rest.
+ * All four open a dialog now — Update Status, Transfer, Return to Manufacturer
+ * and Add Hansel Tracker. Which of them render, and whether each is enabled,
+ * still comes entirely from the kit's own state: a tracked kit is not offered a
+ * tracker, and a kit already in transit cannot be sent anywhere else.
  *
  * These are plain `<button>`s rather than shadcn `Button`s on purpose: its cva
  * base pins `h-8`, `px-2.5` and a single inline row, and an action card is a
@@ -42,9 +43,10 @@ interface Action {
   description: string;
   disabled?: boolean;
   /**
-   * Absent for the flows that do not exist yet, so the card visibly does
-   * nothing. Deliberately not a toast: a "coming soon" popup on every click is
-   * worse than a button that plainly has no effect.
+   * Every card has one now. Kept optional because the type outlived the state
+   * it was written for: while these landed one at a time, an absent handler was
+   * how a card visibly did nothing, deliberately rather than via a "coming
+   * soon" toast. The next action added here starts in that state too.
    */
   onClick?: () => void;
   /** The prototype's tinted "you probably want this one" treatment. */
@@ -57,6 +59,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
   const [statusOpen, setStatusOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [trackerOpen, setTrackerOpen] = useState(false);
 
   const actions: Action[] = [
     {
@@ -95,18 +98,27 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
     },
   ];
 
-  // Pairing is only offered for a kit that has no beacon; a tracked kit gets
-  // the Live Location panel above instead.
+  // Only offered for a kit that has no beacon; a tracked kit gets the Live
+  // Location panel above instead.
   if (!kit.tracker) {
     actions.push({
-      key: 'pair',
+      key: 'add-tracker',
       icon: MapPinIcon,
       iconClassName: 'bg-info-container text-info',
-      title: 'Pair Hansel Tracker',
+      // Mobile's sheet has carried this title since it shipped; the web was the
+      // one out of step. Nothing scans anything either — the user types the id
+      // printed on the tracker — so the old "Scan a Hansel tracker" description
+      // promised an affordance that has never existed here.
+      title: 'Add Hansel Tracker',
       annotation: '· optional',
-      description: 'Scan a Hansel tracker to enable real-time location',
+      description: 'Enter a beacon ID to enable real-time location',
       disabled: inTransit,
-      highlight: 'border-info bg-info-container/40',
+      // No highlight. It carried the prototype's info tint unconditionally,
+      // which made the one *optional* action the loudest thing in the column —
+      // and left the card looking pressed before it was hovered. It now takes
+      // the same card and brand-on-hover border as the other three; the icon
+      // keeps its info colour, which is how each action is told apart.
+      onClick: () => setTrackerOpen(true),
     });
   }
 
@@ -127,6 +139,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       {statusOpen && <UpdateStatusDialog kit={kit} onClose={() => setStatusOpen(false)} />}
       {transferOpen && <TransferDialog kit={kit} onClose={() => setTransferOpen(false)} />}
       {returnOpen && <ReturnToManufacturerDialog kit={kit} onClose={() => setReturnOpen(false)} />}
+      {trackerOpen && <AddTrackerDialog kit={kit} onClose={() => setTrackerOpen(false)} />}
     </div>
   );
 }

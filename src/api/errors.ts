@@ -122,3 +122,34 @@ export function asFieldErrors(error: unknown): FieldErrors | null {
 export function isNotFound(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
+
+/**
+ * The *third* error contract: a 409 `{error, message}`.
+ *
+ * Neither of the two above. `{code, detail}` is `/api/v1/web/*`, the bare
+ * `{field: [...]}` map is every other 400 — and this one says the request was
+ * well-formed but cannot be applied against current server state. `error` is
+ * the stable code to branch on; `message` is display text that may change,
+ * which is why callers map the code to their own copy and keep `message` only
+ * as the fallback for a code they do not know.
+ *
+ * Typed structurally rather than as the generated `Conflict`, for the same
+ * reason `asFieldErrors` avoids its per-operation twin: the shape is declared
+ * identically wherever the contract raises one.
+ *
+ * The status check alone would be enough today, but the value check keeps this
+ * honest if a 409 ever carries something else.
+ */
+export interface ConflictError {
+  error: string;
+  message: string;
+}
+
+export function asConflict(error: unknown): ConflictError | null {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) return null;
+  const data: unknown = error.response.data;
+  if (typeof data !== 'object' || data === null) return null;
+  const { error: code, message } = data as Record<string, unknown>;
+  if (typeof code !== 'string' || typeof message !== 'string') return null;
+  return { error: code, message };
+}

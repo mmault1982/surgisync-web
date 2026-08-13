@@ -1,6 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { listInventoryTransferTargets } from '@/api/generated/endpoints/inventory/inventory';
+import {
+  apiV1InventoryTransfersRetrieve,
+  listInventoryTransferTargets,
+} from '@/api/generated/endpoints/inventory/inventory';
 
 import { transferKeys } from './inventory.keys';
 
@@ -19,6 +22,18 @@ import { transferKeys } from './inventory.keys';
 const TARGETS_STALE_TIME = 5 * 60 * 1000;
 
 export const transferQueries = {
+  /**
+   * One transfer, for the Pending Transfer dialog.
+   *
+   * Not cached like the targets above: a transfer's whole significance here is
+   * whether it is still open, and confirming it makes this row 404. It is
+   * fetched when the dialog opens and invalidated with the kit afterwards.
+   */
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: transferKeys.detail(id),
+      queryFn: ({ signal }) => apiV1InventoryTransfersRetrieve(id, { signal }),
+    }),
   targets: () =>
     queryOptions({
       queryKey: transferKeys.targets(),

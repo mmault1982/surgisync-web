@@ -62,6 +62,15 @@ const ALLOWED_OPERATIONS = new Set([
   'create_inventory_transfer',
   'list_inventory_transfer_targets',
 
+  // Kit Detail's Pending Transfer dialog: read the transfer a kit is on, then
+  // complete it. `retrieve` is what lets the dialog show what is arriving
+  // rather than asking the user to confirm a shipment sight unseen — the kit
+  // itself carries only the destination's name. Confirming is idempotent by
+  // way of 404: the viewset scopes to active transfers, so a second confirm
+  // finds nothing.
+  'api_v1_inventory_transfers_retrieve',
+  'confirm_inventory_transfer_receipt',
+
   // Value sources for the table's column filter menus. These return only what
   // this organization actually holds — the global /manufacturers/ and
   // /facilities/ endpoints are deliberately not used, since their schemas do

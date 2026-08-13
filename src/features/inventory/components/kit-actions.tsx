@@ -13,16 +13,17 @@ import { cn } from '@/lib/utils';
 
 import { isExpired } from '../stock-status';
 
+import { ReturnToManufacturerDialog } from './return-to-manufacturer-dialog';
 import { TransferDialog } from './transfer-dialog';
 import { UpdateStatusDialog } from './update-status-dialog';
 
 /**
  * What you can do to a kit.
  *
- * Update Status opens its dialog; transfer, returns and beacon pairing are
- * still no-ops, and land as their own screens. They render now because the
- * layout and the affordances are what this change is for, and because each one
- * is enabled or disabled by the kit's real state.
+ * Update Status, Transfer and Return to Manufacturer each open a dialog. Beacon
+ * pairing is still a no-op and lands as its own screen; it renders now because
+ * the affordance is worth showing, and because it is enabled or disabled by the
+ * kit's real state like the rest.
  *
  * These are plain `<button>`s rather than shadcn `Button`s on purpose: its cva
  * base pins `h-8`, `px-2.5` and a single inline row, and an action card is a
@@ -55,6 +56,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
   const inTransit = kit.active_transfer_id !== null;
   const [statusOpen, setStatusOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
 
   const actions: Action[] = [
     {
@@ -88,6 +90,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       ...(expired ? { annotation: '· recommended' } : {}),
       description: `Send back to ${kit.manufacturer_name}`,
       disabled: inTransit,
+      onClick: () => setReturnOpen(true),
       ...(expired ? { highlight: 'border-primary ring-2 ring-primary/10' } : {}),
     },
   ];
@@ -123,6 +126,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       */}
       {statusOpen && <UpdateStatusDialog kit={kit} onClose={() => setStatusOpen(false)} />}
       {transferOpen && <TransferDialog kit={kit} onClose={() => setTransferOpen(false)} />}
+      {returnOpen && <ReturnToManufacturerDialog kit={kit} onClose={() => setReturnOpen(false)} />}
     </div>
   );
 }

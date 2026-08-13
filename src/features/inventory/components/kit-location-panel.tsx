@@ -1,5 +1,5 @@
 import { ExternalLinkIcon, MapPinIcon } from 'lucide-react';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 
 import type { InventoryKitDetail, TrackingEvent } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { formatLogDateTime, formatRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 import { addressLine, currentPosition } from '../kit-detail';
+
+import { DetachTrackerDialog } from './detach-tracker-dialog';
 
 // Lazy so leaflet and its stylesheet never load for an untracked kit, and never
 // enter a jsdom test's module graph. Note that lazy() alone is not a barrier —
@@ -31,6 +33,8 @@ interface Props {
  * location fetch never makes an attached beacon disappear from the screen.
  */
 export function KitLocationPanel({ kit, events, isPending, isError, className }: Props) {
+  const [detachOpen, setDetachOpen] = useState(false);
+
   const tracker = kit.tracker;
   if (!tracker) return null;
 
@@ -85,15 +89,23 @@ export function KitLocationPanel({ kit, events, isPending, isError, className }:
         <Row label="Last sterilized" value={formatLogDateTime(kit.last_sterilized_at) ?? 'Never'} />
       </dl>
 
-      {/* Stubs, like the action cards — neither flow exists yet. */}
       <div className="flex items-center justify-between border-t border-info/30 px-2 py-1">
+        {/* Still a stub: the history screen does not exist yet. */}
         <Button variant="link" size="sm" className="text-info" onClick={() => {}}>
           View location history ›
         </Button>
-        <Button variant="link" size="sm" className="text-muted-foreground" onClick={() => {}}>
+        <Button
+          variant="link"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => setDetachOpen(true)}
+        >
           Detach tracker
         </Button>
       </div>
+
+      {/* Mounted only while open, like every other dialog in this feature. */}
+      {detachOpen && <DetachTrackerDialog kit={kit} onClose={() => setDetachOpen(false)} />}
     </section>
   );
 }

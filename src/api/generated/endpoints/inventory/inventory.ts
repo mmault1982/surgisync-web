@@ -201,6 +201,190 @@ export function useCreateInventoryTransfer<TData = Awaited<ReturnType<typeof cre
 
 
 /**
+ * ViewSet for managing inventory transfers.
+ *
+ * list: Get transfers involving the user's organization (source or dest)
+ * create: Create a transfer record
+ * retrieve: Get a single transfer by ID
+ * update / partial_update: Update a transfer
+ * destroy: Soft-delete a transfer
+ */
+export const apiV1InventoryTransfersRetrieve = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<InventoryTransferDetail>(
+      {url: `/api/v1/inventory-transfers/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getApiV1InventoryTransfersRetrieveQueryKey = (id: number,) => {
+    return [
+    `/api/v1/inventory-transfers/${id}/`
+    ] as const;
+    }
+
+
+export const getApiV1InventoryTransfersRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getApiV1InventoryTransfersRetrieveQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>> = ({ signal }) => apiV1InventoryTransfersRetrieve(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ApiV1InventoryTransfersRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>>
+export type ApiV1InventoryTransfersRetrieveQueryError = ErrorType<ErrorDetail>
+
+
+export function useApiV1InventoryTransfersRetrieve<TData = Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiV1InventoryTransfersRetrieve<TData = Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useApiV1InventoryTransfersRetrieve<TData = Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useApiV1InventoryTransfersRetrieve<TData = Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof apiV1InventoryTransfersRetrieve>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getApiV1InventoryTransfersRetrieveQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Confirm receipt of a transfer. Copies the transfer's destination (to_*) onto each associated kit's assigned_to_* fields, then soft-deletes the transfer so its kits are no longer in transit. For a return-to-manufacturer transfer (reason 'return' with no destination facility or representative), the kits are instead detached and soft-deleted along with the transfer. Idempotent: an already-confirmed transfer returns 404.
+ */
+export const confirmInventoryTransferReceipt = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<InventoryTransferDetail>(
+      {url: `/api/v1/inventory-transfers/${id}/confirm-receipt/`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getConfirmInventoryTransferReceiptQueryKey = (id: number,) => {
+    return [
+    'POST', `/api/v1/inventory-transfers/${id}/confirm-receipt/`
+    ] as const;
+    }
+
+
+export const getConfirmInventoryTransferReceiptQueryOptions = <TData = Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getConfirmInventoryTransferReceiptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>> = ({ signal }) => confirmInventoryTransferReceipt(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ConfirmInventoryTransferReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>>
+export type ConfirmInventoryTransferReceiptQueryError = ErrorType<ErrorDetail>
+
+
+export function useConfirmInventoryTransferReceipt<TData = Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useConfirmInventoryTransferReceipt<TData = Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useConfirmInventoryTransferReceipt<TData = Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useConfirmInventoryTransferReceipt<TData = Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof confirmInventoryTransferReceipt>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getConfirmInventoryTransferReceiptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * Assignable From/To values for a transfer: the representatives in the requesting user's organization, then the facilities that user may send to, each block sorted by name. Every option carries a `type` because a transfer stores each side as three nullable FK columns and the ids collide across them — `type` says which `*_assigned_to_<type>` field the option writes. Organizations are not offered; a kit assigned to one keeps that assignment until it is transferred away. Not the global /api/v1/facilities/ catalog.
  */
 export const listInventoryTransferTargets = (

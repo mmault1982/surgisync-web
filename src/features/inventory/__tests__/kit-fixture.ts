@@ -1,4 +1,9 @@
-import type { InventoryKitDetail, InventoryKitHistory, TrackingEvent } from '@/api/generated/model';
+import type {
+  InventoryKitDetail,
+  InventoryKitHistory,
+  InventoryTransferDetail,
+  TrackingEvent,
+} from '@/api/generated/model';
 
 /**
  * Fixtures for the Kit Detail tests.
@@ -82,6 +87,41 @@ export function eventFixture(overrides: Partial<TrackingEvent> = {}): TrackingEv
     beacon_identifier: 'HSL-99887',
     asset_name: 'Tray 12',
     user_name: '',
+    ...overrides,
+  };
+}
+
+/**
+ * A pending transfer: TRC-MTP-2200 moving from its rep to a hospital.
+ *
+ * The `to_*` pair is what decides whether confirming it hands the kit over or
+ * removes it from inventory, so most callers override exactly that.
+ */
+export function transferFixture(
+  overrides: Partial<InventoryTransferDetail> = {},
+): InventoryTransferDetail {
+  return {
+    id: 12,
+    stock_items: [1],
+    transport_method: 'fedex',
+    reason: 'surgery',
+    transfer_date: '2026-04-22',
+    notes: null,
+    from_assigned_to_parent_company: null,
+    from_parent_company_name: null,
+    from_assigned_to_representative: 3,
+    from_representative_name: 'John Smith',
+    from_assigned_to_facility: null,
+    from_facility_name: null,
+    to_assigned_to_parent_company: null,
+    to_parent_company_name: null,
+    to_assigned_to_representative: null,
+    to_representative_name: null,
+    to_assigned_to_facility: 7,
+    to_facility_name: "St Mary's Hospital",
+    kit_photo: null,
+    label_photo: null,
+    created_at: '2026-04-22T09:00:00Z',
     ...overrides,
   };
 }

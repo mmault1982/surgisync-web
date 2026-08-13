@@ -27,6 +27,7 @@ export const stockItemKeys = {
 export const transferKeys = {
   all: ['inventory-transfers'] as const,
   targets: () => [...transferKeys.all, 'targets'] as const,
+  detail: (id: number) => [...transferKeys.all, 'detail', id] as const,
 };
 
 /**

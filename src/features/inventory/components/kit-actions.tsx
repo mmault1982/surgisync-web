@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 import { isExpired } from '../stock-status';
 
+import { TransferDialog } from './transfer-dialog';
 import { UpdateStatusDialog } from './update-status-dialog';
 
 /**
@@ -53,6 +54,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
   const expired = isExpired(kit);
   const inTransit = kit.active_transfer_id !== null;
   const [statusOpen, setStatusOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const actions: Action[] = [
     {
@@ -69,11 +71,14 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
       icon: RefreshCwIcon,
       iconClassName: 'bg-success-container text-success',
       title: 'Transfer',
-      ...(expired ? { annotation: '· to Warehouse only' } : {}),
+      // No expired annotation. The prototype restricts an expired kit to
+      // "Warehouse only", but mobile has no such rule and the backend has no
+      // Warehouse — the copy promised a restriction nothing implements.
       description: 'Move to another rep or facility',
       // A kit already moving cannot be sent somewhere else; the pending
       // transfer has to be confirmed or cancelled first.
       disabled: inTransit,
+      onClick: () => setTransferOpen(true),
     },
     {
       key: 'return',
@@ -117,6 +122,7 @@ export function KitActions({ kit, className }: { kit: InventoryKitDetail; classN
         close, and every field reseeds from the kit on the next open.
       */}
       {statusOpen && <UpdateStatusDialog kit={kit} onClose={() => setStatusOpen(false)} />}
+      {transferOpen && <TransferDialog kit={kit} onClose={() => setTransferOpen(false)} />}
     </div>
   );
 }

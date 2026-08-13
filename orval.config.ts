@@ -47,6 +47,14 @@ const ALLOWED_OPERATIONS = new Set([
   'create_inventory_kit_photo',
   'delete_inventory_kit_photo',
 
+  // Kit Detail's Transfer dialog. Both hang off /inventory-transfers/, so both
+  // are inside the response accuracy gate. `targets` exists because the global
+  // /facilities/ this needs is one of the liars below: it was added to the
+  // backend for this screen, on that prefix so it was gated from its first
+  // commit rather than allowlisted ungated the way tracker events had to be.
+  'create_inventory_transfer',
+  'list_inventory_transfer_targets',
+
   // Value sources for the table's column filter menus. These return only what
   // this organization actually holds — the global /manufacturers/ and
   // /facilities/ endpoints are deliberately not used, since their schemas do

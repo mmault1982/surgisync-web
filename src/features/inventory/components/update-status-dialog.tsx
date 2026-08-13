@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BanIcon, ImagePlusIcon, ImageOffIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { ImagePlusIcon, ImageOffIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { InventoryKitDetail } from '@/api/generated/model';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -24,9 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 import { stockItemKeys } from '../inventory.keys';
-import { EMPTY, ownershipLabel } from '../kit-detail';
 import { facetQueries } from '../on-hand.queries';
-import { isExpired } from '../stock-status';
 import {
   addFiles,
   buildStatusPatch,
@@ -50,6 +46,8 @@ import {
   type PhotoTile,
 } from '../update-status';
 import { initialSaveState, isSaveComplete, madeProgress, runSave } from '../update-status.save';
+
+import { ExpiredBanner, Field, KitSummary } from './dialog-parts';
 
 /**
  * Change a kit's status, location, photos and notes.
@@ -169,7 +167,6 @@ export function UpdateStatusDialog({
   }
 
   const count = photoCount(strip);
-  const ownership = ownershipLabel(kit);
   const outstanding = saveState?.pendingOps.length ?? 0;
 
   return (
@@ -188,30 +185,12 @@ export function UpdateStatusDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-col gap-5 overflow-y-auto px-5 py-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{kit.part_name}</p>
-              <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                {kit.manufacturer_kit_id ?? EMPTY}
-              </p>
-            </div>
-            {ownership ? <Badge variant="secondary">{ownership}</Badge> : null}
-          </div>
+          <KitSummary kit={kit} />
 
-          {isExpired(kit) ? (
-            // Informational only. Mark the condition, then use Return to
-            // Manufacturer — nothing in this dialog is restricted by it.
-            <div className="flex items-start gap-3 rounded-lg border-l-4 border-l-destructive bg-brand-container px-4 py-3.5">
-              <BanIcon aria-hidden className="size-5 shrink-0 text-destructive" />
-              <div>
-                <p className="text-sm font-bold text-destructive">Expired — kit cannot be used</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Exp: {kit.expiration_date}. Mark condition for return audit, then Return to
-                  Manufacturer.
-                </p>
-              </div>
-            </div>
-          ) : null}
+          <ExpiredBanner
+            kit={kit}
+            detail={`Exp: ${kit.expiration_date}. Mark condition for return audit, then Return to Manufacturer.`}
+          />
 
           <Field
             label="Status"
@@ -359,38 +338,6 @@ export function UpdateStatusDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Field({
-  label,
-  required,
-  hint,
-  hintTone,
-  htmlFor,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  hintTone?: string;
-  htmlFor?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <Label htmlFor={htmlFor} className="mb-2">
-        {label}
-        {required ? <span className="text-destructive">*</span> : null}
-        {hint ? (
-          <span className={cn('font-normal text-muted-foreground', hintTone)}>{hint}</span>
-        ) : null}
-      </Label>
-      {children}
-      {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
-    </div>
   );
 }
 

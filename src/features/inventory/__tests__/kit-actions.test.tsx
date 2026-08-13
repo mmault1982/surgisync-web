@@ -63,14 +63,23 @@ describe('KitActions', () => {
     // matching it would pin punctuation and spacing this test does not care
     // about.
     expect(screen.getByText('· recommended')).toBeInTheDocument();
-    expect(screen.getByText('· to Warehouse only')).toBeInTheDocument();
+  });
+
+  it('does not restrict where an expired kit may be transferred', () => {
+    render(<KitActions kit={kitFixture({ expiration_date: '2020-01-15' })} />);
+
+    // The prototype annotates Transfer with "· to Warehouse only" for an
+    // expired kit. Mobile has no such rule and the backend has no Warehouse,
+    // so the copy promised a restriction nothing implements — and the dialog
+    // behind this card restricts nothing.
+    expect(screen.queryByText('· to Warehouse only')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Transfer/ })).toBeEnabled();
   });
 
   it('carries no annotations for a healthy kit', () => {
     render(<KitActions kit={kitFixture()} />);
 
     expect(screen.queryByText('· recommended')).not.toBeInTheDocument();
-    expect(screen.queryByText('· to Warehouse only')).not.toBeInTheDocument();
     expect(screen.getByText('· optional')).toBeInTheDocument();
   });
 });

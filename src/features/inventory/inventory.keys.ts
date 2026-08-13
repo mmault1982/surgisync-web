@@ -19,6 +19,17 @@ export const stockItemKeys = {
 };
 
 /**
+ * Transfers are their own resource. `targets` is the From/To picker's option
+ * list: org membership and facility assignments, which change on a different
+ * clock from stock and must not be dropped by a stock-item invalidation — which
+ * is exactly what creating a transfer does.
+ */
+export const transferKeys = {
+  all: ['inventory-transfers'] as const,
+  targets: () => [...transferKeys.all, 'targets'] as const,
+};
+
+/**
  * Trackers are a separate resource with their own lifetime, keyed on the
  * **tracker** id rather than the kit's — detaching a beacon must not be
  * invalidated by a stock-item mutation, or the reverse.

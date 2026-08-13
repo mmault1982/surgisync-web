@@ -26,18 +26,22 @@ import type {
   ApiV1StockItemsPartialUpdate400,
   Conflict,
   CreateInventoryKitPhoto400,
+  CreateInventoryTransfer400,
   ErrorDetail,
   FacetResponse,
   InventoryKitDetail,
   InventoryKitPhoto,
   InventoryKitPhotoRequest,
+  InventoryTransferDetail,
+  InventoryTransferDetailRequest,
   ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PatchedInventoryKitDetailRequest,
-  StringFacetResponse
+  StringFacetResponse,
+  TransferTargetResponse
 } from '../../model';
 
 import { apiRequest } from '../../../axios-instance';
@@ -62,6 +66,228 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+/**
+ * Create an inventory transfer record. Send as multipart/form-data so `kit_photo` and `label_photo` files can be uploaded alongside the other fields (application/json is also accepted when no files are included). `transport_method` and `reason` are required. If no organization is supplied on either the from_ or to_ side, the source organization defaults to the requesting user's organization.
+ */
+export const createInventoryTransfer = (
+    inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+if(inventoryTransferDetailRequest.stock_items !== undefined) {
+ inventoryTransferDetailRequest.stock_items.forEach(value => formData.append(`stock_items`, value.toString()));
+ }
+if(inventoryTransferDetailRequest.inventory_kits !== undefined) {
+ inventoryTransferDetailRequest.inventory_kits.forEach(value => formData.append(`inventory_kits`, value.toString()));
+ }
+formData.append(`transport_method`, inventoryTransferDetailRequest.transport_method);
+formData.append(`reason`, inventoryTransferDetailRequest.reason);
+if(inventoryTransferDetailRequest.transfer_date !== undefined && inventoryTransferDetailRequest.transfer_date !== null) {
+ formData.append(`transfer_date`, inventoryTransferDetailRequest.transfer_date);
+ }
+if(inventoryTransferDetailRequest.notes !== undefined && inventoryTransferDetailRequest.notes !== null) {
+ formData.append(`notes`, inventoryTransferDetailRequest.notes);
+ }
+if(inventoryTransferDetailRequest.from_assigned_to_parent_company !== undefined && inventoryTransferDetailRequest.from_assigned_to_parent_company !== null) {
+ formData.append(`from_assigned_to_parent_company`, inventoryTransferDetailRequest.from_assigned_to_parent_company.toString())
+ }
+if(inventoryTransferDetailRequest.from_assigned_to_representative !== undefined && inventoryTransferDetailRequest.from_assigned_to_representative !== null) {
+ formData.append(`from_assigned_to_representative`, inventoryTransferDetailRequest.from_assigned_to_representative.toString())
+ }
+if(inventoryTransferDetailRequest.from_assigned_to_facility !== undefined && inventoryTransferDetailRequest.from_assigned_to_facility !== null) {
+ formData.append(`from_assigned_to_facility`, inventoryTransferDetailRequest.from_assigned_to_facility.toString())
+ }
+if(inventoryTransferDetailRequest.to_assigned_to_parent_company !== undefined && inventoryTransferDetailRequest.to_assigned_to_parent_company !== null) {
+ formData.append(`to_assigned_to_parent_company`, inventoryTransferDetailRequest.to_assigned_to_parent_company.toString())
+ }
+if(inventoryTransferDetailRequest.to_assigned_to_representative !== undefined && inventoryTransferDetailRequest.to_assigned_to_representative !== null) {
+ formData.append(`to_assigned_to_representative`, inventoryTransferDetailRequest.to_assigned_to_representative.toString())
+ }
+if(inventoryTransferDetailRequest.to_assigned_to_facility !== undefined && inventoryTransferDetailRequest.to_assigned_to_facility !== null) {
+ formData.append(`to_assigned_to_facility`, inventoryTransferDetailRequest.to_assigned_to_facility.toString())
+ }
+if(inventoryTransferDetailRequest.kit_photo !== undefined && inventoryTransferDetailRequest.kit_photo !== null) {
+ formData.append(`kit_photo`, inventoryTransferDetailRequest.kit_photo);
+ }
+if(inventoryTransferDetailRequest.label_photo !== undefined && inventoryTransferDetailRequest.label_photo !== null) {
+ formData.append(`label_photo`, inventoryTransferDetailRequest.label_photo);
+ }
+if(inventoryTransferDetailRequest.is_draft !== undefined) {
+ formData.append(`is_draft`, inventoryTransferDetailRequest.is_draft.toString())
+ }
+
+      return apiRequest<InventoryTransferDetail>(
+      {url: `/api/v1/inventory-transfers/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateInventoryTransferQueryKey = (inventoryTransferDetailRequest?: BodyType<InventoryTransferDetailRequest>,) => {
+    return [
+    'POST', `/api/v1/inventory-transfers/`, inventoryTransferDetailRequest
+    ] as const;
+    }
+
+
+export const getCreateInventoryTransferQueryOptions = <TData = Awaited<ReturnType<typeof createInventoryTransfer>>, TError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>>(inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateInventoryTransferQueryKey(inventoryTransferDetailRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createInventoryTransfer>>> = ({ signal }) => createInventoryTransfer(inventoryTransferDetailRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateInventoryTransferQueryResult = NonNullable<Awaited<ReturnType<typeof createInventoryTransfer>>>
+export type CreateInventoryTransferQueryError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>
+
+
+export function useCreateInventoryTransfer<TData = Awaited<ReturnType<typeof createInventoryTransfer>>, TError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>>(
+ inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryTransfer>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryTransfer>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryTransfer<TData = Awaited<ReturnType<typeof createInventoryTransfer>>, TError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>>(
+ inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryTransfer>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryTransfer>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryTransfer<TData = Awaited<ReturnType<typeof createInventoryTransfer>>, TError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>>(
+ inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateInventoryTransfer<TData = Awaited<ReturnType<typeof createInventoryTransfer>>, TError = ErrorType<CreateInventoryTransfer400 | ErrorDetail>>(
+ inventoryTransferDetailRequest: BodyType<InventoryTransferDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryTransfer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateInventoryTransferQueryOptions(inventoryTransferDetailRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Assignable From/To values for a transfer: the representatives in the requesting user's organization, then the facilities that user may send to, each block sorted by name. Every option carries a `type` because a transfer stores each side as three nullable FK columns and the ids collide across them — `type` says which `*_assigned_to_<type>` field the option writes. Organizations are not offered; a kit assigned to one keeps that assignment until it is transferred away. Not the global /api/v1/facilities/ catalog.
+ */
+export const listInventoryTransferTargets = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<TransferTargetResponse>(
+      {url: `/api/v1/inventory-transfers/targets/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListInventoryTransferTargetsQueryKey = () => {
+    return [
+    `/api/v1/inventory-transfers/targets/`
+    ] as const;
+    }
+
+
+export const getListInventoryTransferTargetsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryTransferTargetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryTransferTargets>>> = ({ signal }) => listInventoryTransferTargets(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListInventoryTransferTargetsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryTransferTargets>>>
+export type ListInventoryTransferTargetsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryTransferTargets>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryTransferTargets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInventoryTransferTargets>>,
+          TError,
+          Awaited<ReturnType<typeof listInventoryTransferTargets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInventoryTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListInventoryTransferTargetsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 /**
  * List the requesting user's organization inventory kits as a paginated, searchable, filterable collection.

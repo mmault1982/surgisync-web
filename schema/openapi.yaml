@@ -1996,13 +1996,13 @@ paths:
       - Inventory
       requestBody:
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
         required: true
@@ -2107,13 +2107,13 @@ paths:
       - Inventory
       requestBody:
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/InventoryTransferDetailRequest'
         required: true
@@ -2177,13 +2177,13 @@ paths:
       - Inventory
       requestBody:
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedInventoryTransferDetailRequest'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/PatchedInventoryTransferDetailRequest'
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/PatchedInventoryTransferDetailRequest'
       security:
@@ -2314,6 +2314,39 @@ paths:
                 $ref: '#/components/schemas/ErrorDetail'
           description: No such object, or it belongs to another organization. The
             two are deliberately indistinguishable.
+  /api/v1/inventory-transfers/targets/:
+    get:
+      operationId: list_inventory_transfer_targets
+      description: 'Assignable From/To values for a transfer: the representatives
+        in the requesting user''s organization, then the facilities that user may
+        send to, each block sorted by name. Every option carries a `type` because
+        a transfer stores each side as three nullable FK columns and the ids collide
+        across them — `type` says which `*_assigned_to_<type>` field the option writes.
+        Organizations are not offered; a kit assigned to one keeps that assignment
+        until it is transferred away. Not the global /api/v1/facilities/ catalog.'
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferTargetResponse'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/inventory/all-items/:
     get:
       operationId: list_items
@@ -8644,6 +8677,45 @@ components:
       - longitude
       - occurred_at
       - user_name
+    TransferTarget:
+      type: object
+      description: 'One selectable From/To value: its kind, its id, and the label
+        to show.'
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TransferTargetTypeEnum'
+          description: |-
+            Which *_assigned_to_<type> column this option writes.
+
+            * `representative` - Representative
+            * `facility` - Facility
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+      - type
+    TransferTargetResponse:
+      type: object
+      description: 'Assignable transfer destinations: representatives, then facilities.'
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferTarget'
+      required:
+      - results
+    TransferTargetTypeEnum:
+      enum:
+      - representative
+      - facility
+      type: string
+      description: |-
+        * `representative` - Representative
+        * `facility` - Facility
     TransportMethodEnum:
       enum:
       - fedex

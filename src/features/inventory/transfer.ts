@@ -220,7 +220,12 @@ const TARGET_COLUMNS: Record<TargetType, string> = {
   [ORGANIZATION]: 'assigned_to_parent_company',
 };
 
-function sideFields(
+/**
+ * Exported because Return to Manufacturer writes the same columns from a
+ * different form: a return is a transfer whose `to` side names an organization
+ * and — critically — neither of the other two.
+ */
+export function sideFields(
   side: 'from' | 'to',
   target: Target | null,
 ): Partial<InventoryTransferDetailRequest> {

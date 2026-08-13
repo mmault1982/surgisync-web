@@ -6,14 +6,15 @@ import { KitActions } from '../components/kit-actions';
 import { kitFixture } from './kit-fixture';
 
 /**
- * Only Update Status does anything in this build, and what it opens is tested
- * in `update-status-dialog.test.tsx` — which already has the query provider,
- * the Radix jsdom stubs and the facet handler that testing it needs. What is
- * worth testing here is *which actions appear and in what state*, all four of
- * which come from the kit's real data.
+ * Three of the four cards open a dialog now — Update Status, Transfer and
+ * Return to Manufacturer — and each is tested in its own file, which already
+ * has the query provider, the Radix jsdom stubs and the handlers it needs.
+ * Pairing is still a no-op. What is worth testing *here* is which actions
+ * appear and in what state, all of which comes from the kit's real data.
  *
- * The dialog is mounted only while open, so nothing extra renders here and
- * this file stays prop-driven: no provider, no stubs, no MSW.
+ * Every dialog is mounted only while open, so none of them renders here and
+ * this file stays prop-driven: no provider, no stubs, no MSW. That is what
+ * keeps the exact button counts below meaningful.
  */
 describe('KitActions', () => {
   it('offers the three kit actions plus pairing for an untracked kit', () => {

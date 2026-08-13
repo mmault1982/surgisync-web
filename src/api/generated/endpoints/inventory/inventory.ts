@@ -895,6 +895,95 @@ export function useDeleteInventoryKitPhoto<TData = Awaited<ReturnType<typeof del
 
 
 /**
+ * Detach the GPS tracker from this inventory kit. The tracker is left unassigned (not deleted) and can be attached to another kit. Returns the updated kit; 404 if the kit has no tracker.
+ */
+export const detachInventoryKitTracker = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<InventoryKitDetail>(
+      {url: `/api/v1/stock-items/${id}/tracker/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDetachInventoryKitTrackerQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/stock-items/${id}/tracker/`
+    ] as const;
+    }
+
+
+export const getDetachInventoryKitTrackerQueryOptions = <TData = Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDetachInventoryKitTrackerQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof detachInventoryKitTracker>>> = ({ signal }) => detachInventoryKitTracker(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DetachInventoryKitTrackerQueryResult = NonNullable<Awaited<ReturnType<typeof detachInventoryKitTracker>>>
+export type DetachInventoryKitTrackerQueryError = ErrorType<ErrorDetail>
+
+
+export function useDetachInventoryKitTracker<TData = Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof detachInventoryKitTracker>>,
+          TError,
+          Awaited<ReturnType<typeof detachInventoryKitTracker>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDetachInventoryKitTracker<TData = Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof detachInventoryKitTracker>>,
+          TError,
+          Awaited<ReturnType<typeof detachInventoryKitTracker>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDetachInventoryKitTracker<TData = Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDetachInventoryKitTracker<TData = Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof detachInventoryKitTracker>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDetachInventoryKitTrackerQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * Facilities that the requesting user's organization currently has stock assigned to, for the Rep / Assigned To column's filter menu. Sorted by name.
  */
 export const listStockItemFacilityFacets = (

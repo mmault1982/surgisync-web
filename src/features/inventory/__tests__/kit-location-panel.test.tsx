@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { KitLocationPanel } from '../components/kit-location-panel';
 
@@ -19,6 +21,19 @@ import { eventFixture, kitFixture } from './kit-fixture';
  * Everything worth asserting — the beacon, the meta rows, the empty and error
  * copy, the footer — is reachable without a fix.
  */
+beforeAll(() => {
+  // Only the confirmation needs these; Radix measures its content on open.
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+  Element.prototype.scrollIntoView = () => {};
+});
+
 const TRACKER = { id: 7, beacon_id: 'HSL-99887', is_active: true };
 const BASE = { events: undefined, isPending: false, isError: false };
 
@@ -64,10 +79,26 @@ describe('KitLocationPanel', () => {
     expect(screen.getByText('Never')).toBeInTheDocument();
   });
 
-  it('offers the two stubbed tracker links', () => {
+  it('offers the location-history stub and the detach action', () => {
     render(<KitLocationPanel {...BASE} events={[]} kit={kitFixture({ tracker: TRACKER })} />);
 
     expect(screen.getByRole('button', { name: /View location history/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Detach tracker' })).toBeInTheDocument();
+  });
+
+  it('asks before detaching', async () => {
+    // The only test here that needs a query client, because the confirmation
+    // owns a mutation — and it needs one only once opened. That the other
+    // tests do not is the "mounted only while open" property doing its job.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <KitLocationPanel {...BASE} events={[]} kit={kitFixture({ tracker: TRACKER })} />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Detach tracker' }));
+
+    expect(await screen.findByText('Detach tracker?')).toBeInTheDocument();
   });
 });

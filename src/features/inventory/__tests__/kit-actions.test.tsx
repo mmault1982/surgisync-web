@@ -17,13 +17,13 @@ import { kitFixture } from './kit-fixture';
  * keeps the exact button counts below meaningful.
  */
 describe('KitActions', () => {
-  it('offers the three kit actions plus pairing for an untracked kit', () => {
+  it('offers the three kit actions plus the tracker one for an untracked kit', () => {
     render(<KitActions kit={kitFixture()} />);
 
     expect(screen.getByRole('button', { name: /Update Status/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /^Transfer/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Return to Manufacturer/ })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /Pair Hansel Tracker/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Add Hansel Tracker/ })).toBeEnabled();
   });
 
   it('names the manufacturer in the return action', () => {
@@ -31,14 +31,14 @@ describe('KitActions', () => {
     expect(screen.getByText('Send back to Treace')).toBeInTheDocument();
   });
 
-  it('drops the pairing action once a beacon is attached', () => {
+  it('drops the add-tracker action once a beacon is attached', () => {
     // A tracked kit gets the Live Location panel instead — offering to pair a
     // second beacon is an action the backend rejects with `kit_has_tracker`.
     render(
       <KitActions kit={kitFixture({ tracker: { id: 7, beacon_id: 'HSL-1', is_active: true } })} />,
     );
 
-    expect(screen.queryByRole('button', { name: /Pair Hansel Tracker/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add Hansel Tracker/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button')).toHaveLength(3);
   });
 

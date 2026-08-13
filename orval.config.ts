@@ -30,6 +30,13 @@ const ALLOWED_OPERATIONS = new Set([
   // the backend's response accuracy gate like the two above.
   'list_inventory_kit_history',
 
+  // Detaching a beacon. On /stock-items/, so inside the accuracy gate — and
+  // note it is a DELETE that returns 200 with the updated kit, not a 204; the
+  // schema says so because a bare serializer in `responses=` gets rewritten to
+  // 204 and this one is status-keyed. Attaching needs no entry: it is a
+  // `beacon_id` on the PATCH below.
+  'detach_inventory_kit_tracker',
+
   // Kit Detail's Live Location panel. This one is /trackers/, which is
   // *outside* that gate — the hazard this allowlist exists to guard against.
   // Verified two ways before adding it, so nobody has to repeat the dig:

@@ -1,7 +1,7 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import { asFieldErrors, errorMessage, KNOWN_ERROR_CODES } from '@/api/errors';
+import { asConflict, asFieldErrors, errorMessage, KNOWN_ERROR_CODES } from '@/api/errors';
 
 function axiosError(data: unknown, status: number) {
   const error = new AxiosError('failed');
@@ -92,5 +92,43 @@ describe('asFieldErrors', () => {
     expect(asFieldErrors(axiosError({}, 400))).toBeNull();
     expect(asFieldErrors(axiosError({ notes: [1, 2] }, 400))).toBeNull();
     expect(asFieldErrors(new Error('not axios'))).toBeNull();
+  });
+});
+
+describe('asConflict', () => {
+  it('reads the documented 409 body', () => {
+    const conflict = asConflict(
+      axiosError(
+        { error: 'beacon_in_use', message: 'Beacon HSL-9 is attached to another kit.' },
+        409,
+      ),
+    );
+
+    expect(conflict).toEqual({
+      error: 'beacon_in_use',
+      message: 'Beacon HSL-9 is attached to another kit.',
+    });
+  });
+
+  it('ignores every other status', () => {
+    // The same shape at 400 is somebody else's contract, not this one.
+    expect(asConflict(axiosError({ error: 'x', message: 'y' }, 400))).toBeNull();
+  });
+
+  it('does not mistake the other two error contracts for a conflict', () => {
+    // A web error is {code, detail}; a field map is {field: [...]}. Neither has
+    // a string `error` *and* a string `message`.
+    expect(asConflict(axiosError({ code: 'invalid_credentials', detail: 'no' }, 409))).toBeNull();
+    expect(asConflict(axiosError({ beacon_id: ['This field is required.'] }, 409))).toBeNull();
+  });
+
+  it('rejects a body whose values are the wrong type', () => {
+    expect(asConflict(axiosError({ error: 1, message: 'y' }, 409))).toBeNull();
+    expect(asConflict(axiosError({ error: 'x' }, 409))).toBeNull();
+    expect(asConflict(axiosError(null, 409))).toBeNull();
+  });
+
+  it('ignores anything that is not an axios error', () => {
+    expect(asConflict(new Error('boom'))).toBeNull();
   });
 });

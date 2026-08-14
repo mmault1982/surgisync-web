@@ -3437,6 +3437,13 @@ paths:
         schema:
           type: integer
       - in: query
+        name: reference_number
+        schema:
+          type: string
+        description: 'Exact, case-insensitive catalog number. May match more than
+          one part: the number is unique per manufacturer, not across the catalog.
+          Kits never carry one.'
+      - in: query
         name: search
         schema:
           type: string
@@ -8002,6 +8009,9 @@ components:
           type: string
           readOnly: true
           nullable: true
+        description:
+          type: string
+          readOnly: true
         kind:
           allOf:
           - $ref: '#/components/schemas/KindEnum'
@@ -8011,6 +8021,18 @@ components:
 
             * `kit` - Kit
             * `component` - Component
+        reference_number:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Unique catalog number used for scanning and inventory lookup.
+            Empty for kits.
+        is_serialized:
+          type: boolean
+          readOnly: true
+          description: Serialized parts are stocked one row per physical unit (quantity
+            1, own lot/expiry); bulk parts are stocked one row per location with a
+            quantity.
         manufacturer:
           type: integer
           readOnly: true
@@ -8018,11 +8040,14 @@ components:
           type: string
           readOnly: true
       required:
+      - description
       - id
+      - is_serialized
       - kind
       - manufacturer
       - manufacturer_name
       - name
+      - reference_number
       - uuid
     PatchedFacilityAssignmentDetailRequest:
       type: object

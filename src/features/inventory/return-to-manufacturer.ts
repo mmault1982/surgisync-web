@@ -1,14 +1,9 @@
 import { asFieldErrors, errorMessage } from '@/api/errors';
 import type { InventoryKitDetail, InventoryTransferDetailRequest } from '@/api/generated/model';
 import { ReasonEnum, TransportMethodEnum } from '@/api/generated/model';
+import { toDateInput } from '@/lib/dates';
 
-import {
-  currentAssignment,
-  ORGANIZATION,
-  sideFields,
-  toDateInput,
-  type StagedFile,
-} from './transfer';
+import { currentAssignment, ORGANIZATION, sideFields, type StagedFile } from './transfer';
 
 /**
  * Everything the Return to Manufacturer dialog decides, with no DOM in sight.

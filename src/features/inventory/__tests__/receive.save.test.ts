@@ -9,7 +9,7 @@ import {
   isReceiveSaveComplete,
   isRetryingPhotos,
   runReceiveSave,
-} from '../receive-kit.save';
+} from '../receive.save';
 
 /**
  * The create-then-upload sequence, driven directly.

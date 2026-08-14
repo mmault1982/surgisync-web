@@ -28,6 +28,7 @@ export interface PartList {
   readonly uuid: string;
   /** @nullable */
   readonly name: string | null;
+  readonly description: string;
   /**
      * Whether this part is a kit (has a bill of materials) or a loose component.
      *
@@ -35,6 +36,13 @@ export interface PartList {
      * * `component` - Component
      */
   readonly kind: KindEnum;
+  /**
+     * Unique catalog number used for scanning and inventory lookup. Empty for kits.
+     * @nullable
+     */
+  readonly reference_number: string | null;
+  /** Serialized parts are stocked one row per physical unit (quantity 1, own lot/expiry); bulk parts are stocked one row per location with a quantity. */
+  readonly is_serialized: boolean;
   readonly manufacturer: number;
   readonly manufacturer_name: string;
 }

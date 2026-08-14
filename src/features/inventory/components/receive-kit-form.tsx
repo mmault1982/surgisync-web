@@ -39,7 +39,7 @@ import {
   isRetryingPhotos,
   runReceiveSave,
   type ReceiveSaveState,
-} from '../receive-kit.save';
+} from '../receive.save';
 import { catalogQueries } from '../receive.queries';
 import { transferQueries } from '../transfer.queries';
 
@@ -50,7 +50,7 @@ import { Field } from './dialog-parts';
  *
  * The Kit + Manual half of Receive / Load. Field rules, the payload and the
  * error mapping live in `receive-kit.ts`; the create-then-upload sequence and
- * its latch live in `receive-kit.save.ts`. What is left here is the form.
+ * its latch live in `receive.save.ts`. What is left here is the form.
  */
 export function ReceiveKitForm() {
   const navigate = useNavigate();

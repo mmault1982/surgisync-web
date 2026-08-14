@@ -44,7 +44,7 @@ Three decisions were made before this brief and are not open:
    write to (only `udi`, which is a different thing). Mobile is the functional spec: omit both.
 3. **The Kit Name picker needs a new backend endpoint**, which does not exist yet. See below.
 
-## Blocking prerequisite: a catalog-kits endpoint
+## Blocking prerequisite: a catalog endpoint
 
 **Do not start the form until this has landed in `surgiscribe-backend`.** Of the five required
 fields, Kit Name still has no source this client can generate:
@@ -60,35 +60,57 @@ fields, Kit Name still has no source this client can generate:
 Specify and land this first:
 
 ```
-GET /api/v1/stock-items/catalog-kits/?manufacturer_id=<int>   (required)
-operationId: list_catalog_kits
-→ FacetResponse   { results: [{ id, name }] }
+GET /api/v1/parts/?manufacturer_id=<int>&kind=<kit|component>&search=<str>
+operationId: list_parts
+→ PaginatedPartList   (the CustomPagination envelope, rows under `results`)
 ```
 
-- **The path is chosen for the gate, not for taxonomy.** A catalog is not stock, and `/api/v1/parts/`
-  would read better — but `/api/v1/stock-items/` is already in `VALIDATED_PATH_PREFIXES`
-  (`tests/openapi_schema.py`), so this is inside the response-accuracy gate from its first commit
-  rather than being brought up to standard later. The backend ticket records this as the established
-  move, done twice already: the three stock-item facets in Phase 1 and
-  `/inventory-transfers/targets/` in Phase 3. Option lists for a screen already live under
-  `/stock-items/`; this is one more.
-- **Reuse `FacetResponse`/`FacetValue`, do not add a component.** The shape is the same `{id, name}`
-  the filter menus already consume.
-- **Contents**: `Kit.objects` — the kind-scoped proxy of `Part` where `kind='kit'`
-  (`inventory/models/part.py:455`) — for the given manufacturer, sorted by name, scoped the way
-  `get_manufacturer_kits` already scopes its POST body (`manufacturers.py`): rows whose
-  `parent_company` is in the requesting user's orgs **or is null** (null being the shared catalog),
-  and `is_user_created=False`. `manufacturer_id` is **required**; an unscoped catalog dump is not a
-  thing this screen ever wants.
+- **`/api/v1/parts/` is the resource, and the new prefix joins the gate in the same commit.** An
+  earlier draft of this brief put the endpoint at `/api/v1/stock-items/catalog-kits/`, arguing that
+  the prefix was already in `VALIDATED_PATH_PREFIXES` and so gated from day one. That was wrong, and
+  the correction is worth keeping: the gate is only _hard to switch on_ where legacy undocumented
+  operations already squat on a prefix — which is `/api/v1/manufacturers/`'s problem, not this
+  one's. `/api/v1/parts/` does not exist yet, so a new prefix holding one fully-documented endpoint
+  passes trivially and joins the tuple in the same commit. `/api/v1/web/` is the precedent, carrying
+  the note "written contract-first, so it is enforced from its first commit rather than being
+  brought up to standard later". **Add the prefix; do not hide the endpoint under `/stock-items/`,
+  which is a resource it is not part of.**
+- **`kind` takes `kit` or `component`** — `Part.Kind` is `KIT = 'kit'` / `COMPONENT = 'component'`
+  (`inventory/models/part.py:63-65`). **Not `item`**, even though the sibling `source_kind` column
+  does use `'item'`; they are different fields in the same table and the mix-up returns an empty
+  list rather than an error.
+- **`manufacturer_id` is repeatable**, read with `getlist`, matching the on-hand list's filters —
+  and the reason `paramsSerializer: { indexes: null }` in `src/api/axios-instance.ts` is
+  load-bearing. This screen sends one at a time; mobile's equivalent call passes a list, because
+  case-building needs several at once. Optional: a bare call is the whole visible catalog, which
+  pagination makes safe.
+- **Always paginated**, exactly as `/manufacturers/` now is. Not a facet shape: components run to
+  thousands where manufacturers run to twelve, so this one needs real paging — and one envelope
+  across both pickers means this screen reads `results` the same way for each.
+- **Contents**: sorted by name, scoped the way `get_manufacturer_kits` already scopes its POST body
+  (`manufacturers.py`) — rows whose `parent_company` is in the requesting user's orgs **or is null**
+  (null being the shared catalog), and `is_user_created=False`.
+- **Response item**: a small Part representation — `id`, `uuid`, `name`, `kind`, `manufacturer`,
+  `manufacturer_name`. `KitSerializer` (`inventory/serializers.py:123`) is already
+  `['id','uuid','name','manufacturer']` and is the thing to model on. The SKU brief will likely want
+  `reference_number` and `is_serialized`; adding a field later is backward-compatible, unlike
+  changing the shape, so do not try to guess them now.
 
-**Deliberately not returning `kit_uuid`, and this needs recording.** The catalog merge changes kit
-pks in its phase 3, and `manufacturers.py:204-206` tells clients to key selections on `kit_uuid` for
-that reason. This client cannot: `part` is declared `type: integer` in `InventoryKitDetailRequest`,
-so a generated client cannot send the uuid its description says it accepts. The pk is safe **here
+**One trap for whoever builds it.** `CatalogPagination` currently lives in
+`inventory/views/manufacturers.py` and emits a deprecated `data` alias beside `results` — that alias
+exists solely for shipped Flutter builds reading `/manufacturers/`. Reusing the class as-is would
+give `/parts/` a deprecated key it never needed and no client ever read. Move the page-size half to
+`hoosier/pagination.py` beside `CustomPagination`; leave the `data` alias as a manufacturers-only
+subclass.
+
+**This endpoint returns `uuid`, but this screen still sends the pk.** The catalog merge changes kit
+pks in its phase 3 and the backend tells clients to key selections on the uuid for that reason —
+which this client cannot do: `part` is declared `type: integer` in `InventoryKitDetailRequest`, so a
+generated client cannot send the uuid its description says it accepts. The pk is safe **here
 specifically** because it never outlives the session — the option list is fetched and submitted in
 one sitting, which is the same argument `selectedKitId`'s doc comment makes in
 `load_inventory_controller.dart:117-122`. The follow-up is on the schema, not on this screen: type
-`part` as accepting either, then return and send the uuid.
+`part` as accepting either, then send the uuid this endpoint already returns.
 
 ### Manufacturer is no longer blocked
 
@@ -104,7 +126,7 @@ Two things about it that must not be lost:
   until the shipped Flutter app's own fix reaches the field. **Read `results`.** The generated model
   will offer both; picking `data` builds a screen on a key with a removal date.
 - **This is the org's _global_ catalog, unlike everything else this app reads.** It is scoped by
-  `is_user_created=False`, not by organization, while `list_catalog_kits` above **is** org-scoped.
+  `is_user_created=False`, not by organization, while `list_parts` above **is** org-scoped.
   So a user can legitimately pick a manufacturer whose kit list then comes back empty. The Kit Name
   empty state below is not defensive coding — that is the case it exists for. Pass `?has_items=true`
   to narrow it, and note that even so an empty kit list stays reachable, since a manufacturer can
@@ -192,7 +214,7 @@ slot look the same as they do in the dialogs.
 | 1   | Manufacturer      | `Select`                | ✱        | `list_manufacturers`, `?has_items=true`, `results` |
 | 2   | Rep / Assigned To | `Select`                | ✱        | transfer targets, `type === 'representative'`      |
 | 3   | Physical Location | `Select`                | ✱        | facets ∪ the four mobile defaults                  |
-| 4   | Kit Name          | `Select`                | ✱        | `list_catalog_kits`, depends on #1                 |
+| 4   | Kit Name          | `Select`                | ✱        | `list_parts`, `?kind=kit`, depends on #1           |
 | 5   | Kit ID            | `Input`                 | ✱        | `manufacturer_kit_id`, max 64                      |
 | 6   | Hansel Tracker    | `Input`                 |          | `beacon_id`; 409 lands under this field            |
 | 7   | Type              | `Select`                | ✱        | owned / consigned / loaned, defaults **Consigned** |
@@ -349,22 +371,26 @@ round trip.
 ## Plumbing (read `orval.config.ts`'s header comment first)
 
 - **`ALLOWED_OPERATIONS` gains three entries**: `create_inventory_kit`, `list_manufacturers` and
-  `list_catalog_kits`. Comment them the way the existing blocks are — say why each path is safe, and
-  for `list_manufacturers` say plainly that it is **not** inside the response-accuracy gate and why
-  (the `manufacturers/kits/` operations sharing its prefix are undocumented), the way the
-  `tracker_tracking_events` entry already does for `/trackers/`.
-  Then `pnpm api:pull` (the reshaped `list_manufacturers` and the new `list_catalog_kits` only exist
-  in a fresh pull), `pnpm api:gen`, and commit `schema/openapi.yaml` and `src/api/generated/**`
-  together. Update `schema/SOURCE.md`'s pulled-at row.
+  `list_parts`. Comment them the way the existing blocks are — say why each path is safe, and for
+  `list_manufacturers` say plainly that it is **not** inside the response-accuracy gate and why (the
+  `manufacturers/kits/` operations sharing its prefix are undocumented), the way the
+  `tracker_tracking_events` entry already does for `/trackers/`. `list_parts` needs no such caveat:
+  its prefix is gated from its first commit, which is the point of putting it there.
+  Then `pnpm api:pull` (the reshaped `list_manufacturers` and the new `list_parts` only exist in a
+  fresh pull), `pnpm api:gen`, and commit `schema/openapi.yaml` and `src/api/generated/**` together.
+  Update `schema/SOURCE.md`'s pulled-at row.
 - **Call the plain exported functions, not the generated hooks.** orval is configured
   `query: { useQuery: true }`, so it emits `useCreateInventoryKit` as a _query_ — meaningless for a
   POST. `update-status.save.ts` imports the bare `apiV1StockItemsPartialUpdate` /
   `createInventoryKitPhoto` for the same reason; do the same and drive them from `useMutation`.
 - **Query keys**: add a `catalogKeys` namespace to `inventory.keys.ts`, `['catalog']` rooted, with
-  `manufacturers()` and `kits(manufacturerId)`. **Do not hang it off `stockItemKeys`** — the catalog
-  does not change when you receive a kit, and the success path invalidates that whole prefix, so
-  sharing it would refetch the entire catalog after every save. Give both a `staleTime` like
-  `facetQueries`' five minutes; a catalog changes far less often than stock does.
+  `manufacturers()` and `parts(manufacturerId, kind)`. **Do not hang it off `stockItemKeys`** — the
+  catalog does not change when you receive a kit, and the success path invalidates that whole
+  prefix, so sharing it would refetch the entire catalog after every save. Give both a `staleTime`
+  like `facetQueries`' five minutes; a catalog changes far less often than stock does. Put `kind` in
+  the key, not just the manufacturer: the SKU screen will ask the same endpoint for `component`, and
+  a shared key would have whichever loaded last clobber the other — the same trap `trackerKeys`
+  records for `pageSize`.
 - **New files**: `receive-kit.ts` (validation, the payload builder, the 400 slot map),
   `receive-kit.save.ts` (the two-phase sequence), `receive.queries.ts` (the three option lists),
   `components/receive-screen.tsx` (the card, the mode buttons, the placeholder panels) and
@@ -402,7 +428,8 @@ Then the form:
 
 - Save with an empty form shows the required errors and issues no request.
 - Choosing a manufacturer enables Kit Name and fetches its kits; changing the manufacturer clears
-  the chosen kit.
+  the chosen kit. Assert the request carries **`kind=kit`** — without it the picker offers loose
+  components, which the create endpoint would accept, filing a component as though it were a kit.
 - **The manufacturer options survive `data` being removed.** Have the MSW handler return a
   `PaginatedManufacturerList` with `results` and **no** `data`, and assert the picker still fills.
   This is the one test that fails if someone reads the deprecated key, and the deprecation is the
@@ -424,7 +451,9 @@ Gate on **`pnpm verify`**.
 
 ## Explicitly out of scope
 
-SKU + Manual — the next brief, and the last of the ticket's Phase 2 · both Bulk Upload modes,
+SKU + Manual — the next brief, and the last of the ticket's Phase 2. Note it needs **no further
+catalog endpoint**: `list_parts` above serves it with `?kind=component`, which is why this brief
+asks for a Part list rather than a kit-shaped one · both Bulk Upload modes,
 including the template download and the packing-slip photo the prototype shows · Quick Scan mode,
 which the prototype offers for SKU only and which needs a scanner · barcode scanning of any kind ·
 creating a physical location · the searchable-combobox upgrade · unsaved-changes warnings when

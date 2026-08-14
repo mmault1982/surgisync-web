@@ -3087,23 +3087,28 @@ paths:
   /api/v1/manufacturers/:
     get:
       operationId: list_manufacturers
-      description: Get all manufacturers with optional search and pagination.
+      description: Manufacturers in the shared catalog, sorted by name. **Always paginated**
+        — the response shape does not vary with the query parameters. `page` and `page_size`
+        are optional; the default page is wide enough to hold the whole catalog in
+        one response.
       parameters:
       - in: query
         name: has_items
         schema:
           type: boolean
         description: Filter to only manufacturers with active items (true/false)
-      - in: query
-        name: page
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
         schema:
           type: integer
-        description: Page number
-      - in: query
-        name: page_size
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
-        description: Manufacturers per page
       - in: query
         name: search
         schema:
@@ -3118,9 +3123,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Manufacturer'
+                $ref: '#/components/schemas/PaginatedManufacturerList'
           description: ''
   /api/v1/manufacturers/kits/:
     get:
@@ -3397,6 +3400,81 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/parts/:
+    get:
+      operationId: list_parts
+      description: 'The catalog of parts the requesting organization can choose from:
+        shared-catalog rows plus any belonging to its own manufacturers. Not stock
+        on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response
+        shape does not vary with the query parameters, and the default page is wide
+        enough to hold the whole catalog in one response. Sorted by name.'
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - component
+          - kit
+        description: 'Restrict to one kind of part: `kit` (has a bill of materials)
+          or `component` (a loose part).'
+      - in: query
+        name: manufacturer_id
+        schema:
+          type: integer
+        description: Restrict to parts of these manufacturers. Repeatable — send the
+          key once per value (`?manufacturer_id=5&manufacturer_id=9`), which ORs them.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Case-insensitive substring match on name.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartListList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/price-files/:
     get:
       operationId: api_v1_price_files_list
@@ -7701,6 +7779,75 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InventoryTransferList'
+    PaginatedManufacturerList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Manufacturer'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Manufacturer'
+          deprecated: true
+          description: DEPRECATED — an exact duplicate of `results`, kept for clients
+            written against the pre-pagination shape. Read `results`.
+    PaginatedPartListList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartList'
     PaginatedTrackingEventList:
       type: object
       required:
@@ -7826,6 +7973,57 @@ components:
       required:
       - id
       - name
+    PartList:
+      type: object
+      description: |-
+        One catalog part in a `/api/v1/parts/` listing.
+
+        Deliberately narrow. `Part` carries thirty-odd fields including four
+        barcode images and three price columns; this is the picker projection —
+        enough to identify a part and show it in a dropdown, and nothing that
+        invites a client to treat the list as a pricing or media source. Widening
+        it later is backward-compatible; narrowing it is not.
+
+        `kind` is on the wire because one endpoint serves kits and loose
+        components, so a client that omits the filter still has to tell them apart.
+
+        Modelled on `KitSerializer` above, which is the same projection from before
+        the catalog merge gave kits and items one table.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Stable external identifier; survives the catalog merge.
+        name:
+          type: string
+          readOnly: true
+          nullable: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+          description: |-
+            Whether this part is a kit (has a bill of materials) or a loose component.
+
+            * `kit` - Kit
+            * `component` - Component
+        manufacturer:
+          type: integer
+          readOnly: true
+        manufacturer_name:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - kind
+      - manufacturer
+      - manufacturer_name
+      - name
+      - uuid
     PatchedFacilityAssignmentDetailRequest:
       type: object
       description: Full serializer for detail/create/update views.

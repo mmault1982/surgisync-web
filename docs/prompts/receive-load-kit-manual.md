@@ -42,35 +42,24 @@ Three decisions were made before this brief and are not open:
 2. **No Lot # and no Serial #.** The prototype's kit form has both. Mobile's does not — they live on
    its SKU form — and there is no `serial` field anywhere in the contract for the second one to
    write to (only `udi`, which is a different thing). Mobile is the functional spec: omit both.
-3. **The catalog pickers need a new backend endpoint pair**, which does not exist yet. See below.
+3. **The Kit Name picker needs a new backend endpoint**, which does not exist yet. See below.
 
-## Blocking prerequisite: a catalog endpoint pair
+## Blocking prerequisite: a catalog-kits endpoint
 
-**Do not start the form until this has landed in `surgiscribe-backend`.** Two of the five required
-fields — Manufacturer and Kit Name — have no source this client can generate:
+**Do not start the form until this has landed in `surgiscribe-backend`.** Of the five required
+fields, Kit Name still has no source this client can generate:
 
-- **`/api/v1/manufacturers/`** is one of the 13 known-bad operations in the backend ticket's §0.4.
-  It returns `{message, total_data, data}` normally but a pagination envelope when `page` is passed
-  (`inventory/views/manufacturers.py:58-72`) — two shapes one schema cannot describe, and mobile
-  consumes it, so it cannot be fixed in place without picking a winner.
-- **`POST /api/v1/manufacturers/kits/`** (`get_manufacturer_kits_by_ids`) is worse: it declares
-  **no response content at all** (`responses={200: OpenApiResponse(description=...)}`,
-  `manufacturers.py:102`). orval generates a call that returns `void`. What it actually returns is
-  `{message, data}`, where each `data` entry is a manufacturer with a nested `kits` array of
-  `{kit_id, kit_uuid, kit_name, number_of_items}` (`manufacturers.py:177-216`).
+- **`POST /api/v1/manufacturers/kits/`** (`get_manufacturer_kits_by_ids`) declares **no response
+  content at all** (`responses={200: OpenApiResponse(description=...)}`, `manufacturers.py`). orval
+  generates a call that returns `void`. What it actually returns is `{message, data}`, where each
+  `data` entry is a manufacturer with a nested `kits` array of
+  `{kit_id, kit_uuid, kit_name, number_of_items}`.
+- The existing facets do not substitute: `list_inventory_kit_manufacturer_kit_ids` returns
+  `manufacturer_kit_id` strings — the ids stamped on physical units — not catalog kit names.
 
-The existing facet endpoints do not substitute. `list_stock_item_manufacturer_facets` returns
-manufacturers the org **already holds stock of**, which is exactly the wrong set for a screen whose
-purpose is receiving stock you do not yet have; `list_inventory_kit_manufacturer_kit_ids` returns
-`manufacturer_kit_id` strings — the ids stamped on physical units — not catalog kit names.
-
-Specify and land these first:
+Specify and land this first:
 
 ```
-GET /api/v1/stock-items/catalog-manufacturers/
-operationId: list_catalog_manufacturers
-→ FacetResponse   { results: [{ id, name }] }
-
 GET /api/v1/stock-items/catalog-kits/?manufacturer_id=<int>   (required)
 operationId: list_catalog_kits
 → FacetResponse   { results: [{ id, name }] }
@@ -78,22 +67,19 @@ operationId: list_catalog_kits
 
 - **The path is chosen for the gate, not for taxonomy.** A catalog is not stock, and `/api/v1/parts/`
   would read better — but `/api/v1/stock-items/` is already in `VALIDATED_PATH_PREFIXES`
-  (`tests/openapi_schema.py`), so these are inside the response-accuracy gate from their first
-  commit rather than being brought up to standard later. The backend ticket records this as the
-  established move, done twice already: the three stock-item facets in Phase 1 and
+  (`tests/openapi_schema.py`), so this is inside the response-accuracy gate from its first commit
+  rather than being brought up to standard later. The backend ticket records this as the established
+  move, done twice already: the three stock-item facets in Phase 1 and
   `/inventory-transfers/targets/` in Phase 3. Option lists for a screen already live under
-  `/stock-items/`; these are two more.
-- **Reuse `FacetResponse`/`FacetValue`, do not add components.** The shape is the same `{id, name}`
-  the filter menus already consume, and the ids do not collide the way a transfer target's do — one
-  is a `Manufacturer` pk, the other a `Part` pk, and they are never mixed in one list.
-- **Contents**, both sorted by name, both scoped the way `get_manufacturer_kits` already scopes
-  its POST body (`manufacturers.py:127-144`): rows whose `parent_company` is in the requesting
-  user's orgs **or is null** (null being the shared catalog), and `is_user_created=False`.
-  - _catalog-manufacturers_: manufacturers with at least one visible kit-part, so the picker cannot
-    offer a manufacturer whose kit list is then empty.
-  - _catalog-kits_: `Kit.objects` — the kind-scoped proxy of `Part` where `kind='kit'`
-    (`inventory/models/part.py:455`) — for the given manufacturer. `manufacturer_id` is **required**;
-    an unscoped catalog dump is not a thing this screen ever wants.
+  `/stock-items/`; this is one more.
+- **Reuse `FacetResponse`/`FacetValue`, do not add a component.** The shape is the same `{id, name}`
+  the filter menus already consume.
+- **Contents**: `Kit.objects` — the kind-scoped proxy of `Part` where `kind='kit'`
+  (`inventory/models/part.py:455`) — for the given manufacturer, sorted by name, scoped the way
+  `get_manufacturer_kits` already scopes its POST body (`manufacturers.py`): rows whose
+  `parent_company` is in the requesting user's orgs **or is null** (null being the shared catalog),
+  and `is_user_created=False`. `manufacturer_id` is **required**; an unscoped catalog dump is not a
+  thing this screen ever wants.
 
 **Deliberately not returning `kit_uuid`, and this needs recording.** The catalog merge changes kit
 pks in its phase 3, and `manufacturers.py:204-206` tells clients to key selections on `kit_uuid` for
@@ -104,10 +90,35 @@ one sitting, which is the same argument `selectedKitId`'s doc comment makes in
 `load_inventory_controller.dart:117-122`. The follow-up is on the schema, not on this screen: type
 `part` as accepting either, then return and send the uuid.
 
+### Manufacturer is no longer blocked
+
+`/api/v1/manufacturers/` (`list_manufacturers`) used to be the other half of this section: it
+answered `{message, total_data, data}` normally and a pagination envelope when `page` was passed —
+two shapes one schema cannot describe. **That is fixed** (backend `feefae3`). It now always returns
+the `CustomPagination` envelope, generating as `PaginatedManufacturerList`, so the Manufacturer
+picker reads it directly and no `catalog-manufacturers` endpoint is needed.
+
+Two things about it that must not be lost:
+
+- **`data` is still in the response, as a deprecated exact duplicate of `results`.** It exists only
+  until the shipped Flutter app's own fix reaches the field. **Read `results`.** The generated model
+  will offer both; picking `data` builds a screen on a key with a removal date.
+- **This is the org's _global_ catalog, unlike everything else this app reads.** It is scoped by
+  `is_user_created=False`, not by organization, while `list_catalog_kits` above **is** org-scoped.
+  So a user can legitimately pick a manufacturer whose kit list then comes back empty. The Kit Name
+  empty state below is not defensive coding — that is the case it exists for. Pass `?has_items=true`
+  to narrow it, and note that even so an empty kit list stays reachable, since a manufacturer can
+  have active items without having kits.
+
+**And it is outside `VALIDATED_PATH_PREFIXES`**, so its response accuracy is not enforced on every
+backend test run the way `/stock-items/` is — the same position `/api/v1/trackers/` is in. Gating
+that prefix means first documenting the two `manufacturers/kits/` operations that share it, which is
+tracked as backend follow-up. Comment the allowlist entry accordingly.
+
 ## What is _not_ blocked
 
-Everything else this screen needs already exists, and two of the four data sources are already
-wired for other screens. Do not add backend work for any of them.
+Everything else this screen needs already exists, and two of these are already wired for other
+screens. Do not add backend work for any of them.
 
 - **Rep / Assigned To** — `list_inventory_transfer_targets`, already in `ALLOWED_OPERATIONS` and
   already fetched by the Transfer dialog under `transferKeys.targets()`. Filter to
@@ -178,7 +189,7 @@ slot look the same as they do in the dialogs.
 
 | #   | field             | control                 | required | notes                                              |
 | --- | ----------------- | ----------------------- | -------- | -------------------------------------------------- |
-| 1   | Manufacturer      | `Select`                | ✱        | `list_catalog_manufacturers`                       |
+| 1   | Manufacturer      | `Select`                | ✱        | `list_manufacturers`, `?has_items=true`, `results` |
 | 2   | Rep / Assigned To | `Select`                | ✱        | transfer targets, `type === 'representative'`      |
 | 3   | Physical Location | `Select`                | ✱        | facets ∪ the four mobile defaults                  |
 | 4   | Kit Name          | `Select`                | ✱        | `list_catalog_kits`, depends on #1                 |
@@ -202,6 +213,11 @@ manufacturer resets `kitId` to null and refetches. Mobile does exactly this
 (`onManufacturerSelected`, `load_inventory_controller.dart:358-372`) and the reason is that a kit
 belongs to one manufacturer — a stale selection would file the stock under a manufacturer the user
 did not pick, and the server derives it from the part, so nothing would reject it.
+
+**Kit Name's empty state is a real state, not a defensive branch.** Manufacturer is the global
+catalog and Kit Name is org-scoped (see above), so "this manufacturer has no kits you can receive"
+is reachable through no fault of the user. Say that, rather than leaving an enabled select with
+nothing in it.
 
 **Physical Location** is free text on the server (`maxLength: 255`), and the facet endpoint returns
 only values the org is already using. A brand-new org's list is therefore empty — a required select
@@ -332,11 +348,14 @@ round trip.
 
 ## Plumbing (read `orval.config.ts`'s header comment first)
 
-- **`ALLOWED_OPERATIONS` gains three entries**: `create_inventory_kit`, `list_catalog_manufacturers`,
-  `list_catalog_kits`. Comment them the way the existing blocks are — say why the path is safe.
-  Then `pnpm api:pull` (the two new operations only exist in a fresh pull), `pnpm api:gen`, and
-  commit `schema/openapi.yaml` and `src/api/generated/**` together. Update `schema/SOURCE.md`'s
-  pulled-at row.
+- **`ALLOWED_OPERATIONS` gains three entries**: `create_inventory_kit`, `list_manufacturers` and
+  `list_catalog_kits`. Comment them the way the existing blocks are — say why each path is safe, and
+  for `list_manufacturers` say plainly that it is **not** inside the response-accuracy gate and why
+  (the `manufacturers/kits/` operations sharing its prefix are undocumented), the way the
+  `tracker_tracking_events` entry already does for `/trackers/`.
+  Then `pnpm api:pull` (the reshaped `list_manufacturers` and the new `list_catalog_kits` only exist
+  in a fresh pull), `pnpm api:gen`, and commit `schema/openapi.yaml` and `src/api/generated/**`
+  together. Update `schema/SOURCE.md`'s pulled-at row.
 - **Call the plain exported functions, not the generated hooks.** orval is configured
   `query: { useQuery: true }`, so it emits `useCreateInventoryKit` as a _query_ — meaningless for a
   POST. `update-status.save.ts` imports the bare `apiV1StockItemsPartialUpdate` /
@@ -360,6 +379,10 @@ round trip.
   failed and renders zero options is indistinguishable from one the org has no values for. Follow
   the Update Status pattern: disable while loading, and put a one-line muted message under the
   control on error ("Could not load manufacturers.").
+- **The manufacturer query reads `results`.** The generated `PaginatedManufacturerList` also carries
+  a deprecated `data` that duplicates it exactly, and it is going away once mobile's own fix ships —
+  a screen built on it breaks with no type error. One page holds the whole catalog by design, so
+  this screen does not page: ask for the first page and read `results`.
 
 ## Testing (Vitest + MSW; no new Playwright)
 
@@ -380,6 +403,12 @@ Then the form:
 - Save with an empty form shows the required errors and issues no request.
 - Choosing a manufacturer enables Kit Name and fetches its kits; changing the manufacturer clears
   the chosen kit.
+- **The manufacturer options survive `data` being removed.** Have the MSW handler return a
+  `PaginatedManufacturerList` with `results` and **no** `data`, and assert the picker still fills.
+  This is the one test that fails if someone reads the deprecated key, and the deprecation is the
+  whole reason the key is there.
+- A manufacturer whose kit list comes back empty renders Kit Name's empty state, not an enabled
+  select with nothing in it.
 - A 409 renders the tracker copy under the Hansel Tracker field, keeps every other value, and
   editing that field clears it.
 - A 400 on `manufacturer_kit_id` renders under Kit ID.

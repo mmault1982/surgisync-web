@@ -72,13 +72,36 @@ const ALLOWED_OPERATIONS = new Set([
   'confirm_inventory_transfer_receipt',
 
   // Value sources for the table's column filter menus. These return only what
-  // this organization actually holds — the global /manufacturers/ and
-  // /facilities/ endpoints are deliberately not used, since their schemas do
-  // not match what they return.
+  // this organization actually holds — the global /facilities/ endpoint is
+  // deliberately not used, since its schema does not match what it returns.
   'list_stock_item_manufacturer_facets',
   'list_stock_item_facility_facets',
   'list_stock_item_physical_location_facets',
   'list_inventory_kit_manufacturer_kit_ids',
+
+  // Receive / Load. The write is on /stock-items/, so it is inside the
+  // response accuracy gate. Note it declares application/json *first* among
+  // its three request content types, so the generated call posts JSON and a
+  // File in the body would be silently dropped — photos go through
+  // create_inventory_kit_photo above, which is multipart-first.
+  'create_inventory_kit',
+
+  // The Receive form's catalog pickers.
+  //
+  // `list_parts` is /api/v1/parts/, a prefix added to VALIDATED_PATH_PREFIXES
+  // in the same commit that created it, so it is gated from the start.
+  //
+  // `list_manufacturers` is the exception on this list and the caveat matters:
+  // /api/v1/manufacturers/ is *outside* that gate, the same position
+  // tracker_tracking_events is in. Its response shape was fixed (it used to
+  // return two different shapes depending on whether ?page was passed) and it
+  // is now honestly described, but the two /manufacturers/kits/ operations
+  // sharing its prefix still declare no response at all, so the prefix cannot
+  // be gated until those are documented. Its response also still carries a
+  // deprecated `data` key duplicating `results` — for shipped Flutter builds
+  // only. Read `results`.
+  'list_manufacturers',
+  'list_parts',
 ]);
 
 const VERBS = ['get', 'put', 'post', 'delete', 'patch'] as const;

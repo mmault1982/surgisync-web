@@ -31,6 +31,26 @@ export const transferKeys = {
 };
 
 /**
+ * The catalog — what can be *chosen*, as against the stock that is *held*.
+ *
+ * Rooted separately from `stockItemKeys` on purpose. Receiving a kit
+ * invalidates that whole prefix (the facet menus may have gained a value), and
+ * the catalog does not change when you receive stock — so sharing a root would
+ * refetch the entire catalog after every save.
+ *
+ * `parts` carries `kind` as well as the manufacturer because one endpoint
+ * serves both: this screen asks for `kit`, the SKU screen will ask for
+ * `component`, and a key without it would have whichever loaded last clobber
+ * the other — the same trap `trackerKeys` records below for `pageSize`.
+ */
+export const catalogKeys = {
+  all: ['catalog'] as const,
+  manufacturers: () => [...catalogKeys.all, 'manufacturers'] as const,
+  parts: (manufacturerId: number | null, kind: string) =>
+    [...catalogKeys.all, 'parts', { manufacturerId, kind }] as const,
+};
+
+/**
  * Trackers are a separate resource with their own lifetime, keyed on the
  * **tracker** id rather than the kit's — detaching a beacon must not be
  * invalidated by a stock-item mutation, or the reverse.

@@ -25,11 +25,13 @@ import type {
   ApiV1StockItemsListParams,
   ApiV1StockItemsPartialUpdate400,
   Conflict,
+  CreateInventoryKit400,
   CreateInventoryKitPhoto400,
   CreateInventoryTransfer400,
   ErrorDetail,
   FacetResponse,
   InventoryKitDetail,
+  InventoryKitDetailRequest,
   InventoryKitPhoto,
   InventoryKitPhotoRequest,
   InventoryTransferDetail,
@@ -37,8 +39,13 @@ import type {
   ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
+  ListManufacturersParams,
+  ListParts400,
+  ListPartsParams,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
+  PaginatedManufacturerList,
+  PaginatedPartListList,
   PatchedInventoryKitDetailRequest,
   StringFacetResponse,
   TransferTargetResponse
@@ -474,6 +481,186 @@ export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeo
 
 
 /**
+ * Manufacturers in the shared catalog, sorted by name. **Always paginated** — the response shape does not vary with the query parameters. `page` and `page_size` are optional; the default page is wide enough to hold the whole catalog in one response.
+ */
+export const listManufacturers = (
+    params?: ListManufacturersParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedManufacturerList>(
+      {url: `/api/v1/manufacturers/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListManufacturersQueryKey = (params?: ListManufacturersParams,) => {
+    return [
+    `/api/v1/manufacturers/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<unknown>>(params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListManufacturersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listManufacturers>>> = ({ signal }) => listManufacturers(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListManufacturersQueryResult = NonNullable<Awaited<ReturnType<typeof listManufacturers>>>
+export type ListManufacturersQueryError = ErrorType<unknown>
+
+
+export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<unknown>>(
+ params: undefined |  ListManufacturersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listManufacturers>>,
+          TError,
+          Awaited<ReturnType<typeof listManufacturers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<unknown>>(
+ params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listManufacturers>>,
+          TError,
+          Awaited<ReturnType<typeof listManufacturers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<unknown>>(
+ params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<unknown>>(
+ params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListManufacturersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * The catalog of parts the requesting organization can choose from: shared-catalog rows plus any belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response shape does not vary with the query parameters, and the default page is wide enough to hold the whole catalog in one response. Sorted by name.
+ */
+export const listParts = (
+    params?: ListPartsParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedPartListList>(
+      {url: `/api/v1/parts/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPartsQueryKey = (params?: ListPartsParams,) => {
+    return [
+    `/api/v1/parts/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPartsQueryOptions = <TData = Awaited<ReturnType<typeof listParts>>, TError = ErrorType<ListParts400 | ErrorDetail>>(params?: ListPartsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPartsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listParts>>> = ({ signal }) => listParts(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPartsQueryResult = NonNullable<Awaited<ReturnType<typeof listParts>>>
+export type ListPartsQueryError = ErrorType<ListParts400 | ErrorDetail>
+
+
+export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TError = ErrorType<ListParts400 | ErrorDetail>>(
+ params: undefined |  ListPartsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listParts>>,
+          TError,
+          Awaited<ReturnType<typeof listParts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TError = ErrorType<ListParts400 | ErrorDetail>>(
+ params?: ListPartsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listParts>>,
+          TError,
+          Awaited<ReturnType<typeof listParts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TError = ErrorType<ListParts400 | ErrorDetail>>(
+ params?: ListPartsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TError = ErrorType<ListParts400 | ErrorDetail>>(
+ params?: ListPartsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPartsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * List the requesting user's organization inventory kits as a paginated, searchable, filterable collection.
  */
 export const apiV1StockItemsList = (
@@ -552,6 +739,97 @@ export function useApiV1StockItemsList<TData = Awaited<ReturnType<typeof apiV1St
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getApiV1StockItemsListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Register a new physical inventory kit. Send as multipart/form-data so a `photo` file can be uploaded alongside the other fields (application/json is also accepted when no photo is included). The kit's organization (parent_company) is assigned server-side from the requesting user's organization and cannot be set by the client.
+ */
+export const createInventoryKit = (
+    inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<InventoryKitDetail>(
+      {url: `/api/v1/stock-items/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: inventoryKitDetailRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateInventoryKitQueryKey = (inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>,) => {
+    return [
+    'POST', `/api/v1/stock-items/`, inventoryKitDetailRequest
+    ] as const;
+    }
+
+
+export const getCreateInventoryKitQueryOptions = <TData = Awaited<ReturnType<typeof createInventoryKit>>, TError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>>(inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateInventoryKitQueryKey(inventoryKitDetailRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createInventoryKit>>> = ({ signal }) => createInventoryKit(inventoryKitDetailRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateInventoryKitQueryResult = NonNullable<Awaited<ReturnType<typeof createInventoryKit>>>
+export type CreateInventoryKitQueryError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>
+
+
+export function useCreateInventoryKit<TData = Awaited<ReturnType<typeof createInventoryKit>>, TError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>>(
+ inventoryKitDetailRequest: undefined |  BodyType<InventoryKitDetailRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryKit>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryKit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryKit<TData = Awaited<ReturnType<typeof createInventoryKit>>, TError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>>(
+ inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createInventoryKit>>,
+          TError,
+          Awaited<ReturnType<typeof createInventoryKit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateInventoryKit<TData = Awaited<ReturnType<typeof createInventoryKit>>, TError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>>(
+ inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateInventoryKit<TData = Awaited<ReturnType<typeof createInventoryKit>>, TError = ErrorType<CreateInventoryKit400 | ErrorDetail | Conflict>>(
+ inventoryKitDetailRequest?: BodyType<InventoryKitDetailRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createInventoryKit>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateInventoryKitQueryOptions(inventoryKitDetailRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

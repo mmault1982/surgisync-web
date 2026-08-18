@@ -1262,6 +1262,302 @@ paths:
       responses:
         '201':
           description: OTP sent via email
+  /api/v1/integrations/hansel-credentials/:
+    get:
+      operationId: hansel_credential_list
+      description: Hansel API credentials for every organization you administer. The
+        client secret is never returned — `client_secret_set` and `client_secret_last4`
+        say what is stored.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Integrations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedHanselCredentialList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: hansel_credential_create
+      description: Store credentials for one Hansel workspace. An organization may
+        hold several, one per workspace.
+      tags:
+      - Integrations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HanselCredentialRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HanselCredentialRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HanselCredentialRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HanselCredential'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+  /api/v1/integrations/hansel-credentials/{id}/:
+    get:
+      operationId: hansel_credential_retrieve
+      description: CRUD over the requesting user's organizations' Hansel credentials.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Hansel Credential.
+        required: true
+      tags:
+      - Integrations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HanselCredential'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+    patch:
+      operationId: hansel_credential_partial_update
+      description: Update stored credentials. Omit `client_secret` to keep the existing
+        one; supplying it replaces the secret and clears the previous verification
+        result.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Hansel Credential.
+        required: true
+      tags:
+      - Integrations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedHanselCredentialRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedHanselCredentialRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedHanselCredentialRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HanselCredential'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+    delete:
+      operationId: hansel_credential_destroy
+      description: Remove the credentials. The row is retained for audit but the secret
+        is erased — re-enabling requires entering it again.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Hansel Credential.
+        required: true
+      tags:
+      - Integrations
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+  /api/v1/integrations/hansel-credentials/{id}/verify/:
+    post:
+      operationId: hansel_credential_verify
+      description: 'Exchange the stored credentials for a Hansel access token, to
+        confirm they work. Returns **200 with `ok: false`** when the credentials are
+        rejected — the request succeeded, the credentials did not. The token is used
+        to prove reachability and is discarded, never stored or returned.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Hansel Credential.
+        required: true
+      tags:
+      - Integrations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HanselVerifyResult'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
   /api/v1/inventory-kits/:
     get:
       operationId: api_v1_inventory_kits_list
@@ -7224,6 +7520,150 @@ components:
           description: Email address
       required:
       - email
+    HanselCredential:
+      type: object
+      description: |-
+        Read and write. One serializer, not a List/Detail pair — the two would be
+        byte-identical here (no heavy relations, no derived counts) and would put two
+        components in the schema for one shape.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parent_company:
+          type: integer
+          title: Organization
+          description: The organization these credentials belong to.
+        parent_company_name:
+          type: string
+          readOnly: true
+          nullable: true
+        client_id:
+          type: string
+          description: Hansel OAuth client id. Not secret.
+          maxLength: 255
+        workspace_id:
+          type: string
+          format: uuid
+          description: Hansel workspace UUID. Sent only as the OAuth scope `workspace:<uuid>`.
+        client_secret_set:
+          type: boolean
+          readOnly: true
+          description: Whether a secret is stored. The secret itself is never returned.
+        client_secret_last4:
+          type: string
+          readOnly: true
+          description: Last 4 characters of the secret, so the UI can show which one
+            is stored.
+        secret_readable:
+          type: boolean
+          readOnly: true
+          description: False when the stored secret was encrypted in a different environment
+            (e.g. a production snapshot restored into staging). The credential looks
+            configured but cannot be used — re-enter it.
+        is_active:
+          type: boolean
+          description: Operational state of the integration (distinct from soft-delete).
+        last_verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When these credentials last exchanged successfully for a token.
+        last_verification_error:
+          type: string
+          readOnly: true
+          description: Failure code from the last verification attempt; empty when
+            the last one passed.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - client_id
+      - client_secret_last4
+      - client_secret_set
+      - created_at
+      - id
+      - last_verification_error
+      - last_verified_at
+      - parent_company
+      - parent_company_name
+      - secret_readable
+      - updated_at
+      - workspace_id
+    HanselCredentialRequest:
+      type: object
+      description: |-
+        Read and write. One serializer, not a List/Detail pair — the two would be
+        byte-identical here (no heavy relations, no derived counts) and would put two
+        components in the schema for one shape.
+      properties:
+        parent_company:
+          type: integer
+          title: Organization
+          description: The organization these credentials belong to.
+        client_id:
+          type: string
+          minLength: 1
+          description: Hansel OAuth client id. Not secret.
+          maxLength: 255
+        workspace_id:
+          type: string
+          format: uuid
+          description: Hansel workspace UUID. Sent only as the OAuth scope `workspace:<uuid>`.
+        client_secret:
+          type: string
+          writeOnly: true
+          minLength: 8
+          description: Hansel OAuth client secret. Write-only — never returned. Omit
+            on PATCH to keep the stored value.
+          maxLength: 512
+        is_active:
+          type: boolean
+          description: Operational state of the integration (distinct from soft-delete).
+      required:
+      - client_id
+      - client_secret
+      - parent_company
+      - workspace_id
+    HanselVerifyResult:
+      type: object
+      description: |-
+        Outcome of a live credential check.
+
+        Returned with HTTP 200 even when the credentials fail: the *request*
+        succeeded, and the answer is that the credentials do not work. A 4xx would
+        assert the client's request was malformed, which it was not.
+      properties:
+        ok:
+          type: boolean
+          description: True when Hansel issued a token.
+        error:
+          type: string
+          description: 'Stable code, empty when `ok`. One of: `invalid_credentials`,
+            `service_unavailable`, `malformed_response`, `credential_unreadable`,
+            `not_configured`.'
+        message:
+          type: string
+          description: Display text. May change without notice.
+        checked_at:
+          type: string
+          format: date-time
+        expires_in:
+          type: integer
+          nullable: true
+          description: Token lifetime in seconds; null unless `ok`.
+      required:
+      - checked_at
+      - error
+      - expires_in
+      - message
+      - ok
     HistoryChange:
       type: object
       description: 'One changed field: old/new are JSON primitives (FKs as display
@@ -8751,6 +9191,37 @@ components:
         * `owned` - Owned
         * `consigned` - Consigned
         * `loaned` - Loaned
+    PaginatedHanselCredentialList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/HanselCredential'
     PaginatedInventoryKitHistoryList:
       type: object
       required:
@@ -9192,6 +9663,36 @@ components:
         parent_company:
           type: integer
           nullable: true
+    PatchedHanselCredentialRequest:
+      type: object
+      description: |-
+        Read and write. One serializer, not a List/Detail pair — the two would be
+        byte-identical here (no heavy relations, no derived counts) and would put two
+        components in the schema for one shape.
+      properties:
+        parent_company:
+          type: integer
+          title: Organization
+          description: The organization these credentials belong to.
+        client_id:
+          type: string
+          minLength: 1
+          description: Hansel OAuth client id. Not secret.
+          maxLength: 255
+        workspace_id:
+          type: string
+          format: uuid
+          description: Hansel workspace UUID. Sent only as the OAuth scope `workspace:<uuid>`.
+        client_secret:
+          type: string
+          writeOnly: true
+          minLength: 8
+          description: Hansel OAuth client secret. Write-only — never returned. Omit
+            on PATCH to keep the stored value.
+          maxLength: 512
+        is_active:
+          type: boolean
+          description: Operational state of the integration (distinct from soft-delete).
     PatchedInventoryKitDetailRequest:
       type: object
       description: |-

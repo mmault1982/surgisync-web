@@ -15,6 +15,9 @@ import { isExpired } from '../stock-status';
  * labelled field were identical in both, and the expired banner differed only
  * in its second line. Two copies of a label's required-marker is how the two
  * quietly stop matching.
+ *
+ * `Field` has since moved on to `@/components/field` — it knew nothing about
+ * kits, and a second feature needed it. What is left here does know, and stays.
  */
 
 /** The kit this dialog is about: name, id, ownership. */

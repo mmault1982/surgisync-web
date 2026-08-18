@@ -146,6 +146,20 @@ const ALLOWED_OPERATIONS = new Set([
   'import_surgeons',
   'surgeon_import_template',
   'list_parts',
+
+  // Configuration / Hansel. `/api/v1/integrations/` was added to the backend's
+  // VALIDATED_PATH_PREFIXES in the same commit that created it, so these are
+  // gated from the start — no repeat of the tracker_tracking_events dig.
+  //
+  // `hansel_credential_retrieve` is deliberately absent. The collection is one
+  // row per (organization, workspace) and the screen renders every field it
+  // shows straight off the list, so a detail fetch would only duplicate a row
+  // this app already holds.
+  'hansel_credential_list',
+  'hansel_credential_create',
+  'hansel_credential_partial_update',
+  'hansel_credential_destroy',
+  'hansel_credential_verify',
 ]);
 
 const VERBS = ['get', 'put', 'post', 'delete', 'patch'] as const;
@@ -163,7 +177,15 @@ export default defineConfig({
       // This runs *after* the transformer below, not before, so widening it is
       // safe: `Tracking` is here only for `tracker_tracking_events` (its sole
       // operation), and the transformer has already deleted anything else.
-      filters: { mode: 'include', tags: ['Inventory', 'Authentication', 'Tracking'] },
+      //
+      // It is also not optional. An operationId added to ALLOWED_OPERATIONS
+      // whose tag is missing here survives the transformer and is then dropped
+      // by this filter — the generated directory simply never appears, with no
+      // error. `Integrations` is here for the Hansel credential operations.
+      filters: {
+        mode: 'include',
+        tags: ['Inventory', 'Authentication', 'Tracking', 'Integrations'],
+      },
 
       override: {
         // Tags alone are far too coarse — `Inventory` is 42 operations

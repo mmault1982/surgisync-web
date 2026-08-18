@@ -7,12 +7,13 @@ both together.
 |                        |                                    |
 | ---------------------- | ---------------------------------- |
 | Source                 | `http://localhost:8000/schema/v1/` |
-| Pulled                 | 2026-08-19 17:50Z                  |
-| Backend `data_version` | `1c133fb4397f`                     |
+| Pulled                 | 2026-08-20 12:57Z                  |
+| Backend `data_version` | `b08abf56e679`                     |
 
 The backend enforces this file's accuracy on its own side: `openapi.yaml` is a
 committed artifact there, CI fails on drift, and every response on
-`/stock-items/`, `/inventory-kits/`, `/inventory-transfers/` and
-`/api/v1/web/` is validated against it on every test run. Operations outside
-those paths are documented but unverified — which is why `orval.config.ts`
-generates from an explicit allowlist rather than the whole document.
+`/stock-items/`, `/inventory-kits/`, `/inventory-transfers/`,
+`/api/v1/web/`, `/api/v1/parts/` and `/api/v1/integrations/` is validated
+against it on every test run. Operations outside those paths are documented but
+unverified — which is why `orval.config.ts` generates from an explicit
+allowlist rather than the whole document.

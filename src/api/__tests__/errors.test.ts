@@ -1,7 +1,14 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import { asConflict, asFieldErrors, errorMessage, KNOWN_ERROR_CODES } from '@/api/errors';
+import {
+  asConflict,
+  asFieldErrors,
+  asServiceFault,
+  errorMessage,
+  isForbidden,
+  KNOWN_ERROR_CODES,
+} from '@/api/errors';
 
 function axiosError(data: unknown, status: number) {
   const error = new AxiosError('failed');
@@ -69,6 +76,32 @@ describe('error copy', () => {
     // `code`. Merging them would break the coverage assertion above.
     expect(KNOWN_ERROR_CODES).not.toContain('502');
   });
+
+  it('does not blame a deployment for a 503 Django raised itself', () => {
+    // encryption_unavailable means the server holds no credential-encryption
+    // key. "Try again in a minute" sends the user round a loop that cannot
+    // close — this is the whole reason asServiceFault exists.
+    const message = errorMessage(
+      axiosError({ error: 'encryption_unavailable', message: 'Contact your administrator.' }, 503),
+    );
+
+    expect(message).not.toMatch(/try again in a minute/i);
+    expect(message).toMatch(/retrying will not help/i);
+  });
+
+  it('falls back to the server text for a coded 503 this build predates', () => {
+    expect(
+      errorMessage(axiosError({ error: 'something_new', message: 'Server said this.' }, 503)),
+    ).toBe('Server said this.');
+  });
+
+  it('explains a throttle that arrives as DRF, not as the web contract', () => {
+    // DRF's 429 body is {detail: "…"} with no `code`, so asWebError misses it.
+    // Verify is 10/min per user, so this is a button the user can reach.
+    expect(errorMessage(axiosError({ detail: 'Request was throttled.' }, 429))).toMatch(
+      /too many attempts/i,
+    );
+  });
 });
 
 describe('asFieldErrors', () => {
@@ -130,5 +163,44 @@ describe('asConflict', () => {
 
   it('ignores anything that is not an axios error', () => {
     expect(asConflict(new Error('boom'))).toBeNull();
+  });
+
+  it('leaves the coded 503 to asServiceFault', () => {
+    // The two wear the same body. Loosening this status check would route
+    // encryption_unavailable into conflict copy, which is about server state
+    // the caller could change — and this one is not.
+    expect(
+      asConflict(axiosError({ error: 'encryption_unavailable', message: 'no' }, 503)),
+    ).toBeNull();
+  });
+});
+
+describe('asServiceFault', () => {
+  it('reads the coded 503 Django raises', () => {
+    expect(
+      asServiceFault(
+        axiosError({ error: 'encryption_unavailable', message: 'Contact an admin.' }, 503),
+      ),
+    ).toEqual({ error: 'encryption_unavailable', message: 'Contact an admin.' });
+  });
+
+  it('leaves a gateway 503 alone', () => {
+    // An HTML error page has no `error` key, which is exactly what keeps the
+    // deployment-window copy working for the case it was written for.
+    expect(asServiceFault(axiosError('<html>gateway</html>', 503))).toBeNull();
+  });
+
+  it('ignores every other status', () => {
+    expect(asServiceFault(axiosError({ error: 'x', message: 'y' }, 409))).toBeNull();
+    expect(asServiceFault(axiosError({ error: 'x', message: 'y' }, 500))).toBeNull();
+    expect(asServiceFault(new Error('boom'))).toBeNull();
+  });
+});
+
+describe('isForbidden', () => {
+  it('separates a permission answer from a failure', () => {
+    expect(isForbidden(axiosError({ detail: 'Not permitted.' }, 403))).toBe(true);
+    expect(isForbidden(axiosError({ detail: 'Not found.' }, 404))).toBe(false);
+    expect(isForbidden(new Error('boom'))).toBe(false);
   });
 });

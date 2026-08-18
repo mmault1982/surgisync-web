@@ -62,8 +62,12 @@ export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
       setCommitted(true);
       // Both roots, as the create and delete dialogs do: the receive forms'
       // manufacturer picker reads the same endpoint under `catalogKeys` with
-      // its own staleTime, and newly imported names missing from it reads as
-      // "the import did not work".
+      // its own staleTime.
+      //
+      // Imported names still will not appear in that picker — it filters on
+      // `has_items` and they have no catalog parts yet. See the note in
+      // `manufacturer-dialog.tsx`; the dialog says so rather than leaving the
+      // user to discover it.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: manufacturerKeys.all }),
         queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
@@ -117,6 +121,8 @@ export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
           <DialogDescription>
             A CSV or Excel file with a single column headed <strong>name</strong>. Names your
             organization already has are left alone, so the same file can be imported twice safely.
+            Imported manufacturers need a catalog of parts before stock can be received against
+            them.
           </DialogDescription>
         </DialogHeader>
 

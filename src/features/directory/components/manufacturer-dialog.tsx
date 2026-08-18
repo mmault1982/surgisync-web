@@ -69,12 +69,15 @@ export function ManufacturerDialog({
         : createManufacturer(body);
     },
     onSuccess: async () => {
-      // Two roots, and both are load-bearing. `manufacturerKeys` is this
-      // table; `catalogKeys` is the manufacturer picker on the receive forms,
-      // which reads the same endpoint under a different key with a five-minute
-      // staleTime. Without the second, a manufacturer added here does not
-      // appear there until the cache expires — which the user reads as "it did
-      // not save". This is the first screen whose writes cross two roots.
+      // Both roots. `manufacturerKeys` is this table; `catalogKeys` is the
+      // receive forms' picker, which reads the same endpoint under a different
+      // key with its own staleTime, so a rename or a removal must reach both.
+      //
+      // It does **not** make a newly added manufacturer appear in that picker.
+      // The picker asks for `has_items: true`, and the server reads that as
+      // "has at least one active catalog part" — a manufacturer added here has
+      // none, so it is filtered out server-side no matter how fresh the cache
+      // is. Receiving against it needs a catalog, which this app cannot load.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: manufacturerKeys.all }),
         queryClient.invalidateQueries({ queryKey: catalogKeys.all }),

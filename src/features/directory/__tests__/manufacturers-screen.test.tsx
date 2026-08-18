@@ -149,6 +149,20 @@ describe('the table', () => {
   });
 });
 
+describe('what the screen promises', () => {
+  it('says a manufacturer needs a catalog before stock can be received', async () => {
+    // The surprise this exists to prevent: a manufacturer added here does not
+    // appear on Receive / Load, because that picker asks for `has_items` and a
+    // new one has no catalog parts. Discovering that by not finding it is the
+    // worst way to learn it.
+    renderScreen();
+
+    expect(
+      await screen.findByText(/needs its catalog of parts, which is loaded separately/i),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('adding one', () => {
   it('posts just the trimmed name', async () => {
     const { user } = renderScreen();

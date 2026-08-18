@@ -51,7 +51,19 @@ export function ManufacturersScreen({
 
   return (
     <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold text-primary">Manufacturers</h1>
+      <h1 className="mb-1 text-2xl font-semibold text-primary">Manufacturers</h1>
+      {/*
+        Said plainly, because the alternative is finding out by not finding the
+        manufacturer you just added. Receive / Load lists manufacturers that
+        have a catalog (`has_items`), and a catalog is loaded separately from
+        this screen — so adding one here does not by itself make it something
+        you can receive against.
+      */}
+      <p className="mb-4 text-sm text-muted-foreground">
+        Manufacturers your organization has added, alongside the shared catalog. Receiving stock
+        against one also needs its catalog of parts, which is loaded separately — until then it will
+        not be offered on Receive / Load.
+      </p>
 
       <header className="mb-3 flex flex-wrap items-center gap-3">
         <Input

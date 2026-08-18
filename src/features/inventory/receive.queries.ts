@@ -32,6 +32,13 @@ export const catalogQueries = {
    * than the organization's, so a manufacturer whose kits this org cannot
    * receive remains selectable — see `partsQuery`'s note.
    *
+   * **A manufacturer added on the Manufacturers screen does not appear here**,
+   * and that is the filter working rather than a caching bug: it has no
+   * catalog parts, so the server excludes it. Nor would showing it help — Kit
+   * mode needs catalog kits and SKU mode needs a part carrying the typed
+   * reference number, and this app can load neither. The Manufacturers screen
+   * says so rather than leaving it to be discovered here.
+   *
    * One page holds the whole catalog by design (the endpoint's default page is
    * wide), so nothing here pages.
    */

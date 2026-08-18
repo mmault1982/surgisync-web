@@ -3343,6 +3343,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
           description: Authenticated, but not permitted to perform this action.
+  /api/v1/manufacturers/import/:
+    post:
+      operationId: import_manufacturers
+      description: Create manufacturers in bulk from a CSV or Excel file with a `name`
+        column. Organization admins only. Names this organization already has are
+        **skipped**, not re-created and not errors, so re-running the same file is
+        safe. Send `dry_run=true` to preview the outcome of every row without writing
+        anything.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ManufacturerImportRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerImportReport'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/manufacturers/import/template/:
+    get:
+      operationId: manufacturer_import_template
+      description: An empty CSV with the header row the importer expects.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/manufacturers/kits/:
     get:
       operationId: get_manufacturer_kits
@@ -7878,6 +7954,83 @@ components:
       required:
       - id
       - name
+    ManufacturerImportReport:
+      type: object
+      description: The outcome of an import, whether or not anything was written.
+      properties:
+        dry_run:
+          type: boolean
+          description: True when nothing was written and this is a preview.
+        total_rows:
+          type: integer
+        created:
+          type: integer
+          description: Created, or — on a dry run — what would be created.
+        skipped:
+          type: integer
+          description: Already present. Not failures.
+        failed:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManufacturerImportRow'
+      required:
+      - created
+      - dry_run
+      - failed
+      - rows
+      - skipped
+      - total_rows
+    ManufacturerImportRequestRequest:
+      type: object
+      description: |-
+        The bulk-import upload.
+
+        Declared as a serializer rather than read off `request.data` so the
+        contract documents the multipart body, and so a generated client knows
+        `file` is binary — which is what makes the browser call one line.
+      properties:
+        file:
+          type: string
+          format: binary
+          description: CSV or Excel (.csv, .xlsx) with a `name` column. 10MB and 2000
+            rows maximum.
+        dry_run:
+          type: boolean
+          default: false
+          description: Decide every row and report the outcome without writing anything.
+            The preview half of the flow.
+      required:
+      - file
+    ManufacturerImportRow:
+      type: object
+      description: What happened to one row of the file.
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row number. Data starts at 2; row 1 is the header.
+        name:
+          type: string
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          description: |-
+            `created` — a new manufacturer. `skipped` — this organization already has that name, which is a normal outcome of re-running a file and **not** an error. `failed` — the row could not be used.
+
+            * `created` - created
+            * `skipped` - skipped
+            * `failed` - failed
+        code:
+          type: string
+          description: Stable machine-readable reason. Branch on this, never on `detail`.
+        detail:
+          type: string
+          description: Display text. May change without notice.
+      required:
+      - name
+      - outcome
+      - row
     ManufacturerKitsByIdsRequestRequest:
       type: object
       properties:
@@ -7920,6 +8073,16 @@ components:
         * `distributor` - Distributor
         * `oem` - OEM
         * `facility` - Facility (Hospital)
+    OutcomeEnum:
+      enum:
+      - created
+      - skipped
+      - failed
+      type: string
+      description: |-
+        * `created` - created
+        * `skipped` - skipped
+        * `failed` - failed
     OwnershipTypeEnum:
       enum:
       - owned

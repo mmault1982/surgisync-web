@@ -31,6 +31,7 @@ import type {
   CreateManufacturer400,
   ErrorDetail,
   FacetResponse,
+  ImportManufacturers400,
   InventoryKitDetail,
   InventoryKitDetailRequest,
   InventoryKitPhoto,
@@ -44,6 +45,8 @@ import type {
   ListParts400,
   ListPartsParams,
   Manufacturer,
+  ManufacturerImportReport,
+  ManufacturerImportRequestRequest,
   ManufacturerWriteRequest,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
@@ -931,6 +934,192 @@ export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteMa
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDeleteManufacturerQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Create manufacturers in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview the outcome of every row without writing anything.
+ */
+export const importManufacturers = (
+    manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, manufacturerImportRequestRequest.file);
+if(manufacturerImportRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, manufacturerImportRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ManufacturerImportReport>(
+      {url: `/api/v1/manufacturers/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportManufacturersQueryKey = (manufacturerImportRequestRequest?: BodyType<ManufacturerImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/manufacturers/import/`, manufacturerImportRequestRequest
+    ] as const;
+    }
+
+
+export const getImportManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportManufacturersQueryKey(manufacturerImportRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importManufacturers>>> = ({ signal }) => importManufacturers(manufacturerImportRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportManufacturersQueryResult = NonNullable<Awaited<ReturnType<typeof importManufacturers>>>
+export type ImportManufacturersQueryError = ErrorType<ImportManufacturers400 | ErrorDetail>
+
+
+export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
+ manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importManufacturers>>,
+          TError,
+          Awaited<ReturnType<typeof importManufacturers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
+ manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importManufacturers>>,
+          TError,
+          Awaited<ReturnType<typeof importManufacturers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
+ manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
+ manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportManufacturersQueryOptions(manufacturerImportRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * An empty CSV with the header row the importer expects.
+ */
+export const manufacturerImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/manufacturers/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getManufacturerImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/manufacturers/import/template/`
+    ] as const;
+    }
+
+
+export const getManufacturerImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getManufacturerImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof manufacturerImportTemplate>>> = ({ signal }) => manufacturerImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ManufacturerImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof manufacturerImportTemplate>>>
+export type ManufacturerImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof manufacturerImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof manufacturerImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof manufacturerImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof manufacturerImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getManufacturerImportTemplateQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

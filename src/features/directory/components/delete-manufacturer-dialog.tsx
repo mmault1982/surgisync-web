@@ -45,7 +45,9 @@ export function DeleteManufacturerDialog({
       // Both roots, for the same reason the save dialog does it: the receive
       // forms' picker reads this endpoint under `catalogKeys` with its own
       // staleTime, and a removed manufacturer still offered there is worse
-      // than one that never disappeared.
+      // than one that never disappeared. Removal *is* reflected there —
+      // unlike creation, which the picker's `has_items` filter hides. See the
+      // note in `manufacturer-dialog.tsx`.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: manufacturerKeys.all }),
         queryClient.invalidateQueries({ queryKey: catalogKeys.all }),

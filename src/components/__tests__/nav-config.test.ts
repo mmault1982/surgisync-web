@@ -18,10 +18,20 @@ describe('findNavTrail', () => {
     }
   });
 
+  it('locates the Directory Profiles section', () => {
+    // The second section, and the first one whose parent is not Inventory —
+    // so this also covers that section lookup is not hardcoded to one entry.
+    const trail = findNavTrail('/directory/manufacturers');
+
+    expect(trail?.section.title).toBe('Directory Profiles');
+    expect(trail?.item.title).toBe('Manufacturers');
+  });
+
   it('returns null off the nav', () => {
     // The breadcrumb renders nothing rather than a stale crumb.
     expect(findNavTrail('/login')).toBeNull();
     expect(findNavTrail('/inventory')).toBeNull();
+    expect(findNavTrail('/directory')).toBeNull();
   });
 
   it('does not match a longer path that merely starts the same', () => {

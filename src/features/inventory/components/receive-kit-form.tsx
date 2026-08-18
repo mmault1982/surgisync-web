@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { CheckIcon, ImagePlusIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -42,8 +43,6 @@ import {
 } from '../receive.save';
 import { catalogQueries } from '../receive.queries';
 import { transferQueries } from '../transfer.queries';
-
-import { Field } from './dialog-parts';
 
 /**
  * Register a physical kit into inventory.

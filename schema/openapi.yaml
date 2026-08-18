@@ -3087,10 +3087,11 @@ paths:
   /api/v1/manufacturers/:
     get:
       operationId: list_manufacturers
-      description: Manufacturers in the shared catalog, sorted by name. **Always paginated**
-        — the response shape does not vary with the query parameters. `page` and `page_size`
+      description: 'Manufacturers this organization may choose from, sorted by name:
+        the shared catalog plus any the organization owns. **Always paginated** —
+        the response shape does not vary with the query parameters. `page` and `page_size`
         are optional; the default page is wide enough to hold the whole catalog in
-        one response.
+        one response.'
       parameters:
       - in: query
         name: has_items
@@ -3125,6 +3126,223 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedManufacturerList'
           description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_manufacturer
+      description: Add a manufacturer to this organization. Organization admins only.
+        The new row belongs to the caller's organization and is invisible to every
+        other one; the shared catalog is not writable.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manufacturer'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/manufacturers/{id}/:
+    get:
+      operationId: retrieve_manufacturer
+      description: One manufacturer, if this organization may see it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manufacturer'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    patch:
+      operationId: partial_update_manufacturer
+      description: 'Rename a manufacturer this organization owns. Organization admins
+        only. `name` is the only writable field: the barcode is generated from it,
+        ownership comes from the session, and deactivation is what DELETE does.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manufacturer'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: delete_manufacturer
+      description: Remove a manufacturer this organization owns. Organization admins
+        only. A soft delete — the row stops being listed and frees its name, but stays
+        for the history that references it. Refused while catalog parts still point
+        at it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Manufacturer'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'The manufacturer still has catalog parts (`manufacturer_in_use`).
+            The database cannot refuse this on its own: `Part.manufacturer` is `PROTECT`ed,
+            but removing a manufacturer is a soft delete, which never trips a foreign
+            key.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/manufacturers/kits/:
     get:
       operationId: get_manufacturer_kits
@@ -7670,6 +7888,25 @@ components:
           description: List of manufacturer IDs
       required:
       - manufacturer_ids
+    ManufacturerWriteRequest:
+      type: object
+      description: |-
+        Create/update payload for a manufacturer an organization owns.
+
+        `name` is the only writable field, and that is the whole model rather than
+        a simplification: `barcode` is generated from the name, `parent_company`
+        comes from the caller's organization, and `is_active`/`deleted_at` are what
+        DELETE writes. Accepting `parent_company` from the body would let a client
+        file a row in another tenant's list.
+
+        Read responses use `ManufacturerSerializer`; this one never renders.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
     NullEnum:
       enum:
       - null
@@ -8280,6 +8517,23 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+    PatchedManufacturerWriteRequest:
+      type: object
+      description: |-
+        Create/update payload for a manufacturer an organization owns.
+
+        `name` is the only writable field, and that is the whole model rather than
+        a simplification: `barcode` is generated from the name, `parent_company`
+        comes from the caller's organization, and `is_active`/`deleted_at` are what
+        DELETE writes. Accepting `parent_company` from the body would let a client
+        file a row in another tenant's list.
+
+        Read responses use `ManufacturerSerializer`; this one never renders.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
     PatchedParentCompanyDetailRequest:
       type: object
       description: |-

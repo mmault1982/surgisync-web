@@ -30,6 +30,7 @@ import type {
   InventoryKitDetail,
   InventoryKitPhoto,
   InventoryTransferDetail,
+  Manufacturer,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
@@ -48,6 +49,14 @@ export const getConfirmInventoryTransferReceiptResponseMock = (overrideResponse:
 export const getListInventoryTransferTargetsResponseMock = (overrideResponse: Partial<Extract<TransferTargetResponse, object>> = {}): TransferTargetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({type: faker.helpers.arrayElement(Object.values(TransferTargetTypeEnum)), id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
 export const getListManufacturersResponseMock = (overrideResponse: Partial<Extract<PaginatedManufacturerList, object>> = {}): PaginatedManufacturerList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined])})), data: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined])})), undefined]), ...overrideResponse})
+
+export const getCreateManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), ...overrideResponse})
+
+export const getRetrieveManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), ...overrideResponse})
+
+export const getPartialUpdateManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), ...overrideResponse})
+
+export const getDeleteManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), ...overrideResponse})
 
 export const getListPartsResponseMock = (overrideResponse: Partial<Extract<PaginatedPartListList, object>> = {}): PaginatedPartListList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), uuid: faker.string.uuid(), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), description: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(KindEnum)), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), is_serialized: faker.datatype.boolean(), manufacturer: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
@@ -129,6 +138,54 @@ export const getListManufacturersMockHandler = (overrideResponse?: PaginatedManu
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getListManufacturersResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/manufacturers/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateManufacturerResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getRetrieveManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRetrieveManufacturerResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPartialUpdateManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdateManufacturerResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeleteManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getDeleteManufacturerResponseMock(),
       { status: 200
       })
   }, options)
@@ -293,6 +350,10 @@ export const getInventoryMock = () => [
   getConfirmInventoryTransferReceiptMockHandler(),
   getListInventoryTransferTargetsMockHandler(),
   getListManufacturersMockHandler(),
+  getCreateManufacturerMockHandler(),
+  getRetrieveManufacturerMockHandler(),
+  getPartialUpdateManufacturerMockHandler(),
+  getDeleteManufacturerMockHandler(),
   getListPartsMockHandler(),
   getApiV1StockItemsListMockHandler(),
   getCreateInventoryKitMockHandler(),

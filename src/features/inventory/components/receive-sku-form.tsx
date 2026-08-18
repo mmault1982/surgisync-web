@@ -3,6 +3,7 @@ import { CalendarIcon, ImagePlusIcon, TriangleAlertIcon, XIcon } from 'lucide-re
 import { useEffect, useRef, useState } from 'react';
 
 import type { PartList } from '@/api/generated/model';
+import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -46,8 +47,6 @@ import {
   type ReceiveSkuValues,
 } from '../receive-sku';
 import { transferQueries } from '../transfer.queries';
-
-import { Field } from './dialog-parts';
 
 /**
  * Register a loose catalog item into inventory.

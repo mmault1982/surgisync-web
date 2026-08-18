@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { apiV1StockItemsPartialUpdate } from '@/api/generated/endpoints/inventory/inventory';
 import type { InventoryKitDetail } from '@/api/generated/model';
+import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { buildTrackerPatch, canSubmitBeacon, trackerErrorMessage } from '../add-tracker';
 import { stockItemKeys } from '../inventory.keys';
 
-import { Field, KitSummary } from './dialog-parts';
+import { KitSummary } from './dialog-parts';
 
 /**
  * Attach a Hansel tracker to a kit that has none.

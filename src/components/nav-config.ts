@@ -1,5 +1,7 @@
 import type { LinkProps } from '@tanstack/react-router';
 import {
+  FactoryIcon,
+  FolderIcon,
   LayoutDashboardIcon,
   PackageIcon,
   PackageOpenIcon,
@@ -31,11 +33,18 @@ export interface NavSection {
 }
 
 /**
- * Only Inventory for now. The prototype has seven more sections (Directory
- * Profiles, Cases / Restocks, Ordering, Quotes, Pricing, Reports, Setup); each
- * arrives with the screens behind it rather than as a row of dead links.
+ * The prototype's section order, as far as it is built. Six more are still to
+ * come (Cases / Restocks, Ordering, Quotes, Pricing, Reports, Setup), and each
+ * arrives with the screens behind it rather than as a row of dead links —
+ * which is also why Directory Profiles lists only Manufacturers, not the
+ * Facilities, Surgeons and Users the prototype shows beside it.
  */
 export const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Directory Profiles',
+    icon: FolderIcon,
+    items: [{ title: 'Manufacturers', to: '/directory/manufacturers', icon: FactoryIcon }],
+  },
   {
     title: 'Inventory',
     icon: PackageIcon,

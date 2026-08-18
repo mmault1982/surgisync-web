@@ -91,16 +91,22 @@ const ALLOWED_OPERATIONS = new Set([
   // `list_parts` is /api/v1/parts/, a prefix added to VALIDATED_PATH_PREFIXES
   // in the same commit that created it, so it is gated from the start.
   //
-  // `list_manufacturers` is the exception on this list and the caveat matters:
-  // /api/v1/manufacturers/ is *outside* that gate, the same position
-  // tracker_tracking_events is in. Its response shape was fixed (it used to
-  // return two different shapes depending on whether ?page was passed) and it
-  // is now honestly described, but the two /manufacturers/kits/ operations
-  // sharing its prefix still declare no response at all, so the prefix cannot
-  // be gated until those are documented. Its response also still carries a
-  // deprecated `data` key duplicating `results` — for shipped Flutter builds
-  // only. Read `results`.
+  // The five /api/v1/manufacturers/ operations are the exception on this list
+  // and the caveat matters: that prefix is *outside* the gate, the same
+  // position tracker_tracking_events is in. The three legacy case/quote
+  // operations sharing it (get_manufacturer_kits, get_manufacturer_kits_by_ids,
+  // get_category_items) still declare no response at all, so the prefix cannot
+  // be gated until those are documented — backend #43 left that as its own
+  // change rather than folding it in. The five below each document every
+  // status they emit, so what is missing is enforcement, not description.
+  //
+  // `list_manufacturers` also still carries a deprecated `data` key
+  // duplicating `results`, for shipped Flutter builds only. Read `results`.
   'list_manufacturers',
+  'create_manufacturer',
+  'retrieve_manufacturer',
+  'partial_update_manufacturer',
+  'delete_manufacturer',
   'list_parts',
 ]);
 

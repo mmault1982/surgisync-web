@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { createInventoryTransfer } from '@/api/generated/endpoints/inventory/inventory';
 import type { InventoryKitDetail, ReasonEnum, TransportMethodEnum } from '@/api/generated/model';
+import { Field } from '@/components/field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -50,7 +51,7 @@ import {
   type Target,
 } from '../transfer';
 
-import { ExpiredBanner, Field, KitSummary, PhotoCapture } from './dialog-parts';
+import { ExpiredBanner, KitSummary, PhotoCapture } from './dialog-parts';
 
 /**
  * Send a kit somewhere else.

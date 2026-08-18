@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { createInventoryTransfer } from '@/api/generated/endpoints/inventory/inventory';
 import type { InventoryKitDetail, TransportMethodEnum } from '@/api/generated/model';
+import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,7 +38,7 @@ import {
 } from '../return-to-manufacturer';
 import { replaceFile, TRANSPORT_OPTIONS } from '../transfer';
 
-import { ExpiredBanner, Field, KitSummary, PhotoCapture } from './dialog-parts';
+import { ExpiredBanner, KitSummary, PhotoCapture } from './dialog-parts';
 
 /**
  * Send a kit back to the manufacturer.

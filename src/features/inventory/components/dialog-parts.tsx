@@ -2,7 +2,6 @@ import { BanIcon, ImagePlusIcon, XIcon } from 'lucide-react';
 
 import type { InventoryKitDetail } from '@/api/generated/model';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 import { EMPTY, ownershipLabel } from '../kit-detail';
@@ -57,39 +56,6 @@ export function ExpiredBanner({
         <p className="text-sm font-bold text-destructive">Expired — kit cannot be used</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
       </div>
-    </div>
-  );
-}
-
-/** A labelled control with an optional required marker, hint and error. */
-export function Field({
-  label,
-  required,
-  hint,
-  hintTone,
-  htmlFor,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  hintTone?: string;
-  htmlFor?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <Label htmlFor={htmlFor} className="mb-2">
-        {label}
-        {required ? <span className="text-destructive">*</span> : null}
-        {hint ? (
-          <span className={cn('font-normal text-muted-foreground', hintTone)}>{hint}</span>
-        ) : null}
-      </Label>
-      {children}
-      {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
     </div>
   );
 }

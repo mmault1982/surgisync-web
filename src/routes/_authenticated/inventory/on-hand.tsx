@@ -4,8 +4,8 @@ import { useSyncExternalStore } from 'react';
 
 import { ActiveFilterChips } from '@/features/inventory/components/active-filter-chips';
 import { OnHandTable } from '@/features/inventory/components/on-hand-table';
-import { Pagination } from '@/features/inventory/components/pagination';
-import { TableEmpty, TableError, TableLoading } from '@/features/inventory/components/table-states';
+import { Pagination } from '@/components/pagination';
+import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { onHandListQuery } from '@/features/inventory/on-hand.queries';
 import {
   ON_HAND_DEFAULTS,
@@ -108,11 +108,22 @@ function OnHandPage() {
         </div>
 
         {query.isPending ? (
-          <TableLoading />
+          <TableLoading label="Loading inventory" />
         ) : query.isError ? (
-          <TableError onRetry={() => void query.refetch()} />
+          <TableError title="Could not load inventory" onRetry={() => void query.refetch()} />
         ) : rows.length === 0 ? (
-          <TableEmpty filtered={hasActiveFilters(search)} onClearFilters={clearAll} />
+          hasActiveFilters(search) ? (
+            <TableEmpty
+              title="No kits match these filters"
+              description="Try removing one, or clear them all."
+              action={{ label: 'Clear all filters', onClick: clearAll }}
+            />
+          ) : (
+            <TableEmpty
+              title="No inventory yet"
+              description="Stock you receive will appear here."
+            />
+          )
         ) : (
           <>
             <OnHandTable

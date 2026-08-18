@@ -3,6 +3,7 @@ import { ImagePlusIcon, ImageOffIcon, TriangleAlertIcon, XIcon } from 'lucide-re
 import { useEffect, useRef, useState } from 'react';
 
 import type { InventoryKitDetail } from '@/api/generated/model';
+import { Field } from '@/components/field';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -47,7 +48,7 @@ import {
 } from '../update-status';
 import { initialSaveState, isSaveComplete, madeProgress, runSave } from '../update-status.save';
 
-import { ExpiredBanner, Field, KitSummary } from './dialog-parts';
+import { ExpiredBanner, KitSummary } from './dialog-parts';
 
 /**
  * Change a kit's status, location, photos and notes.

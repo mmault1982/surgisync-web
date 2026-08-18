@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import type { Manufacturer } from '@/api/generated/model';
@@ -14,6 +14,7 @@ import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
 import { DeleteManufacturerDialog } from './delete-manufacturer-dialog';
+import { ManufacturerImportDialog } from './manufacturer-import-dialog';
 import { ManufacturerDialog } from './manufacturer-dialog';
 import { ManufacturersTable } from './manufacturers-table';
 
@@ -44,6 +45,7 @@ export function ManufacturersScreen({
   // both be true.
   const [editing, setEditing] = useState<Manufacturer | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Manufacturer | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const rows = query.data?.results ?? [];
 
@@ -61,10 +63,16 @@ export function ManufacturersScreen({
           className="min-w-64 max-w-sm"
         />
         {canManage ? (
-          <Button type="button" className="ml-auto" onClick={() => setEditing(null)}>
-            <PlusIcon />
-            Add manufacturer
-          </Button>
+          <div className="ml-auto flex gap-2">
+            <Button type="button" variant="outline" onClick={() => setImporting(true)}>
+              <UploadIcon />
+              Import
+            </Button>
+            <Button type="button" onClick={() => setEditing(null)}>
+              <PlusIcon />
+              Add manufacturer
+            </Button>
+          </div>
         ) : null}
       </header>
 
@@ -127,6 +135,7 @@ export function ManufacturersScreen({
       {deleting ? (
         <DeleteManufacturerDialog manufacturer={deleting} onClose={() => setDeleting(null)} />
       ) : null}
+      {importing ? <ManufacturerImportDialog onClose={() => setImporting(false)} /> : null}
     </div>
   );
 }

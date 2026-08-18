@@ -107,6 +107,13 @@ const ALLOWED_OPERATIONS = new Set([
   'retrieve_manufacturer',
   'partial_update_manufacturer',
   'delete_manufacturer',
+  // Bulk import. `import_manufacturers` declares multipart/form-data *first*
+  // among its content types, which is what makes the generated call able to
+  // carry a file at all — the opposite of create_inventory_kit below, whose
+  // JSON-first declaration is why photos go through a separate operation.
+  // The template download returns a CSV body rather than JSON.
+  'import_manufacturers',
+  'manufacturer_import_template',
   'list_parts',
 ]);
 

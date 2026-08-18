@@ -97,3 +97,29 @@ function toDate(value: string | null | undefined): Date | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
+
+/**
+ * `YYYY-MM-DD` for a local calendar day — never `toISOString`, which is UTC.
+ *
+ * The inbound half of what this module already guards on the way out: a form
+ * that writes a calendar date has the same off-by-one-day trap as one that
+ * renders it, in the opposite direction.
+ */
+export function toDateInput(date: Date): string {
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * The inverse, for seeding a calendar's selection.
+ *
+ * Built from parts rather than `new Date('2026-04-22')`, which parses as UTC
+ * midnight and lands on the 21st anywhere west of Greenwich — the same trap
+ * this module's header documents for rendering.
+ */
+export function fromDateInput(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}

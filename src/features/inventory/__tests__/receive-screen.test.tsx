@@ -73,13 +73,39 @@ describe('ReceiveScreen', () => {
     expect(screen.getByRole('radio', { name: /Bulk Upload/ })).not.toBeChecked();
   });
 
-  it('replaces the form with a placeholder for SKU', async () => {
+  it('switches mode when the card itself is clicked', async () => {
+    // The regression this exists for: the radio used to be a hidden Radix
+    // button inside the card, and a <label> does not forward clicks to a
+    // button the way it does to an input — so the cards were unclickable by
+    // mouse while every other test here passed, because they click the radio
+    // directly rather than the card a user aims at.
+    const user = renderScreen();
+
+    await user.click(screen.getByText('Load individual items'));
+
+    expect(screen.getByRole('radio', { name: /SKU/ })).toBeChecked();
+    expect(await screen.findByRole('button', { name: 'Save SKU' })).toBeInTheDocument();
+  });
+
+  it('swaps in the SKU form for SKU + Manual', async () => {
     const user = renderScreen();
 
     await user.click(screen.getByRole('radio', { name: /SKU/ }));
 
-    expect(screen.getByText('SKU / Manual — coming soon')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Save SKU' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Kit' })).not.toBeInTheDocument();
+  });
+
+  it('does not carry one form’s state into the other', async () => {
+    // The two forms share option lists but not a payload, and a half-filled kit
+    // bleeding into a SKU would be worse than re-picking.
+    const user = renderScreen();
+
+    await user.type(screen.getByLabelText(/Kit ID/), 'TRC-1');
+    await user.click(screen.getByRole('radio', { name: /SKU/ }));
+    await user.click(screen.getByRole('radio', { name: /Kit/ }));
+
+    expect(screen.getByLabelText(/Kit ID/)).toHaveValue('');
   });
 
   it('replaces the form with a placeholder for Bulk Upload', async () => {

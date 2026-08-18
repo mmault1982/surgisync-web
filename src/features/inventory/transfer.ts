@@ -5,6 +5,7 @@ import type {
   TransferTarget,
 } from '@/api/generated/model';
 import { ReasonEnum, TransferTargetTypeEnum, TransportMethodEnum } from '@/api/generated/model';
+import { toDateInput } from '@/lib/dates';
 
 /**
  * Everything the Transfer dialog decides, with no DOM in sight.
@@ -171,26 +172,6 @@ export interface TransferFormValues {
   kitPhoto: StagedFile | null;
   labelPhoto: StagedFile | null;
   notes: string;
-}
-
-/** `YYYY-MM-DD` for a local calendar day — never `toISOString`, which is UTC. */
-export function toDateInput(date: Date): string {
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/**
- * The inverse, for seeding the calendar's selection.
- *
- * Built from parts rather than `new Date('2026-04-22')`, which parses as UTC
- * midnight and lands on the 21st anywhere west of Greenwich — the same trap
- * `lib/dates.ts` documents for rendering.
- */
-export function fromDateInput(value: string): Date | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return undefined;
-  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
 export function seedTransferForm(kit: InventoryKitDetail, today = new Date()): TransferFormValues {

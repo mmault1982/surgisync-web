@@ -25,6 +25,10 @@ page?: number;
  */
 page_size?: number;
 /**
+ * Exact, case-insensitive catalog number. May match more than one part: the number is unique per manufacturer, not across the catalog. Kits never carry one.
+ */
+reference_number?: string;
+/**
  * Case-insensitive substring match on name.
  */
 search?: string;

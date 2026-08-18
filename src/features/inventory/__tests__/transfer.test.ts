@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import type { TransferTarget } from '@/api/generated/model';
+import { fromDateInput, toDateInput } from '@/lib/dates';
 
 import {
   buildTransferBody,
   currentAssignment,
-  fromDateInput,
   ORGANIZATION,
   requiresLabelPhoto,
   seedTransferForm,
   targetKey,
-  toDateInput,
   toTargets,
   transferFieldErrors,
   validateTransferForm,

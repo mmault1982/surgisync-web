@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { formatCalendarDate } from '@/lib/dates';
+import { formatCalendarDate, fromDateInput, toDateInput } from '@/lib/dates';
 
 import { stockItemKeys } from '../inventory.keys';
 import { EMPTY } from '../kit-detail';
@@ -33,14 +33,12 @@ import { transferQueries } from '../transfer.queries';
 import {
   buildTransferBody,
   findTarget,
-  fromDateInput,
   hasTransferErrors,
   REASON_OPTIONS,
   replaceFile,
   requiresLabelPhoto,
   seedTransferForm,
   targetKey,
-  toDateInput,
   toTargets,
   transferErrorMessage,
   transferFieldErrors,

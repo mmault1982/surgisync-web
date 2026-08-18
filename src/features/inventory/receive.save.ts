@@ -12,7 +12,7 @@ import type { StagedPhoto } from './receive-kit';
  *
  * Split out of the component for the reason `update-status.save.ts` was: the
  * ordering and the latch are the two things most worth testing, and neither
- * needs a DOM. `receive-kit.save.test.ts` drives this module against MSW.
+ * needs a DOM. `receive.save.test.ts` drives this module against MSW.
  */
 
 export interface ReceiveSaveState {
@@ -53,8 +53,14 @@ export function isReceiveSaveComplete(state: ReceiveSaveState): boolean {
   return state.pendingCreate === null && state.pendingPhotos.length === 0;
 }
 
-/** Whether the kit exists and only its photos are outstanding. */
-export function isRetryingPhotos(state: ReceiveSaveState | null): boolean {
+/**
+ * Whether the stock item exists and only its photos are outstanding.
+ *
+ * A type predicate, so the caller that acts on this — re-running the save with
+ * the existing state — does not have to null-check the very thing this just
+ * confirmed is present.
+ */
+export function isRetryingPhotos(state: ReceiveSaveState | null): state is ReceiveSaveState {
   return state !== null && state.pendingCreate === null && state.pendingPhotos.length > 0;
 }
 

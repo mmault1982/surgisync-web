@@ -9,7 +9,7 @@ import { trackerErrorMessage } from './add-tracker';
  * Same split as `update-status.ts`: the validation rules, the payload shape and
  * the error mapping are the parts worth testing and none of them need a render.
  * The network half — a create followed by N photo uploads, with a latch — lives
- * in `receive-kit.save.ts`.
+ * in `receive.save.ts`, which the SKU form shares.
  */
 
 /** The four physical locations mobile always offers, before any facets. */

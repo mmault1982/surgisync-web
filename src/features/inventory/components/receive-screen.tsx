@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
 import { Card } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
 import { ReceiveKitForm } from './receive-kit-form';
+import { ReceiveSkuForm } from './receive-sku-form';
 
 /**
  * Receive / Load Inventory.
@@ -47,12 +47,14 @@ export function ReceiveScreen() {
         */}
         <div className="flex flex-col gap-3">
           <ModeGroup
+            name="receive-item-type"
             label="What are you loading?"
             value={itemType}
             options={ITEM_TYPES}
             onChange={setItemType}
           />
           <ModeGroup
+            name="receive-entry-method"
             label="How are you entering it?"
             value={entryMethod}
             options={ENTRY_METHODS}
@@ -60,8 +62,16 @@ export function ReceiveScreen() {
           />
         </div>
 
-        {itemType === 'kit' && entryMethod === 'manual' ? (
-          <ReceiveKitForm />
+        {entryMethod === 'manual' ? (
+          // Keyed, so switching Kit <-> SKU remounts rather than carrying one
+          // form's state into the other. They share three option lists but not
+          // a payload, and a half-filled kit bleeding into a SKU would be worse
+          // than re-picking.
+          itemType === 'kit' ? (
+            <ReceiveKitForm key="kit" />
+          ) : (
+            <ReceiveSkuForm key="sku" />
+          )
         ) : (
           <p className="py-6 text-sm font-medium text-muted-foreground">
             {modeLabel(itemType, entryMethod)} — coming soon
@@ -79,32 +89,41 @@ function modeLabel(itemType: ItemType, entryMethod: EntryMethod): string {
 }
 
 /**
- * One exclusive pair, as a radio group.
+ * One exclusive pair, as a radio group of cards.
  *
- * A radio group is what two mutually exclusive choices *are*: it brings
- * arrow-key navigation, a group label and `role="radio"` with `aria-checked`
- * for free, so tests select by role rather than by class. `ToggleGroup` is
- * built for compact icon toolbars and its items have no room for the subtitle
- * line the prototype and mobile both carry.
+ * Two mutually exclusive choices *are* a radio group, and the semantics are
+ * what this is after: `role="radio"` with `aria-checked`, arrow-key navigation
+ * within the group, and a group label — so tests select by role rather than by
+ * class.
+ *
+ * **Native inputs rather than the vendored `RadioGroupItem`, and the reason is
+ * a bug this shipped with.** That primitive renders a 4px `<button
+ * role="radio">` and ignores children, so a card has to wrap it and hide it —
+ * and a `<label>` does *not* forward clicks to a button the way it does to an
+ * input. The cards were therefore unclickable by mouse, while every test
+ * passed, because a test clicks the radio directly rather than the card a user
+ * aims at. A native radio inside its label is forwarded by the platform, so the
+ * whole card is the hit target and the semantics come for free.
+ *
+ * `ToggleGroup` was the other candidate and is worse: it is built for compact
+ * icon toolbars, and its items have no room for the subtitle line the prototype
+ * and mobile both carry.
  */
 function ModeGroup<T extends string>({
+  name,
   label,
   value,
   options,
   onChange,
 }: {
+  name: string;
   label: string;
   value: T;
   options: { value: T; title: string; subtitle: string }[];
   onChange: (value: T) => void;
 }) {
   return (
-    <RadioGroup
-      value={value}
-      aria-label={label}
-      onValueChange={(next) => onChange(next as T)}
-      className="grid grid-cols-2 gap-3"
-    >
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-2 gap-3">
       {options.map((option) => (
         <label
           key={option.value}
@@ -116,16 +135,20 @@ function ModeGroup<T extends string>({
               : 'border-border bg-card hover:border-primary',
           )}
         >
-          {/*
-            The radio itself is the accessible control and stays in the tree;
-            only its visual indicator is hidden, so the card is the hit target
-            without the group losing keyboard semantics.
-          */}
-          <RadioGroupItem value={option.value} className="sr-only" />
+          <input
+            type="radio"
+            // Shared `name` is what makes the pair exclusive and gives the
+            // group arrow-key navigation without any JavaScript.
+            name={name}
+            value={option.value}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+            className="sr-only"
+          />
           <span className="text-sm font-semibold text-foreground">{option.title}</span>
           <span className="mt-0.5 text-xs text-muted-foreground">{option.subtitle}</span>
         </label>
       ))}
-    </RadioGroup>
+    </div>
   );
 }

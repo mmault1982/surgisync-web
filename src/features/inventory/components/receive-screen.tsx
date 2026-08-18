@@ -9,9 +9,18 @@ import { ReceiveSkuForm } from './receive-sku-form';
 /**
  * Receive / Load Inventory.
  *
- * Two exclusive pairs of mode buttons over a single form card. Only Kit +
- * Manual is built; the other three combinations are honest placeholders, as
+ * Two exclusive pairs of mode buttons over a single form card. Both Manual
+ * combinations are built; the two Bulk Upload ones are honest placeholders, as
  * they are on mobile.
+ *
+ * Bulk Upload is the deferred Excel import, and the mechanism for it now
+ * exists — `hoosier/file_import.py` and `inventory/imports/` in the backend,
+ * behind the manufacturers import dialog. What these two modes still need is
+ * their own entry under `inventory/imports/`, plus the parts that one
+ * deliberately did not anticipate: a packing-slip photo per batch, shared
+ * metadata applied to every row (Manufacturer, Rep, Location, Type), and
+ * row-conditional validation — the FRD requires a Loaner Due Date only on rows
+ * whose Type is Loaned.
  */
 
 type ItemType = 'kit' | 'sku';

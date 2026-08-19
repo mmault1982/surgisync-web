@@ -1,5 +1,6 @@
 import type { ManufacturerSearch } from './manufacturers.search';
 import type { ProcedureSearch } from './procedures.search';
+import type { SurgeonSearch } from './surgeons.search';
 
 /**
  * Query keys for the Directory Profiles section.
@@ -32,4 +33,16 @@ export const manufacturerKeys = {
 export const procedureKeys = {
   all: ['directory-procedures'] as const,
   list: (search: ProcedureSearch) => [...procedureKeys.all, 'list', search] as const,
+};
+
+/**
+ * Surgeons, likewise their own root.
+ *
+ * Nothing else in this app reads them yet — the legacy `/surgeons/` lookup the
+ * mobile app uses has no client here — so there is no second root to
+ * invalidate alongside it, as manufacturers has with the receive picker.
+ */
+export const surgeonKeys = {
+  all: ['directory-surgeons'] as const,
+  list: (search: SurgeonSearch) => [...surgeonKeys.all, 'list', search] as const,
 };

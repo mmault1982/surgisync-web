@@ -3,6 +3,7 @@ import {
   FactoryIcon,
   FolderIcon,
   StethoscopeIcon,
+  UserRoundIcon,
   LayoutDashboardIcon,
   PackageIcon,
   PackageOpenIcon,
@@ -49,8 +50,10 @@ export const NAV_SECTIONS: NavSection[] = [
       // Not in the prototype's Directory Profiles, which lists Facilities,
       // Manufacturers, Surgeons and Users. A deliberate addition: procedures
       // are reference data an organization maintains the same way, and the
-      // spec simply never covered them.
+      // spec simply never covered them. Surgeons below *is* in the
+      // prototype's list; Facilities and Users are what remain.
       { title: 'Procedures', to: '/directory/procedures', icon: StethoscopeIcon },
+      { title: 'Surgeons', to: '/directory/surgeons', icon: UserRoundIcon },
     ],
   },
   {

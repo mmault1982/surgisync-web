@@ -38,11 +38,27 @@ import type {
   PaginatedManufacturerList,
   PaginatedPartListList,
   PaginatedProcedureCatalogList,
+  PaginatedSurgeonCatalogList,
   ProcedureCatalog,
   StringFacetResponse,
+  SurgeonCatalog,
   TransferTargetResponse
 } from '../../model';
 
+
+export const getListSurgeonsCatalogResponseMock = (overrideResponse: Partial<Extract<PaginatedSurgeonCatalogList, object>> = {}): PaginatedSurgeonCatalogList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean()})), ...overrideResponse})
+
+export const getCreateSurgeonCatalogResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
+
+export const getRetrieveSurgeonResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
+
+export const getPartialUpdateSurgeonResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
+
+export const getDeleteSurgeonResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
+
+export const getImportSurgeonsResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+
+export const getSurgeonImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
 export const getCreateInventoryTransferResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
@@ -104,6 +120,94 @@ export const getListStockItemManufacturerFacetsResponseMock = (overrideResponse:
 
 export const getListStockItemPhysicalLocationFacetsResponseMock = (overrideResponse: Partial<Extract<StringFacetResponse, object>> = {}): StringFacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
 
+
+export const getListSurgeonsCatalogMockHandler = (overrideResponse?: PaginatedSurgeonCatalogList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedSurgeonCatalogList> | PaginatedSurgeonCatalogList), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/surgeons/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListSurgeonsCatalogResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateSurgeonCatalogMockHandler = (overrideResponse?: SurgeonCatalog | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<SurgeonCatalog> | SurgeonCatalog), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/directory/surgeons/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateSurgeonCatalogResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getRetrieveSurgeonMockHandler = (overrideResponse?: SurgeonCatalog | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<SurgeonCatalog> | SurgeonCatalog), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/surgeons/:id/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRetrieveSurgeonResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPartialUpdateSurgeonMockHandler = (overrideResponse?: SurgeonCatalog | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<SurgeonCatalog> | SurgeonCatalog), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/directory/surgeons/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdateSurgeonResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeleteSurgeonMockHandler = (overrideResponse?: SurgeonCatalog | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<SurgeonCatalog> | SurgeonCatalog), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/directory/surgeons/:id/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getDeleteSurgeonResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getImportSurgeonsMockHandler = (overrideResponse?: ImportReport | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportReport> | ImportReport), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/directory/surgeons/import/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getImportSurgeonsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getSurgeonImportTemplateMockHandler = (overrideResponse?: ArrayBuffer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ArrayBuffer> | ArrayBuffer), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/surgeons/import/template/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const binaryBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSurgeonImportTemplateResponseMock();
+    return HttpResponse.arrayBuffer(
+      binaryBody instanceof ArrayBuffer
+        ? binaryBody
+        : new ArrayBuffer(0),
+      { status: 200,
+        headers: { 'Content-Type': 'application/octet-stream' }
+      })
+  }, options)
+}
 
 export const getCreateInventoryTransferMockHandler = (overrideResponse?: InventoryTransferDetail | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InventoryTransferDetail> | InventoryTransferDetail), options?: RequestHandlerOptions) => {
   return http.post('/api/v1/inventory-transfers/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
@@ -483,6 +587,13 @@ export const getListStockItemPhysicalLocationFacetsMockHandler = (overrideRespon
   }, options)
 }
 export const getInventoryMock = () => [
+  getListSurgeonsCatalogMockHandler(),
+  getCreateSurgeonCatalogMockHandler(),
+  getRetrieveSurgeonMockHandler(),
+  getPartialUpdateSurgeonMockHandler(),
+  getDeleteSurgeonMockHandler(),
+  getImportSurgeonsMockHandler(),
+  getSurgeonImportTemplateMockHandler(),
   getCreateInventoryTransferMockHandler(),
   getApiV1InventoryTransfersRetrieveMockHandler(),
   getConfirmInventoryTransferReceiptMockHandler(),

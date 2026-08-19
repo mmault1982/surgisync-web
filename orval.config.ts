@@ -131,6 +131,20 @@ const ALLOWED_OPERATIONS = new Set([
   'delete_procedure',
   'import_procedures',
   'procedure_import_template',
+
+  // Directory Profiles → Surgeons, on /api/v1/directory/ — a new prefix
+  // because /api/v1/surgeons/ is the legacy lookup, one of the known-bad
+  // operations and frozen by three mobile call sites. That prefix is inside
+  // the response-accuracy gate from its first commit.
+  //
+  // Two writable fields here rather than one: `npi_number` alongside `name`.
+  'list_surgeons_catalog',
+  'create_surgeon_catalog',
+  'retrieve_surgeon',
+  'partial_update_surgeon',
+  'delete_surgeon',
+  'import_surgeons',
+  'surgeon_import_template',
   'list_parts',
 ]);
 

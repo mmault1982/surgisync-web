@@ -27,6 +27,13 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manufacturers');
   });
 
+  it('locates Surgeons, the third item in its section', () => {
+    const trail = findNavTrail('/directory/surgeons');
+
+    expect(trail?.section.title).toBe('Directory Profiles');
+    expect(trail?.item.title).toBe('Surgeons');
+  });
+
   it('locates Procedures beside Manufacturers', () => {
     // A second item within one section, which nothing covered before.
     const trail = findNavTrail('/directory/procedures');

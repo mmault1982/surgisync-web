@@ -30,12 +30,14 @@ import type {
   CreateInventoryTransfer400,
   CreateManufacturer400,
   CreateProcedure400,
+  CreateSurgeonCatalog400,
   ErrorDetail,
   FacetResponse,
   ImportManufacturers400,
   ImportProcedures400,
   ImportReport,
   ImportRequestRequest,
+  ImportSurgeons400,
   InventoryKitDetail,
   InventoryKitDetailRequest,
   InventoryKitPhoto,
@@ -49,6 +51,7 @@ import type {
   ListParts400,
   ListPartsParams,
   ListProceduresCatalogParams,
+  ListSurgeonsCatalogParams,
   Manufacturer,
   ManufacturerWriteRequest,
   PaginatedInventoryKitHistoryList,
@@ -56,14 +59,19 @@ import type {
   PaginatedManufacturerList,
   PaginatedPartListList,
   PaginatedProcedureCatalogList,
+  PaginatedSurgeonCatalogList,
   PartialUpdateManufacturer400,
   PartialUpdateProcedure400,
+  PartialUpdateSurgeon400,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
   PatchedProcedureWriteRequest,
+  PatchedSurgeonWriteRequest,
   ProcedureCatalog,
   ProcedureWriteRequest,
   StringFacetResponse,
+  SurgeonCatalog,
+  SurgeonWriteRequest,
   TransferTargetResponse
 } from '../../model';
 
@@ -89,6 +97,649 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+/**
+ * Surgeons this organization may choose from, sorted by name: the shared roster plus any the organization owns. Always paginated. This is the management list; the legacy `/api/v1/surgeons/` remains the per-facility lookup its clients depend on.
+ */
+export const listSurgeonsCatalog = (
+    params?: ListSurgeonsCatalogParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedSurgeonCatalogList>(
+      {url: `/api/v1/directory/surgeons/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListSurgeonsCatalogQueryKey = (params?: ListSurgeonsCatalogParams,) => {
+    return [
+    `/api/v1/directory/surgeons/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSurgeonsCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError = ErrorType<ErrorDetail>>(params?: ListSurgeonsCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSurgeonsCatalogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSurgeonsCatalog>>> = ({ signal }) => listSurgeonsCatalog(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSurgeonsCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listSurgeonsCatalog>>>
+export type ListSurgeonsCatalogQueryError = ErrorType<ErrorDetail>
+
+
+export function useListSurgeonsCatalog<TData = Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params: undefined |  ListSurgeonsCatalogParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSurgeonsCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listSurgeonsCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSurgeonsCatalog<TData = Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListSurgeonsCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSurgeonsCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listSurgeonsCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSurgeonsCatalog<TData = Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListSurgeonsCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListSurgeonsCatalog<TData = Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListSurgeonsCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSurgeonsCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSurgeonsCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a surgeon to this organization. Organization admins only. A 10-digit NPI is optional; when given it is what identifies the surgeon, so two people sharing a name can both be recorded.
+ */
+export const createSurgeonCatalog = (
+    surgeonWriteRequest: BodyType<SurgeonWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<SurgeonCatalog>(
+      {url: `/api/v1/directory/surgeons/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: surgeonWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateSurgeonCatalogQueryKey = (surgeonWriteRequest?: BodyType<SurgeonWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/surgeons/`, surgeonWriteRequest
+    ] as const;
+    }
+
+
+export const getCreateSurgeonCatalogQueryOptions = <TData = Awaited<ReturnType<typeof createSurgeonCatalog>>, TError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>>(surgeonWriteRequest: BodyType<SurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateSurgeonCatalogQueryKey(surgeonWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createSurgeonCatalog>>> = ({ signal }) => createSurgeonCatalog(surgeonWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateSurgeonCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof createSurgeonCatalog>>>
+export type CreateSurgeonCatalogQueryError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>
+
+
+export function useCreateSurgeonCatalog<TData = Awaited<ReturnType<typeof createSurgeonCatalog>>, TError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>>(
+ surgeonWriteRequest: BodyType<SurgeonWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createSurgeonCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof createSurgeonCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateSurgeonCatalog<TData = Awaited<ReturnType<typeof createSurgeonCatalog>>, TError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>>(
+ surgeonWriteRequest: BodyType<SurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createSurgeonCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof createSurgeonCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateSurgeonCatalog<TData = Awaited<ReturnType<typeof createSurgeonCatalog>>, TError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>>(
+ surgeonWriteRequest: BodyType<SurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateSurgeonCatalog<TData = Awaited<ReturnType<typeof createSurgeonCatalog>>, TError = ErrorType<CreateSurgeonCatalog400 | ErrorDetail>>(
+ surgeonWriteRequest: BodyType<SurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createSurgeonCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateSurgeonCatalogQueryOptions(surgeonWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * One surgeon, if this organization may see them.
+ */
+export const retrieveSurgeon = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<SurgeonCatalog>(
+      {url: `/api/v1/directory/surgeons/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetrieveSurgeonQueryKey = (id: number,) => {
+    return [
+    `/api/v1/directory/surgeons/${id}/`
+    ] as const;
+    }
+
+
+export const getRetrieveSurgeonQueryOptions = <TData = Awaited<ReturnType<typeof retrieveSurgeon>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetrieveSurgeonQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrieveSurgeon>>> = ({ signal }) => retrieveSurgeon(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetrieveSurgeonQueryResult = NonNullable<Awaited<ReturnType<typeof retrieveSurgeon>>>
+export type RetrieveSurgeonQueryError = ErrorType<ErrorDetail>
+
+
+export function useRetrieveSurgeon<TData = Awaited<ReturnType<typeof retrieveSurgeon>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveSurgeon<TData = Awaited<ReturnType<typeof retrieveSurgeon>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveSurgeon<TData = Awaited<ReturnType<typeof retrieveSurgeon>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetrieveSurgeon<TData = Awaited<ReturnType<typeof retrieveSurgeon>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetrieveSurgeonQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Amend a surgeon this organization owns. Organization admins only. Name and NPI are both writable.
+ */
+export const partialUpdateSurgeon = (
+    id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<SurgeonCatalog>(
+      {url: `/api/v1/directory/surgeons/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedSurgeonWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateSurgeonQueryKey = (id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/directory/surgeons/${id}/`, patchedSurgeonWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateSurgeonQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>>(id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateSurgeonQueryKey(id,patchedSurgeonWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateSurgeon>>> = ({ signal }) => partialUpdateSurgeon(id,patchedSurgeonWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateSurgeonQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateSurgeon>>>
+export type PartialUpdateSurgeonQueryError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>
+
+
+export function usePartialUpdateSurgeon<TData = Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>>(
+ id: number,
+    patchedSurgeonWriteRequest: undefined |  BodyType<PatchedSurgeonWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateSurgeon<TData = Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>>(
+ id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateSurgeon<TData = Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>>(
+ id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateSurgeon<TData = Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError = ErrorType<PartialUpdateSurgeon400 | ErrorDetail>>(
+ id: number,
+    patchedSurgeonWriteRequest?: BodyType<PatchedSurgeonWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateSurgeonQueryOptions(id,patchedSurgeonWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove a surgeon this organization owns. Organization admins only. A soft delete, refused while cases or facility assignments still reference them.
+ */
+export const deleteSurgeon = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<SurgeonCatalog>(
+      {url: `/api/v1/directory/surgeons/${id}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteSurgeonQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/directory/surgeons/${id}/`
+    ] as const;
+    }
+
+
+export const getDeleteSurgeonQueryOptions = <TData = Awaited<ReturnType<typeof deleteSurgeon>>, TError = ErrorType<ErrorDetail | Conflict>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteSurgeonQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteSurgeon>>> = ({ signal }) => deleteSurgeon(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeleteSurgeonQueryResult = NonNullable<Awaited<ReturnType<typeof deleteSurgeon>>>
+export type DeleteSurgeonQueryError = ErrorType<ErrorDetail | Conflict>
+
+
+export function useDeleteSurgeon<TData = Awaited<ReturnType<typeof deleteSurgeon>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof deleteSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteSurgeon<TData = Awaited<ReturnType<typeof deleteSurgeon>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteSurgeon>>,
+          TError,
+          Awaited<ReturnType<typeof deleteSurgeon>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteSurgeon<TData = Awaited<ReturnType<typeof deleteSurgeon>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeleteSurgeon<TData = Awaited<ReturnType<typeof deleteSurgeon>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteSurgeon>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteSurgeonQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Create surgeons in bulk from a CSV or Excel file with a `name` column and an optional `npi_number` column. Organization admins only. Surgeons already available — matched on NPI where a row has one, otherwise on name — are **skipped**, not re-created and not errors, so re-running the same file is safe. A row whose NPI is not 10 digits fails rather than being imported without it. Send `dry_run=true` to preview.
+ */
+export const importSurgeons = (
+    importRequestRequest: BodyType<ImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ImportReport>(
+      {url: `/api/v1/directory/surgeons/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportSurgeonsQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/surgeons/import/`, importRequestRequest
+    ] as const;
+    }
+
+
+export const getImportSurgeonsQueryOptions = <TData = Awaited<ReturnType<typeof importSurgeons>>, TError = ErrorType<ImportSurgeons400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportSurgeonsQueryKey(importRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importSurgeons>>> = ({ signal }) => importSurgeons(importRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportSurgeonsQueryResult = NonNullable<Awaited<ReturnType<typeof importSurgeons>>>
+export type ImportSurgeonsQueryError = ErrorType<ImportSurgeons400 | ErrorDetail>
+
+
+export function useImportSurgeons<TData = Awaited<ReturnType<typeof importSurgeons>>, TError = ErrorType<ImportSurgeons400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importSurgeons>>,
+          TError,
+          Awaited<ReturnType<typeof importSurgeons>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportSurgeons<TData = Awaited<ReturnType<typeof importSurgeons>>, TError = ErrorType<ImportSurgeons400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importSurgeons>>,
+          TError,
+          Awaited<ReturnType<typeof importSurgeons>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportSurgeons<TData = Awaited<ReturnType<typeof importSurgeons>>, TError = ErrorType<ImportSurgeons400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportSurgeons<TData = Awaited<ReturnType<typeof importSurgeons>>, TError = ErrorType<ImportSurgeons400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importSurgeons>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportSurgeonsQueryOptions(importRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * An empty CSV with the header row the importer expects.
+ */
+export const surgeonImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/directory/surgeons/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getSurgeonImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/directory/surgeons/import/template/`
+    ] as const;
+    }
+
+
+export const getSurgeonImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof surgeonImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSurgeonImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof surgeonImportTemplate>>> = ({ signal }) => surgeonImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SurgeonImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof surgeonImportTemplate>>>
+export type SurgeonImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function useSurgeonImportTemplate<TData = Awaited<ReturnType<typeof surgeonImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof surgeonImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof surgeonImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSurgeonImportTemplate<TData = Awaited<ReturnType<typeof surgeonImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof surgeonImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof surgeonImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSurgeonImportTemplate<TData = Awaited<ReturnType<typeof surgeonImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSurgeonImportTemplate<TData = Awaited<ReturnType<typeof surgeonImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof surgeonImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSurgeonImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 /**
  * Create an inventory transfer record. Send as multipart/form-data so `kit_photo` and `label_photo` files can be uploaded alongside the other fields (application/json is also accepted when no files are included). `transport_method` and `reason` are required. If no organization is supplied on either the from_ or to_ side, the source organization defaults to the requesting user's organization.

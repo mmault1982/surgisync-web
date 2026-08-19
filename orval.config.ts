@@ -114,6 +114,23 @@ const ALLOWED_OPERATIONS = new Set([
   // The template download returns a CSV body rather than JSON.
   'import_manufacturers',
   'manufacturer_import_template',
+
+  // Directory Profiles → Procedures. Same shape as manufacturers above, on a
+  // prefix that is *inside* the response-accuracy gate from its first commit —
+  // nothing legacy squats /api/v1/procedures/, so it did not inherit the
+  // problem /api/v1/manufacturers/ still has.
+  //
+  // Note the legacy `/api/v1/procedure_names/` is deliberately absent. It is
+  // one of the known-bad operations, declaring a bare array while answering
+  // {message, data}, and it stays that way for the shipped mobile app. This
+  // list reads the new endpoint instead.
+  'list_procedures_catalog',
+  'create_procedure',
+  'retrieve_procedure',
+  'partial_update_procedure',
+  'delete_procedure',
+  'import_procedures',
+  'procedure_import_template',
   'list_parts',
 ]);
 

@@ -4,10 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ManufacturerImportReport } from '@/api/generated/model';
+import type { ImportReport } from '@/api/generated/model';
 import { server } from '@/test/msw/server';
 
-import { ManufacturerImportDialog } from '../components/manufacturer-import-dialog';
+import {
+  importManufacturers,
+  manufacturerImportTemplate,
+} from '@/api/generated/endpoints/inventory/inventory';
+
+import { ImportDialog } from '../components/import-dialog';
 
 beforeAll(() => {
   globalThis.ResizeObserver ??= class {
@@ -23,7 +28,7 @@ beforeAll(() => {
 
 const IMPORT = '/api/v1/manufacturers/import/';
 
-function report(overrides: Partial<ManufacturerImportReport> = {}): ManufacturerImportReport {
+function report(overrides: Partial<ImportReport> = {}): ImportReport {
   return {
     dry_run: true,
     total_rows: 2,
@@ -49,7 +54,17 @@ function renderDialog() {
   const onClose = vi.fn();
   render(
     <QueryClientProvider client={client}>
-      <ManufacturerImportDialog onClose={onClose} />
+      {/* Configured as the Manufacturers screen configures it, so the test
+          exercises a real wiring rather than a bespoke one. */}
+      <ImportDialog
+        title="Import manufacturers"
+        description="A CSV or Excel file with a single column headed name."
+        onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
+        onTemplate={() => manufacturerImportTemplate()}
+        templateFilename="manufacturers_template.csv"
+        invalidates={[['directory-manufacturers'], ['catalog']]}
+        onClose={onClose}
+      />
     </QueryClientProvider>,
   );
   return { user: userEvent.setup(), onClose };

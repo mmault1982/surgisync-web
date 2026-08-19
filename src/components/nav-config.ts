@@ -2,6 +2,7 @@ import type { LinkProps } from '@tanstack/react-router';
 import {
   FactoryIcon,
   FolderIcon,
+  StethoscopeIcon,
   LayoutDashboardIcon,
   PackageIcon,
   PackageOpenIcon,
@@ -43,7 +44,14 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Directory Profiles',
     icon: FolderIcon,
-    items: [{ title: 'Manufacturers', to: '/directory/manufacturers', icon: FactoryIcon }],
+    items: [
+      { title: 'Manufacturers', to: '/directory/manufacturers', icon: FactoryIcon },
+      // Not in the prototype's Directory Profiles, which lists Facilities,
+      // Manufacturers, Surgeons and Users. A deliberate addition: procedures
+      // are reference data an organization maintains the same way, and the
+      // spec simply never covered them.
+      { title: 'Procedures', to: '/directory/procedures', icon: StethoscopeIcon },
+    ],
   },
   {
     title: 'Inventory',

@@ -7,13 +7,13 @@
  */
 
 /**
- * The bulk-import upload.
+ * A bulk-import upload.
  *
  * Declared as a serializer rather than read off `request.data` so the
  * contract documents the multipart body, and so a generated client knows
  * `file` is binary — which is what makes the browser call one line.
  */
-export interface ManufacturerImportRequestRequest {
+export interface ImportRequestRequest {
   /** CSV or Excel (.csv, .xlsx) with a `name` column. 10MB and 2000 rows maximum. */
   file: Blob;
   /** Decide every row and report the outcome without writing anything. The preview half of the flow. */

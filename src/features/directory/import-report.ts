@@ -1,13 +1,18 @@
 import { asFieldErrors, errorMessage } from '@/api/errors';
-import type { ManufacturerImportReport, ManufacturerImportRow } from '@/api/generated/model';
+import type { ImportReport, ImportRow } from '@/api/generated/model';
 import { OutcomeEnum } from '@/api/generated/model';
 
 /**
- * Everything the import dialog decides, with no DOM in sight.
+ * Everything an import dialog decides, with no DOM in sight.
  *
- * The same split as `receive-sku.ts` and `manufacturers.ts`: the report
- * arithmetic and the copy live here so they can be tested without a render,
- * and the component is left with wiring.
+ * Entity-neutral, and it always was — `summarise`, `rowsToShow` and `hasWork`
+ * only ever read counts and outcomes. It was named for manufacturers because
+ * they were the only caller; procedures is the second, and the backend's
+ * report serializer became entity-neutral in the same change, so the names
+ * here follow.
+ *
+ * The same split as `receive-sku.ts`: the arithmetic and the copy live here so
+ * they can be tested without a render, and the component is left with wiring.
  */
 
 /** Where the dialog is in the upload → preview → commit sequence. */
@@ -21,7 +26,7 @@ export type ImportStage = 'choose' | 'preview' | 'done';
  * Skips are named rather than folded into a total: re-running a file is a
  * normal thing to do, and "35 already there" is the answer that says so.
  */
-export function summarise(report: ManufacturerImportReport): string {
+export function summarise(report: ImportReport): string {
   const parts: string[] = [];
   const verb = report.dry_run ? 'to add' : 'added';
 
@@ -41,7 +46,7 @@ export function summarise(report: ManufacturerImportReport): string {
  * only ones the user can act on; skips follow, because "why did nothing
  * happen?" is the next question. Created rows are counted, not listed.
  */
-export function rowsToShow(report: ManufacturerImportReport): ManufacturerImportRow[] {
+export function rowsToShow(report: ImportReport): ImportRow[] {
   const rank = { [OutcomeEnum.failed]: 0, [OutcomeEnum.skipped]: 1, [OutcomeEnum.created]: 2 };
   return report.rows
     .filter((row) => row.outcome !== OutcomeEnum.created)
@@ -49,7 +54,7 @@ export function rowsToShow(report: ManufacturerImportReport): ManufacturerImport
 }
 
 /** True when committing would write something. */
-export function hasWork(report: ManufacturerImportReport): boolean {
+export function hasWork(report: ImportReport): boolean {
   return report.created > 0;
 }
 
@@ -60,7 +65,7 @@ export function hasWork(report: ManufacturerImportReport): boolean {
  * The fallback is the server's own text rather than a generic line, because an
  * unmapped code still carries something the user can act on.
  */
-export function rowReason(row: ManufacturerImportRow): string {
+export function rowReason(row: ImportRow): string {
   switch (row.code) {
     case 'already_exists':
       return 'Already in your list';

@@ -2,11 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileSpreadsheetIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import {
-  importManufacturers,
-  manufacturerImportTemplate,
-} from '@/api/generated/endpoints/inventory/inventory';
-import type { ManufacturerImportReport } from '@/api/generated/model';
+import type { ImportReport } from '@/api/generated/model';
 import { OutcomeEnum } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,20 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { catalogKeys } from '@/features/inventory/inventory.keys';
 import { cn } from '@/lib/utils';
 
-import { manufacturerKeys } from '../directory.keys';
-import {
-  hasWork,
-  rowReason,
-  rowsToShow,
-  summarise,
-  uploadErrorMessage,
-} from '../manufacturer-import';
+import { hasWork, rowReason, rowsToShow, summarise, uploadErrorMessage } from '../import-report';
 
 /**
- * Import manufacturers from a CSV or Excel file.
+ * Import records from a CSV or Excel file.
  *
  * Three steps in one dialog: pick a file, read what would happen, confirm.
  * The preview is the same server call with `dry_run` set, so what it shows is
@@ -38,14 +26,47 @@ import {
  *
  * The file is posted twice — once to preview, once to commit — because there
  * is no server-side staging and a JWT session has nowhere to keep one. That is
- * affordable precisely because the import merges: if another admin adds a
- * manufacturer in between, the commit turns a `created` into a `skipped` and
- * says so.
+ * affordable precisely because these imports merge: if another admin adds a
+ * row in between, the commit turns a `created` into a `skipped` and says so.
+ *
+ * Entity-neutral. It started out as the manufacturers dialog; procedures is
+ * the second caller and differs only in its copy, its two generated calls and
+ * which caches to refresh, so those became props rather than a second copy of
+ * 270 lines. This project promotes on the second caller — see
+ * `table-states.tsx` and `field.tsx`.
  */
-export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
+export interface ImportDialogProps {
+  /** Dialog title, e.g. "Import manufacturers". */
+  title: string;
+  /** What the file should contain, and what happens to names already present. */
+  description: React.ReactNode;
+  /** The generated import call, with `dry_run` threaded through. */
+  onImport: (file: File, dryRun: boolean) => Promise<ImportReport>;
+  /** The generated template download, returning the CSV body. */
+  onTemplate: () => Promise<Blob>;
+  templateFilename: string;
+  /**
+   * Every query root a successful commit invalidates.
+   *
+   * More than one because these lists are read in two places under different
+   * keys — the screen's table and a picker elsewhere with its own staleTime.
+   */
+  invalidates: readonly (readonly unknown[])[];
+  onClose: () => void;
+}
+
+export function ImportDialog({
+  title,
+  description,
+  onImport,
+  onTemplate,
+  templateFilename,
+  invalidates,
+  onClose,
+}: ImportDialogProps) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [report, setReport] = useState<ManufacturerImportReport | null>(null);
+  const [report, setReport] = useState<ImportReport | null>(null);
   const [committed, setCommitted] = useState(false);
 
   const send = useMutation({
@@ -53,25 +74,18 @@ export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
     // skips what the first made — but it would report every row as already
     // there, which reads as a failure.
     retry: false,
-    mutationFn: ({ upload, dryRun }: { upload: File; dryRun: boolean }) =>
-      importManufacturers({ file: upload, dry_run: dryRun }),
+    mutationFn: ({ upload, dryRun }: { upload: File; dryRun: boolean }) => onImport(upload, dryRun),
     onSuccess: async (next) => {
       setReport(next);
       if (next.dry_run) return;
 
       setCommitted(true);
-      // Both roots, as the create and delete dialogs do: the receive forms'
-      // manufacturer picker reads the same endpoint under `catalogKeys` with
-      // its own staleTime.
-      //
-      // Imported names still will not appear in that picker — it filters on
-      // `has_items` and they have no catalog parts yet. See the note in
-      // `manufacturer-dialog.tsx`; the dialog says so rather than leaving the
-      // user to discover it.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: manufacturerKeys.all }),
-        queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
-      ]);
+      // Every root the caller named. Manufacturers passes two, because the
+      // receive forms' picker reads the same endpoint under `catalogKeys` with
+      // its own staleTime — though note imported manufacturers still will not
+      // appear there until they have catalog parts, which the Manufacturers
+      // screen says out loud.
+      await Promise.all(invalidates.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     },
   });
 
@@ -94,12 +108,12 @@ export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
    */
   const template = useMutation({
     retry: false,
-    mutationFn: () => manufacturerImportTemplate(),
+    mutationFn: () => onTemplate(),
     onSuccess: (blob) => {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = 'manufacturers_template.csv';
+      anchor.download = templateFilename;
       anchor.click();
       URL.revokeObjectURL(url);
     },
@@ -117,13 +131,8 @@ export function ManufacturerImportDialog({ onClose }: { onClose: () => void }) {
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Import manufacturers</DialogTitle>
-          <DialogDescription>
-            A CSV or Excel file with a single column headed <strong>name</strong>. Names your
-            organization already has are left alone, so the same file can be imported twice safely.
-            Imported manufacturers need a catalog of parts before stock can be received against
-            them.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">

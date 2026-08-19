@@ -27,6 +27,14 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manufacturers');
   });
 
+  it('locates Procedures beside Manufacturers', () => {
+    // A second item within one section, which nothing covered before.
+    const trail = findNavTrail('/directory/procedures');
+
+    expect(trail?.section.title).toBe('Directory Profiles');
+    expect(trail?.item.title).toBe('Procedures');
+  });
+
   it('returns null off the nav', () => {
     // The breadcrumb renders nothing rather than a stale crumb.
     expect(findNavTrail('/login')).toBeNull();

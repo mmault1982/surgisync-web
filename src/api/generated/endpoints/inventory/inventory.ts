@@ -29,9 +29,13 @@ import type {
   CreateInventoryKitPhoto400,
   CreateInventoryTransfer400,
   CreateManufacturer400,
+  CreateProcedure400,
   ErrorDetail,
   FacetResponse,
   ImportManufacturers400,
+  ImportProcedures400,
+  ImportReport,
+  ImportRequestRequest,
   InventoryKitDetail,
   InventoryKitDetailRequest,
   InventoryKitPhoto,
@@ -44,17 +48,21 @@ import type {
   ListManufacturersParams,
   ListParts400,
   ListPartsParams,
+  ListProceduresCatalogParams,
   Manufacturer,
-  ManufacturerImportReport,
-  ManufacturerImportRequestRequest,
   ManufacturerWriteRequest,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
   PaginatedPartListList,
+  PaginatedProcedureCatalogList,
   PartialUpdateManufacturer400,
+  PartialUpdateProcedure400,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
+  PatchedProcedureWriteRequest,
+  ProcedureCatalog,
+  ProcedureWriteRequest,
   StringFacetResponse,
   TransferTargetResponse
 } from '../../model';
@@ -949,17 +957,17 @@ export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteMa
  * Create manufacturers in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview the outcome of every row without writing anything.
  */
 export const importManufacturers = (
-    manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>,
+    importRequestRequest: BodyType<ImportRequestRequest>,
  options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
 ) => {
 
       const formData = new FormData();
-formData.append(`file`, manufacturerImportRequestRequest.file);
-if(manufacturerImportRequestRequest.dry_run !== undefined) {
- formData.append(`dry_run`, manufacturerImportRequestRequest.dry_run.toString())
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
  }
 
-      return apiRequest<ManufacturerImportReport>(
+      return apiRequest<ImportReport>(
       {url: `/api/v1/manufacturers/import/`, method: 'POST',
       headers: {'Content-Type': 'multipart/form-data', },
        data: formData, signal
@@ -970,23 +978,23 @@ if(manufacturerImportRequestRequest.dry_run !== undefined) {
 
 
 
-export const getImportManufacturersQueryKey = (manufacturerImportRequestRequest?: BodyType<ManufacturerImportRequestRequest>,) => {
+export const getImportManufacturersQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
     return [
-    'POST', `/api/v1/manufacturers/import/`, manufacturerImportRequestRequest
+    'POST', `/api/v1/manufacturers/import/`, importRequestRequest
     ] as const;
     }
 
 
-export const getImportManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+export const getImportManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getImportManufacturersQueryKey(manufacturerImportRequestRequest);
+  const queryKey =  queryOptions?.queryKey ?? getImportManufacturersQueryKey(importRequestRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof importManufacturers>>> = ({ signal }) => importManufacturers(manufacturerImportRequestRequest, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importManufacturers>>> = ({ signal }) => importManufacturers(importRequestRequest, requestOptions, signal);
 
 
 
@@ -1000,7 +1008,7 @@ export type ImportManufacturersQueryError = ErrorType<ImportManufacturers400 | E
 
 
 export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof importManufacturers>>,
           TError,
@@ -1010,7 +1018,7 @@ export function useImportManufacturers<TData = Awaited<ReturnType<typeof importM
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof importManufacturers>>,
           TError,
@@ -1020,16 +1028,16 @@ export function useImportManufacturers<TData = Awaited<ReturnType<typeof importM
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- manufacturerImportRequestRequest: BodyType<ManufacturerImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getImportManufacturersQueryOptions(manufacturerImportRequestRequest,options)
+  const queryOptions = getImportManufacturersQueryOptions(importRequestRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1210,6 +1218,649 @@ export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListPartsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Procedures this organization may choose from, sorted by name: the shared catalog plus any the organization owns. Always paginated.
+ */
+export const listProceduresCatalog = (
+    params?: ListProceduresCatalogParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedProcedureCatalogList>(
+      {url: `/api/v1/procedures/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListProceduresCatalogQueryKey = (params?: ListProceduresCatalogParams,) => {
+    return [
+    `/api/v1/procedures/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProceduresCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listProceduresCatalog>>, TError = ErrorType<ErrorDetail>>(params?: ListProceduresCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProceduresCatalogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProceduresCatalog>>> = ({ signal }) => listProceduresCatalog(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListProceduresCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listProceduresCatalog>>>
+export type ListProceduresCatalogQueryError = ErrorType<ErrorDetail>
+
+
+export function useListProceduresCatalog<TData = Awaited<ReturnType<typeof listProceduresCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params: undefined |  ListProceduresCatalogParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProceduresCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listProceduresCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProceduresCatalog<TData = Awaited<ReturnType<typeof listProceduresCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListProceduresCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listProceduresCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listProceduresCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListProceduresCatalog<TData = Awaited<ReturnType<typeof listProceduresCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListProceduresCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListProceduresCatalog<TData = Awaited<ReturnType<typeof listProceduresCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListProceduresCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listProceduresCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListProceduresCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a procedure to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one; the shared catalog is not writable.
+ */
+export const createProcedure = (
+    procedureWriteRequest: BodyType<ProcedureWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ProcedureCatalog>(
+      {url: `/api/v1/procedures/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: procedureWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateProcedureQueryKey = (procedureWriteRequest?: BodyType<ProcedureWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/procedures/`, procedureWriteRequest
+    ] as const;
+    }
+
+
+export const getCreateProcedureQueryOptions = <TData = Awaited<ReturnType<typeof createProcedure>>, TError = ErrorType<CreateProcedure400 | ErrorDetail>>(procedureWriteRequest: BodyType<ProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateProcedureQueryKey(procedureWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createProcedure>>> = ({ signal }) => createProcedure(procedureWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateProcedureQueryResult = NonNullable<Awaited<ReturnType<typeof createProcedure>>>
+export type CreateProcedureQueryError = ErrorType<CreateProcedure400 | ErrorDetail>
+
+
+export function useCreateProcedure<TData = Awaited<ReturnType<typeof createProcedure>>, TError = ErrorType<CreateProcedure400 | ErrorDetail>>(
+ procedureWriteRequest: BodyType<ProcedureWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof createProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateProcedure<TData = Awaited<ReturnType<typeof createProcedure>>, TError = ErrorType<CreateProcedure400 | ErrorDetail>>(
+ procedureWriteRequest: BodyType<ProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof createProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateProcedure<TData = Awaited<ReturnType<typeof createProcedure>>, TError = ErrorType<CreateProcedure400 | ErrorDetail>>(
+ procedureWriteRequest: BodyType<ProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateProcedure<TData = Awaited<ReturnType<typeof createProcedure>>, TError = ErrorType<CreateProcedure400 | ErrorDetail>>(
+ procedureWriteRequest: BodyType<ProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateProcedureQueryOptions(procedureWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * One procedure, if this organization may see it.
+ */
+export const retrieveProcedure = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ProcedureCatalog>(
+      {url: `/api/v1/procedures/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetrieveProcedureQueryKey = (id: number,) => {
+    return [
+    `/api/v1/procedures/${id}/`
+    ] as const;
+    }
+
+
+export const getRetrieveProcedureQueryOptions = <TData = Awaited<ReturnType<typeof retrieveProcedure>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetrieveProcedureQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrieveProcedure>>> = ({ signal }) => retrieveProcedure(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetrieveProcedureQueryResult = NonNullable<Awaited<ReturnType<typeof retrieveProcedure>>>
+export type RetrieveProcedureQueryError = ErrorType<ErrorDetail>
+
+
+export function useRetrieveProcedure<TData = Awaited<ReturnType<typeof retrieveProcedure>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveProcedure<TData = Awaited<ReturnType<typeof retrieveProcedure>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveProcedure<TData = Awaited<ReturnType<typeof retrieveProcedure>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetrieveProcedure<TData = Awaited<ReturnType<typeof retrieveProcedure>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetrieveProcedureQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Rename a procedure this organization owns. Organization admins only. `name` is the only writable field.
+ */
+export const partialUpdateProcedure = (
+    id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ProcedureCatalog>(
+      {url: `/api/v1/procedures/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedProcedureWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateProcedureQueryKey = (id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/procedures/${id}/`, patchedProcedureWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateProcedureQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateProcedure>>, TError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>>(id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateProcedureQueryKey(id,patchedProcedureWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateProcedure>>> = ({ signal }) => partialUpdateProcedure(id,patchedProcedureWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateProcedureQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateProcedure>>>
+export type PartialUpdateProcedureQueryError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>
+
+
+export function usePartialUpdateProcedure<TData = Awaited<ReturnType<typeof partialUpdateProcedure>>, TError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>>(
+ id: number,
+    patchedProcedureWriteRequest: undefined |  BodyType<PatchedProcedureWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateProcedure<TData = Awaited<ReturnType<typeof partialUpdateProcedure>>, TError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>>(
+ id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateProcedure<TData = Awaited<ReturnType<typeof partialUpdateProcedure>>, TError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>>(
+ id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateProcedure<TData = Awaited<ReturnType<typeof partialUpdateProcedure>>, TError = ErrorType<PartialUpdateProcedure400 | ErrorDetail>>(
+ id: number,
+    patchedProcedureWriteRequest?: BodyType<PatchedProcedureWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateProcedureQueryOptions(id,patchedProcedureWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove a procedure this organization owns. Organization admins only. A soft delete, refused while cases or quotes still reference it.
+ */
+export const deleteProcedure = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ProcedureCatalog>(
+      {url: `/api/v1/procedures/${id}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteProcedureQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/procedures/${id}/`
+    ] as const;
+    }
+
+
+export const getDeleteProcedureQueryOptions = <TData = Awaited<ReturnType<typeof deleteProcedure>>, TError = ErrorType<ErrorDetail | Conflict>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteProcedureQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteProcedure>>> = ({ signal }) => deleteProcedure(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeleteProcedureQueryResult = NonNullable<Awaited<ReturnType<typeof deleteProcedure>>>
+export type DeleteProcedureQueryError = ErrorType<ErrorDetail | Conflict>
+
+
+export function useDeleteProcedure<TData = Awaited<ReturnType<typeof deleteProcedure>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof deleteProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteProcedure<TData = Awaited<ReturnType<typeof deleteProcedure>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteProcedure>>,
+          TError,
+          Awaited<ReturnType<typeof deleteProcedure>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteProcedure<TData = Awaited<ReturnType<typeof deleteProcedure>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeleteProcedure<TData = Awaited<ReturnType<typeof deleteProcedure>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteProcedure>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteProcedureQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Create procedures in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview.
+ */
+export const importProcedures = (
+    importRequestRequest: BodyType<ImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ImportReport>(
+      {url: `/api/v1/procedures/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportProceduresQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/procedures/import/`, importRequestRequest
+    ] as const;
+    }
+
+
+export const getImportProceduresQueryOptions = <TData = Awaited<ReturnType<typeof importProcedures>>, TError = ErrorType<ImportProcedures400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportProceduresQueryKey(importRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importProcedures>>> = ({ signal }) => importProcedures(importRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportProceduresQueryResult = NonNullable<Awaited<ReturnType<typeof importProcedures>>>
+export type ImportProceduresQueryError = ErrorType<ImportProcedures400 | ErrorDetail>
+
+
+export function useImportProcedures<TData = Awaited<ReturnType<typeof importProcedures>>, TError = ErrorType<ImportProcedures400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importProcedures>>,
+          TError,
+          Awaited<ReturnType<typeof importProcedures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportProcedures<TData = Awaited<ReturnType<typeof importProcedures>>, TError = ErrorType<ImportProcedures400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importProcedures>>,
+          TError,
+          Awaited<ReturnType<typeof importProcedures>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportProcedures<TData = Awaited<ReturnType<typeof importProcedures>>, TError = ErrorType<ImportProcedures400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportProcedures<TData = Awaited<ReturnType<typeof importProcedures>>, TError = ErrorType<ImportProcedures400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importProcedures>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportProceduresQueryOptions(importRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * An empty CSV with the header row the importer expects.
+ */
+export const procedureImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/procedures/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getProcedureImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/procedures/import/template/`
+    ] as const;
+    }
+
+
+export const getProcedureImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof procedureImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProcedureImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof procedureImportTemplate>>> = ({ signal }) => procedureImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProcedureImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof procedureImportTemplate>>>
+export type ProcedureImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function useProcedureImportTemplate<TData = Awaited<ReturnType<typeof procedureImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof procedureImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof procedureImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProcedureImportTemplate<TData = Awaited<ReturnType<typeof procedureImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof procedureImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof procedureImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProcedureImportTemplate<TData = Awaited<ReturnType<typeof procedureImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProcedureImportTemplate<TData = Awaited<ReturnType<typeof procedureImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof procedureImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProcedureImportTemplateQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -5,12 +5,12 @@
  * API documentation with JWT Authentication
  * OpenAPI spec version: v1
  */
-import type { ManufacturerImportRow } from './manufacturerImportRow';
+import type { ImportRow } from './importRow';
 
 /**
  * The outcome of an import, whether or not anything was written.
  */
-export interface ManufacturerImportReport {
+export interface ImportReport {
   /** True when nothing was written and this is a preview. */
   dry_run: boolean;
   total_rows: number;
@@ -19,5 +19,5 @@ export interface ManufacturerImportReport {
   /** Already present. Not failures. */
   skipped: number;
   failed: number;
-  rows: ManufacturerImportRow[];
+  rows: ImportRow[];
 }

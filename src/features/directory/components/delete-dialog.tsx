@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { deleteManufacturer } from '@/api/generated/endpoints/inventory/inventory';
-import type { Manufacturer } from '@/api/generated/model';
+import { asConflict, errorMessage } from '@/api/errors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,27 +11,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { catalogKeys } from '@/features/inventory/inventory.keys';
-
-import { manufacturerKeys } from '../directory.keys';
-import { deleteErrorMessage } from '../manufacturers';
 
 /**
- * Confirm before removing a manufacturer.
+ * Confirm before removing a directory record.
  *
  * `AlertDialog` rather than `Dialog`: it interrupts to ask a yes/no question
  * about something already decided, which is the split between the two Radix
  * primitives, and it focuses Cancel by default.
  *
- * The copy avoids "permanently". This is a soft delete — the row stops being
- * listed and frees its name, but it stays for the history that references it —
- * and promising otherwise would be a promise the server does not keep.
+ * Both entities soft-delete and both refuse while something references them,
+ * so the only real difference is the conflict code and the copy. The copy
+ * avoids "permanently" in either case, because neither server promises it.
  */
-export function DeleteManufacturerDialog({
-  manufacturer,
+export function DeleteDialog({
+  title,
+  description,
+  conflictCode,
+  onDelete,
+  invalidates,
   onClose,
 }: {
-  manufacturer: Manufacturer;
+  title: string;
+  description: string;
+  /**
+   * The 409 `error` code this entity refuses with, e.g. `procedure_in_use`.
+   * Branching on the code rather than the prose is the house rule; the
+   * server's `message` carries the counts and is what gets rendered.
+   */
+  conflictCode: string;
+  onDelete: () => Promise<unknown>;
+  invalidates: readonly (readonly unknown[])[];
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -40,21 +48,19 @@ export function DeleteManufacturerDialog({
   const remove = useMutation({
     // A 409 is a decision for the user, not something to re-send.
     retry: false,
-    mutationFn: () => deleteManufacturer(manufacturer.id),
+    mutationFn: () => onDelete(),
     onSuccess: async () => {
-      // Both roots, for the same reason the save dialog does it: the receive
-      // forms' picker reads this endpoint under `catalogKeys` with its own
-      // staleTime, and a removed manufacturer still offered there is worse
-      // than one that never disappeared. Removal *is* reflected there —
-      // unlike creation, which the picker's `has_items` filter hides. See the
-      // note in `manufacturer-dialog.tsx`.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: manufacturerKeys.all }),
-        queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
-      ]);
+      await Promise.all(invalidates.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onClose();
     },
   });
+
+  const conflict = asConflict(remove.error);
+  const message = remove.error
+    ? conflict?.error === conflictCode
+      ? conflict.message
+      : errorMessage(remove.error)
+    : null;
 
   return (
     <AlertDialog
@@ -67,16 +73,13 @@ export function DeleteManufacturerDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove {manufacturer.name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            It stops appearing in your organization&rsquo;s lists and pickers. Stock already
-            received keeps its manufacturer.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
 
-        {remove.error ? (
+        {message ? (
           <p role="alert" className="text-sm text-destructive">
-            {deleteErrorMessage(remove.error)}
+            {message}
           </p>
         ) : null}
 
@@ -86,8 +89,8 @@ export function DeleteManufacturerDialog({
             disabled={remove.isPending}
             // Not the default close-on-click: the dialog has to survive a
             // failure so the message above has somewhere to render — and the
-            // failure that matters here, a manufacturer that still has parts,
-            // is the one the user most needs to read.
+            // failure that matters, a record something still references, is
+            // the one the user most needs to read.
             onClick={(event) => {
               event.preventDefault();
               remove.mutate();

@@ -10,12 +10,12 @@ import type { OutcomeEnum } from './outcomeEnum';
 /**
  * What happened to one row of the file.
  */
-export interface ManufacturerImportRow {
+export interface ImportRow {
   /** Spreadsheet row number. Data starts at 2; row 1 is the header. */
   row: number;
   name: string;
   /**
-     * `created` — a new manufacturer. `skipped` — this organization already has that name, which is a normal outcome of re-running a file and **not** an error. `failed` — the row could not be used.
+     * `created` — a new record. `skipped` — this organization already has that name, which is a normal outcome of re-running a file and **not** an error. `failed` — the row could not be used.
      *
      * * `created` - created
      * * `skipped` - skipped

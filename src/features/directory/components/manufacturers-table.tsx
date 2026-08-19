@@ -92,26 +92,31 @@ export function ManufacturersTable({
               ))}
               {canManage ? (
                 <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label={`Rename ${row.name}`}
-                      onClick={() => onEdit(row)}
-                    >
-                      <PencilIcon />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label={`Remove ${row.name}`}
-                      onClick={() => onDelete(row)}
-                    >
-                      <Trash2Icon />
-                    </Button>
-                  </div>
+                  {/* Owned rows only — see procedures-table.tsx. */}
+                  {row.is_owned ? (
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`Rename ${row.name}`}
+                        onClick={() => onEdit(row)}
+                      >
+                        <PencilIcon />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`Remove ${row.name}`}
+                        onClick={() => onDelete(row)}
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Shared</span>
+                  )}
                 </td>
               ) : null}
             </tr>

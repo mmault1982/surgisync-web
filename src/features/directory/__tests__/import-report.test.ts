@@ -1,21 +1,15 @@
 import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import type { ManufacturerImportReport, ManufacturerImportRow } from '@/api/generated/model';
+import type { ImportReport, ImportRow } from '@/api/generated/model';
 
-import {
-  hasWork,
-  rowReason,
-  rowsToShow,
-  summarise,
-  uploadErrorMessage,
-} from '../manufacturer-import';
+import { hasWork, rowReason, rowsToShow, summarise, uploadErrorMessage } from '../import-report';
 
-function row(overrides: Partial<ManufacturerImportRow> = {}): ManufacturerImportRow {
+function row(overrides: Partial<ImportRow> = {}): ImportRow {
   return { row: 2, name: 'Acme Ortho', outcome: 'created', ...overrides };
 }
 
-function report(overrides: Partial<ManufacturerImportReport> = {}): ManufacturerImportReport {
+function report(overrides: Partial<ImportReport> = {}): ImportReport {
   return {
     dry_run: true,
     total_rows: 0,

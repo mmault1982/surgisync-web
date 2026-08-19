@@ -6,12 +6,13 @@
  * OpenAPI spec version: v1
  */
 
-export interface Manufacturer {
+/**
+ * The Directory Profiles shape: a procedure plus whether you may edit it.
+ */
+export interface ProcedureCatalog {
   readonly id: number;
   /** @maxLength 100 */
   name: string;
-  /** @nullable */
-  barcode?: string | null;
   /** True when this row belongs to your organization and may be renamed or removed. False for the shared catalog, which is readable by everyone and writable by nobody. */
   readonly is_owned: boolean;
 }

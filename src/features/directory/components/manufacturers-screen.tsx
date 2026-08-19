@@ -2,20 +2,29 @@ import { useQuery } from '@tanstack/react-query';
 import { PlusIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
+import {
+  createManufacturer,
+  deleteManufacturer,
+  importManufacturers,
+  manufacturerImportTemplate,
+  partialUpdateManufacturer,
+} from '@/api/generated/endpoints/inventory/inventory';
 import type { Manufacturer } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
+import { catalogKeys } from '@/features/inventory/inventory.keys';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { canManageManufacturers } from '../manufacturers';
+import { manufacturerKeys } from '../directory.keys';
+import { canManageDirectory } from '../permissions';
 import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
-import { DeleteManufacturerDialog } from './delete-manufacturer-dialog';
-import { ManufacturerImportDialog } from './manufacturer-import-dialog';
-import { ManufacturerDialog } from './manufacturer-dialog';
+import { DeleteDialog } from './delete-dialog';
+import { ImportDialog } from './import-dialog';
+import { NameDialog } from './name-dialog';
 import { ManufacturersTable } from './manufacturers-table';
 
 /**
@@ -26,6 +35,17 @@ import { ManufacturersTable } from './manufacturers-table';
  * client-side guess would either hide rows it should not or offer edits the
  * server will 404.
  */
+/**
+ * The two query roots every manufacturer write refreshes.
+ *
+ * `manufacturerKeys` is this table; `catalogKeys` is the receive forms'
+ * picker, which reads the same endpoint under a different key with its own
+ * staleTime. It does *not* make a newly added manufacturer appear in that
+ * picker — that filters on `has_items` and a new row has no catalog parts, as
+ * the copy under the heading says.
+ */
+const INVALIDATES = [manufacturerKeys.all, catalogKeys.all] as const;
+
 export function ManufacturersScreen({
   search,
   onSearchChange,
@@ -38,7 +58,7 @@ export function ManufacturersScreen({
   const query = useQuery(manufacturerListQuery(search));
   // Writes are org-admin only server-side. Offering the controls to
   // everyone would mean a rep fills in the form and learns on submit.
-  const canManage = canManageManufacturers(useAuth().user?.role);
+  const canManage = canManageDirectory(useAuth().user?.role);
 
   // `undefined` closed, `null` open-for-create, a row open-for-rename. One
   // piece of state rather than two booleans, so "adding" and "renaming" cannot
@@ -142,12 +162,54 @@ export function ManufacturersScreen({
         to the Kit Detail dialogs.
       */}
       {editing !== undefined ? (
-        <ManufacturerDialog manufacturer={editing} onClose={() => setEditing(undefined)} />
+        <NameDialog
+          title={editing ? 'Rename manufacturer' : 'Add manufacturer'}
+          description={
+            editing
+              ? 'The new name appears everywhere this manufacturer is listed.'
+              : 'Visible to your organization only. A name already in the shared ' +
+                'catalog counts as a duplicate.'
+          }
+          initialName={editing?.name ?? ''}
+          isRename={editing !== null}
+          onSave={(name) =>
+            editing ? partialUpdateManufacturer(editing.id, { name }) : createManufacturer({ name })
+          }
+          invalidates={INVALIDATES}
+          onClose={() => setEditing(undefined)}
+        />
       ) : null}
       {deleting ? (
-        <DeleteManufacturerDialog manufacturer={deleting} onClose={() => setDeleting(null)} />
+        <DeleteDialog
+          title={`Remove ${deleting.name}?`}
+          description={
+            'It stops appearing in your organization\u2019s lists and pickers. Stock already ' +
+            'received keeps its manufacturer.'
+          }
+          conflictCode="manufacturer_in_use"
+          onDelete={() => deleteManufacturer(deleting.id)}
+          invalidates={INVALIDATES}
+          onClose={() => setDeleting(null)}
+        />
       ) : null}
-      {importing ? <ManufacturerImportDialog onClose={() => setImporting(false)} /> : null}
+      {importing ? (
+        <ImportDialog
+          title="Import manufacturers"
+          description={
+            <>
+              A CSV or Excel file with a single column headed <strong>name</strong>. Names already
+              available to you — your own or the shared catalog — are left alone, so the same file
+              can be imported twice safely. Imported manufacturers need a catalog of parts before
+              stock can be received against them.
+            </>
+          }
+          onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
+          onTemplate={() => manufacturerImportTemplate()}
+          templateFilename="manufacturers_template.csv"
+          invalidates={INVALIDATES}
+          onClose={() => setImporting(false)}
+        />
+      ) : null}
     </div>
   );
 }

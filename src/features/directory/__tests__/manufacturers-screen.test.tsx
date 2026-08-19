@@ -27,7 +27,9 @@ beforeAll(() => {
 const MANUFACTURERS = '/api/v1/manufacturers/';
 
 function manufacturer(overrides: Partial<Manufacturer> = {}): Manufacturer {
-  return { id: 7, name: 'Acme Ortho', barcode: null, ...overrides };
+  // Owned by default, so the write-control tests use rows the server would
+  // accept a write on.
+  return { id: 7, name: 'Acme Ortho', barcode: null, is_owned: true, ...overrides };
 }
 
 const page = (results: Manufacturer[]) => ({
@@ -324,5 +326,20 @@ describe('who may write', () => {
     expect(
       screen.getByText('An administrator can add one for your organization.'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('shared catalog rows', () => {
+  it('offers no controls on a row the server would refuse', async () => {
+    server.use(
+      http.get(MANUFACTURERS, () =>
+        HttpResponse.json(page([manufacturer({ name: 'Shared Vendor', is_owned: false })])),
+      ),
+    );
+    renderScreen();
+    await screen.findByText('Shared Vendor');
+
+    expect(screen.queryByRole('button', { name: 'Rename Shared Vendor' })).not.toBeInTheDocument();
+    expect(screen.getByText('Shared')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import type { ManufacturerSearch } from './manufacturers.search';
+import type { ProcedureSearch } from './procedures.search';
 
 /**
  * Query keys for the Directory Profiles section.
@@ -15,4 +16,20 @@ import type { ManufacturerSearch } from './manufacturers.search';
 export const manufacturerKeys = {
   all: ['directory-manufacturers'] as const,
   list: (search: ManufacturerSearch) => [...manufacturerKeys.all, 'list', search] as const,
+};
+
+/**
+ * Procedures are their own root.
+ *
+ * Not folded in with manufacturers despite the identical shape: they are
+ * separate resources with separate lifetimes, and one root would mean adding a
+ * procedure refetches the manufacturers table for no reason.
+ *
+ * Unlike `manufacturerKeys` there is no second root to invalidate alongside
+ * this one — nothing else in this app reads procedures yet. The legacy
+ * `/procedure_names/` lookup the mobile app uses has no client here.
+ */
+export const procedureKeys = {
+  all: ['directory-procedures'] as const,
+  list: (search: ProcedureSearch) => [...procedureKeys.all, 'list', search] as const,
 };

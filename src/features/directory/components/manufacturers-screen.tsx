@@ -12,6 +12,7 @@ import {
 import type { Manufacturer } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
 import { catalogKeys } from '@/features/inventory/inventory.keys';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,6 @@ import { canManageDirectory } from '../permissions';
 import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
-import { DeleteDialog } from './delete-dialog';
 import { ImportDialog } from './import-dialog';
 import { NameDialog } from './name-dialog';
 import { ManufacturersTable } from './manufacturers-table';

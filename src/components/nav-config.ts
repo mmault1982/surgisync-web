@@ -8,6 +8,8 @@ import {
   PackageIcon,
   PackageOpenIcon,
   PackagePlusIcon,
+  PlugIcon,
+  SettingsIcon,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,11 +37,16 @@ export interface NavSection {
 }
 
 /**
- * The prototype's section order, as far as it is built. Six more are still to
- * come (Cases / Restocks, Ordering, Quotes, Pricing, Reports, Setup), and each
- * arrives with the screens behind it rather than as a row of dead links —
- * which is also why Directory Profiles lists only Manufacturers, not the
- * Facilities, Surgeons and Users the prototype shows beside it.
+ * The prototype's section order, as far as it is built. Five more are still to
+ * come (Cases / Restocks, Ordering, Quotes, Pricing, Reports), and each arrives
+ * with the screens behind it rather than as a row of dead links — which is also
+ * why Directory Profiles lists Manufacturers, Procedures and Surgeons, not the
+ * Facilities and Users the prototype shows beside them.
+ *
+ * **Configuration is not the prototype's name for it — that is "Setup"** — and
+ * the difference is deliberate rather than an oversight, so do not "fix" it
+ * back. If Setup ever ships as well, the two want merging under one of the two
+ * names rather than sitting side by side meaning the same thing.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
@@ -64,6 +71,11 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Manage On-Hand', to: '/inventory/on-hand', icon: PackageOpenIcon },
       { title: 'Receive / Load', to: '/inventory/receive', icon: PackagePlusIcon },
     ],
+  },
+  {
+    title: 'Configuration',
+    icon: SettingsIcon,
+    items: [{ title: 'Hansel', to: '/configuration/hansel', icon: PlugIcon }],
   },
 ];
 

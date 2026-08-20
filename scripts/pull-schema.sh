@@ -43,10 +43,11 @@ both together.
 
 The backend enforces this file's accuracy on its own side: \`openapi.yaml\` is a
 committed artifact there, CI fails on drift, and every response on
-\`/stock-items/\`, \`/inventory-kits/\`, \`/inventory-transfers/\` and
-\`/api/v1/web/\` is validated against it on every test run. Operations outside
-those paths are documented but unverified — which is why \`orval.config.ts\`
-generates from an explicit allowlist rather than the whole document.
+\`/stock-items/\`, \`/inventory-kits/\`, \`/inventory-transfers/\`,
+\`/api/v1/web/\`, \`/api/v1/parts/\` and \`/api/v1/integrations/\` is validated
+against it on every test run. Operations outside those paths are documented but
+unverified — which is why \`orval.config.ts\` generates from an explicit
+allowlist rather than the whole document.
 EOF
 
 echo "Wrote $OUT and $SOURCE (data_version: $data_version)"

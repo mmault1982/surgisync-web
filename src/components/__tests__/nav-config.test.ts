@@ -10,6 +10,15 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manage On-Hand');
   });
 
+  it('locates a section with a single child', () => {
+    // Configuration has one item where Inventory has three, and a section is
+    // still a section — the sidebar renders it collapsible either way.
+    const trail = findNavTrail('/configuration/hansel');
+
+    expect(trail?.section.title).toBe('Configuration');
+    expect(trail?.item.title).toBe('Hansel');
+  });
+
   it('resolves every configured item', () => {
     for (const section of NAV_SECTIONS) {
       for (const item of section.items) {

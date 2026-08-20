@@ -3,8 +3,9 @@
  *
  * All that survives of what was `manufacturers.ts`: the form logic it held —
  * seed, validate, build a body, map field errors — moved into `NameDialog` and
- * `DeleteDialog` when procedures became the second entity and made it obvious
- * that none of it was about manufacturers.
+ * `DeleteDialog` (since lifted again, to `@/components/delete-dialog`) when
+ * procedures became the second entity and made it obvious that none of it was
+ * about manufacturers.
  */
 
 /**

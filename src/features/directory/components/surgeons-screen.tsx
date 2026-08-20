@@ -9,6 +9,7 @@ import {
 } from '@/api/generated/endpoints/inventory/inventory';
 import type { SurgeonCatalog } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,6 @@ import { canManageDirectory } from '../permissions';
 import { surgeonListQuery } from '../surgeons.queries';
 import { hasActiveSearch, type SurgeonSearch } from '../surgeons.search';
 
-import { DeleteDialog } from './delete-dialog';
 import { ImportDialog } from './import-dialog';
 import { SurgeonDialog } from './surgeon-dialog';
 import { SurgeonsTable } from './surgeons-table';

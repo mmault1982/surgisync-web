@@ -13,15 +13,19 @@ import {
 } from '@/components/ui/alert-dialog';
 
 /**
- * Confirm before removing a directory record.
+ * Confirm before removing a record.
  *
  * `AlertDialog` rather than `Dialog`: it interrupts to ask a yes/no question
  * about something already decided, which is the split between the two Radix
  * primitives, and it focuses Cancel by default.
  *
- * Both entities soft-delete and both refuse while something references them,
- * so the only real difference is the conflict code and the copy. The copy
- * avoids "permanently" in either case, because neither server promises it.
+ * Started in the Directory Profiles feature, where the three entities differed
+ * only in their conflict code and their copy. It knows nothing about directory
+ * records, and Configuration / Hansel was the caller that proved it — the same
+ * move, for the same reason, as `field.tsx`.
+ *
+ * The copy avoids "permanently": none of these servers promise it, and the one
+ * caller whose delete really is destructive says so in its own words.
  */
 export function DeleteDialog({
   title,
@@ -37,8 +41,12 @@ export function DeleteDialog({
    * The 409 `error` code this entity refuses with, e.g. `procedure_in_use`.
    * Branching on the code rather than the prose is the house rule; the
    * server's `message` carries the counts and is what gets rendered.
+   *
+   * Optional because not every delete has something to refuse for. Omitted,
+   * every failure renders through `errorMessage()` — which is also what a 409
+   * carrying some *other* code falls back to.
    */
-  conflictCode: string;
+  conflictCode?: string;
   onDelete: () => Promise<unknown>;
   invalidates: readonly (readonly unknown[])[];
   onClose: () => void;
@@ -57,7 +65,7 @@ export function DeleteDialog({
 
   const conflict = asConflict(remove.error);
   const message = remove.error
-    ? conflict?.error === conflictCode
+    ? conflictCode && conflict?.error === conflictCode
       ? conflict.message
       : errorMessage(remove.error)
     : null;

@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { errorMessage, isForbidden } from '@/api/errors';
+import { hanselCredentialDestroy } from '@/api/generated/endpoints/integrations/integrations';
 import type { HanselCredential, WebUser } from '@/api/generated/model';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -14,10 +16,10 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { hanselCredentialKeys } from '../hansel.keys';
 import { hanselQueries } from '../hansel.queries';
 import { resolveOrganization } from '../hansel-credentials';
 
-import { DeleteCredentialDialog } from './delete-credential-dialog';
 import { HanselCredentialForm } from './hansel-credential-form';
 import { HanselCredentialRow } from './hansel-credential-row';
 
@@ -187,7 +189,22 @@ export function HanselCredentialsSection({ user }: { user: WebUser }) {
       </CardContent>
 
       {deleting ? (
-        <DeleteCredentialDialog credential={deleting} onClose={() => setDeleting(null)} />
+        <DeleteDialog
+          title="Remove these credentials?"
+          // No `conflictCode`: nothing references a credential, so the server
+          // has nothing to refuse for. What it *does* do is worth spelling
+          // out — `delete()` soft-deletes and scrubs the ciphertext, so the
+          // secret is gone and the only way back is to obtain it from Hansel
+          // again. "This cannot be undone" on its own would understate it.
+          description={
+            'SurgiSync will stop talking to this Hansel workspace. The stored secret is ' +
+            'destroyed, not just hidden — restoring the connection means getting the secret ' +
+            'from Hansel again.'
+          }
+          onDelete={() => hanselCredentialDestroy(deleting.id)}
+          invalidates={[hanselCredentialKeys.all]}
+          onClose={() => setDeleting(null)}
+        />
       ) : null}
     </Card>
   );

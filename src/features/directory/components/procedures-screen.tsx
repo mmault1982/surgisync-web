@@ -11,6 +11,7 @@ import {
 } from '@/api/generated/endpoints/inventory/inventory';
 import type { ProcedureCatalog } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,6 @@ import { canManageDirectory } from '../permissions';
 import { procedureListQuery } from '../procedures.queries';
 import { hasActiveSearch, type ProcedureSearch } from '../procedures.search';
 
-import { DeleteDialog } from './delete-dialog';
 import { ImportDialog } from './import-dialog';
 import { NameDialog } from './name-dialog';
 import { ProceduresTable } from './procedures-table';

@@ -261,6 +261,83 @@ export function HanselCredentialForm({
         </Label>
       </div>
 
+      {/*
+        Grouped and separated rather than appended in schema order, because the
+        three are one feature and depend on each other — the checkbox is invalid
+        without the asset type, which is a relationship a flat list of controls
+        does not convey.
+      */}
+      <div className="flex flex-col gap-4 border-t border-border pt-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Asset sync</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            When on, attaching a beacon to a stock item creates the matching asset in Hansel and
+            assigns the tag to it.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="hansel-sync-enabled"
+            checked={values.syncEnabled}
+            disabled={disabled}
+            onCheckedChange={(checked) => update('syncEnabled', checked === true)}
+          />
+          <Label htmlFor="hansel-sync-enabled" className="font-normal">
+            Sync stock items to Hansel
+          </Label>
+        </div>
+
+        <Field
+          label="Asset type ID"
+          hint={values.syncEnabled ? ' — required to sync' : ' (optional)'}
+          htmlFor="hansel-asset-type-id"
+          error={shown.defaultAssetTypeId}
+        >
+          <Input
+            id="hansel-asset-type-id"
+            value={values.defaultAssetTypeId}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={disabled}
+            aria-invalid={Boolean(shown.defaultAssetTypeId)}
+            className="font-mono"
+            onChange={(event) => update('defaultAssetTypeId', event.target.value)}
+          />
+          {/*
+            Nothing else in the product tells you where this comes from, and it
+            cannot be derived from anything we hold — without this line the
+            field is unfillable in practice.
+          */}
+          <p className="mt-1 text-xs text-muted-foreground">
+            The Hansel device type applied to every asset we create. List them in Hansel with{' '}
+            <code className="font-mono">GET /api/v1/assets/types</code>.
+          </p>
+        </Field>
+
+        <Field
+          label="Manufacturer ID"
+          hint=" (optional)"
+          htmlFor="hansel-manufacturer-id"
+          error={shown.defaultManufacturerId}
+        >
+          <Input
+            id="hansel-manufacturer-id"
+            value={values.defaultManufacturerId}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={disabled}
+            aria-invalid={Boolean(shown.defaultManufacturerId)}
+            className="font-mono"
+            onChange={(event) => update('defaultManufacturerId', event.target.value)}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Used when a part&rsquo;s manufacturer has no explicit Hansel mapping. Leave blank if
+            every manufacturer is mapped.
+          </p>
+        </Field>
+      </div>
+
       {formError ? (
         <p role="alert" className="text-sm text-destructive">
           {formError}

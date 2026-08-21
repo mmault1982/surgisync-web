@@ -13,4 +13,13 @@ export interface KitTracker {
   readonly id: number;
   readonly beacon_id: string;
   readonly is_active: boolean;
+  /** Outcome of the most recent attempt to mirror this assignment to Hansel: not_synced (the organization does not sync to Hansel, which is the usual case), pending, synced, or failed. Normally reflects the attempt made by this very request. */
+  readonly sync_state: string;
+  /** Stable failure code from the last sync attempt; empty when the last one passed or none was made. */
+  readonly sync_error: string;
+  /**
+     * When this assignment last reached Hansel successfully.
+     * @nullable
+     */
+  readonly synced_at: string | null;
 }

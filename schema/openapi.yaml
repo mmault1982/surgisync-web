@@ -7564,6 +7564,23 @@ components:
         is_active:
           type: boolean
           description: Operational state of the integration (distinct from soft-delete).
+        sync_enabled:
+          type: boolean
+          description: Use this workspace for outbound asset sync. At most one active
+            credential per organization may have this set.
+        default_manufacturer_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel manufacturer UUID used when a part's manufacturer has
+            no explicit mapping. Required to create assets, since Hansel's asset create
+            demands a manufacturer from their UUID space.
+        default_asset_type_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel asset-type UUID applied to every asset we create. Required
+            to create assets; we have no local equivalent to map from.
         last_verified_at:
           type: string
           format: date-time
@@ -7626,6 +7643,23 @@ components:
         is_active:
           type: boolean
           description: Operational state of the integration (distinct from soft-delete).
+        sync_enabled:
+          type: boolean
+          description: Use this workspace for outbound asset sync. At most one active
+            credential per organization may have this set.
+        default_manufacturer_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel manufacturer UUID used when a part's manufacturer has
+            no explicit mapping. Required to create assets, since Hansel's asset create
+            demands a manufacturer from their UUID space.
+        default_asset_type_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel asset-type UUID applied to every asset we create. Required
+            to create assets; we have no local equivalent to map from.
       required:
       - client_id
       - client_secret
@@ -8940,10 +8974,31 @@ components:
         is_active:
           type: boolean
           readOnly: true
+        sync_state:
+          type: string
+          readOnly: true
+          description: 'Outcome of the most recent attempt to mirror this assignment
+            to Hansel: not_synced (the organization does not sync to Hansel, which
+            is the usual case), pending, synced, or failed. Normally reflects the
+            attempt made by this very request.'
+        sync_error:
+          type: string
+          readOnly: true
+          description: Stable failure code from the last sync attempt; empty when
+            the last one passed or none was made.
+        synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When this assignment last reached Hansel successfully.
       required:
       - beacon_id
       - id
       - is_active
+      - sync_error
+      - sync_state
+      - synced_at
     ListItem:
       type: object
       properties:
@@ -9693,6 +9748,23 @@ components:
         is_active:
           type: boolean
           description: Operational state of the integration (distinct from soft-delete).
+        sync_enabled:
+          type: boolean
+          description: Use this workspace for outbound asset sync. At most one active
+            credential per organization may have this set.
+        default_manufacturer_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel manufacturer UUID used when a part's manufacturer has
+            no explicit mapping. Required to create assets, since Hansel's asset create
+            demands a manufacturer from their UUID space.
+        default_asset_type_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Hansel asset-type UUID applied to every asset we create. Required
+            to create assets; we have no local equivalent to map from.
     PatchedInventoryKitDetailRequest:
       type: object
       description: |-

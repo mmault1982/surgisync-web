@@ -27,6 +27,10 @@ export interface HanselCredentialValues {
   clientSecret: string;
   workspaceId: string;
   isActive: boolean;
+  syncEnabled: boolean;
+  /** Empty means unset. Nullability is reintroduced at the request boundary. */
+  defaultAssetTypeId: string;
+  defaultManufacturerId: string;
 }
 
 export interface HanselCredentialErrors {
@@ -34,6 +38,8 @@ export interface HanselCredentialErrors {
   clientId?: string;
   clientSecret?: string;
   workspaceId?: string;
+  defaultAssetTypeId?: string;
+  defaultManufacturerId?: string;
 }
 
 /** The server's own floor: `client_secret` is `min_length=8`. */
@@ -54,6 +60,12 @@ export function initialCredentialValues(
     clientSecret: '',
     workspaceId: credential?.workspace_id ?? '',
     isActive: credential?.is_active ?? true,
+    // `?? false` matches the server's own default: sync is off until an admin
+    // deliberately turns it on, which is what keeps the feature dark for the
+    // organizations — nearly all of them — that will never use it.
+    syncEnabled: credential?.sync_enabled ?? false,
+    defaultAssetTypeId: credential?.default_asset_type_id ?? '',
+    defaultManufacturerId: credential?.default_manufacturer_id ?? '',
   };
 }
 
@@ -75,7 +87,7 @@ export function normaliseUuid(value: string): string {
     .replaceAll('-', '');
 }
 
-function isUuid(value: string): boolean {
+export function isUuid(value: string): boolean {
   return /^[0-9a-f]{32}$/.test(normaliseUuid(value));
 }
 
@@ -131,6 +143,27 @@ export function validateHanselCredential(
       'This organization already has credentials for that Hansel workspace. Edit those instead.';
   }
 
+  const assetType = values.defaultAssetTypeId.trim();
+  const manufacturer = values.defaultManufacturerId.trim();
+
+  if (assetType && !isUuid(assetType)) {
+    errors.defaultAssetTypeId =
+      'That does not look like an asset type UUID — copy it from your Hansel account';
+  } else if (values.syncEnabled && !assetType) {
+    // The server's own rule, checked here for the same reason the duplicate
+    // workspace is: Hansel demands a device type on every asset it creates and
+    // we have nothing local to derive one from, so enabling sync without it
+    // fails on every single attach — as a code on a tracker nobody is looking
+    // at. The round trip would answer this correctly; answering before it is
+    // what puts the message where the user is already looking.
+    errors.defaultAssetTypeId = 'Set an asset type before turning sync on — Hansel requires one';
+  }
+
+  if (manufacturer && !isUuid(manufacturer)) {
+    errors.defaultManufacturerId =
+      'That does not look like a manufacturer UUID — copy it from your Hansel account';
+  }
+
   return errors;
 }
 
@@ -145,6 +178,24 @@ export function buildCredentialCreateBody(values: HanselCredentialValues): Hanse
     workspace_id: values.workspaceId.trim(),
     client_secret: values.clientSecret.trim(),
     is_active: values.isActive,
+    sync_enabled: values.syncEnabled,
+    ...syncTargets(values),
+  };
+}
+
+/**
+ * The two sync UUIDs, as the server wants them: a value, or an explicit `null`.
+ *
+ * `null` rather than `''` and rather than omission, and the three are not
+ * interchangeable. The columns are nullable, so `''` would store an empty
+ * string that reads as configured and resolves to nothing — while *omitting*
+ * the key on a PATCH means "leave what is stored", which makes clearing a value
+ * impossible. Only an explicit null empties one.
+ */
+function syncTargets(values: HanselCredentialValues) {
+  return {
+    default_asset_type_id: values.defaultAssetTypeId.trim() || null,
+    default_manufacturer_id: values.defaultManufacturerId.trim() || null,
   };
 }
 
@@ -169,6 +220,8 @@ export function buildCredentialPatch(
     client_id: values.clientId.trim(),
     workspace_id: values.workspaceId.trim(),
     is_active: values.isActive,
+    sync_enabled: values.syncEnabled,
+    ...syncTargets(values),
     ...(secret ? { client_secret: secret } : {}),
   };
 }
@@ -187,6 +240,8 @@ const FIELD_SLOTS: Record<string, keyof HanselCredentialErrors> = {
   client_id: 'clientId',
   client_secret: 'clientSecret',
   workspace_id: 'workspaceId',
+  default_asset_type_id: 'defaultAssetTypeId',
+  default_manufacturer_id: 'defaultManufacturerId',
 };
 
 /** Server rejections, folded onto the form's own error slots. */

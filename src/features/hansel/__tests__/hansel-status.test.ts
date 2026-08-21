@@ -152,6 +152,28 @@ describe('maskedSecret', () => {
   });
 });
 
+describe('the sync badge', () => {
+  it('appears when sync is on', () => {
+    expect(labels(credentialFixture({ sync_enabled: true }))).toContain('Sync on');
+  });
+
+  it('says nothing when sync is off', () => {
+    // Deliberately silent rather than a "Sync off" badge: the flag defaults to
+    // false and nearly every credential keeps it that way, so announcing the
+    // off state would put a badge saying nothing on almost every row.
+    expect(labels(credentialFixture({ sync_enabled: false }))).not.toContain('Sync on');
+  });
+
+  it('does not displace an unreadable secret', () => {
+    // Same ordering rule the rest of this block exists for: sync being on says
+    // nothing about whether the credential still works.
+    const shown = labels(credentialFixture({ sync_enabled: true, secret_readable: false }));
+
+    expect(shown).toContain('Secret unreadable');
+    expect(shown.some((label) => label.startsWith('Verified'))).toBe(false);
+  });
+});
+
 describe('lastCheckedLabel', () => {
   it('says Never rather than leaving the row blank', () => {
     expect(lastCheckedLabel(credentialFixture({ last_verified_at: null }))).toBe('Never');

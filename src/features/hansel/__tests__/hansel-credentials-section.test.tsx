@@ -43,6 +43,7 @@ beforeAll(() => {
 const LIST = '/api/v1/integrations/hansel-credentials/';
 const ONE = '/api/v1/integrations/hansel-credentials/1/';
 const WORKSPACE = '3f1c9e2a-5b6d-4f7a-8c9d-0e1f2a3b4c5d';
+const ASSET_TYPE = 'c85ab63c-ebb4-4dac-a8e0-b10b1eca8ae6';
 
 /** Bodies of every write that went out, in order. */
 let sent: unknown[];
@@ -104,6 +105,27 @@ describe('reading what is configured', () => {
     expect(screen.getByRole('button', { name: /add workspace/i })).toBeInTheDocument();
   });
 
+  it('shows the sync targets whether or not they are set', async () => {
+    // An em-dash rather than a hidden row: a missing asset type is the one
+    // thing that blocks turning sync on, so this is the answer to "why can I
+    // not enable this?".
+    listReturns([credentialFixture()]);
+    renderSection();
+
+    expect(await screen.findByText('Asset type')).toBeInTheDocument();
+    expect(screen.getByText('Manufacturer')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('Sync on')).not.toBeInTheDocument();
+  });
+
+  it('shows the sync badge and the stored targets once sync is on', async () => {
+    listReturns([credentialFixture({ sync_enabled: true, default_asset_type_id: ASSET_TYPE })]);
+    renderSection();
+
+    expect(await screen.findByText('Sync on')).toBeInTheDocument();
+    expect(screen.getByText(ASSET_TYPE)).toBeInTheDocument();
+  });
+
   it('warns that a credential from another environment cannot be used', async () => {
     listReturns([credentialFixture({ secret_readable: false })]);
     renderSection();
@@ -157,7 +179,48 @@ describe('connecting a workspace', () => {
       workspace_id: WORKSPACE,
       client_secret: 'a-long-enough-secret',
       is_active: true,
+      sync_enabled: false,
+      default_asset_type_id: null,
+      default_manufacturer_id: null,
     });
+  });
+
+  it('posts the sync settings when they are filled in', async () => {
+    listReturns([]);
+    server.use(
+      http.post(LIST, async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json(credentialFixture(), { status: 201 });
+      }),
+    );
+    const { user } = renderSection();
+
+    await fillNewCredential(user);
+    await user.type(screen.getByLabelText(/asset type id/i), ASSET_TYPE);
+    await user.click(screen.getByLabelText(/sync stock items/i));
+    await user.click(save());
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toMatchObject({
+      sync_enabled: true,
+      default_asset_type_id: ASSET_TYPE,
+    });
+  });
+
+  it('refuses to enable sync without an asset type, without asking the server', async () => {
+    listReturns([]);
+    const { user } = renderSection();
+
+    await fillNewCredential(user);
+    await user.click(screen.getByLabelText(/sync stock items/i));
+    await user.click(save());
+
+    expect(
+      await screen.findByText(/set an asset type before turning sync on/i),
+    ).toBeInTheDocument();
+    // No POST handler is registered, and MSW is set to error on an unhandled
+    // request — so a request here would fail the test rather than pass silently.
+    expect(sent).toHaveLength(0);
   });
 
   it('says to run the check rather than running it unasked', async () => {
@@ -219,6 +282,32 @@ describe('connecting a workspace', () => {
 
     expect(await screen.findByText('No such Hansel client.')).toBeInTheDocument();
     // No generic banner on top of a specific, correct field error.
+    expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
+  });
+
+  it('puts the asset-type rejection under the asset-type field', async () => {
+    // The server runs the same cross-field rule the form does, and can reject
+    // for reasons the form cannot know. Without `default_asset_type_id` in
+    // FIELD_SLOTS this message lands in the form-level banner instead — beside
+    // the field it is actually about, rather than on it.
+    listReturns([]);
+    server.use(
+      http.post(LIST, () =>
+        HttpResponse.json(
+          { default_asset_type_id: ['Set a Hansel asset type UUID before enabling sync.'] },
+          { status: 400 },
+        ),
+      ),
+    );
+    const { user } = renderSection();
+
+    await fillNewCredential(user);
+    await user.type(screen.getByLabelText(/asset type id/i), ASSET_TYPE);
+    await user.click(save());
+
+    expect(
+      await screen.findByText('Set a Hansel asset type UUID before enabling sync.'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/something went wrong/i)).not.toBeInTheDocument();
   });
 

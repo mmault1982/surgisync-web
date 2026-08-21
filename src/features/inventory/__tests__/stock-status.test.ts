@@ -4,6 +4,8 @@ import type { InventoryKitDetail, InventoryKitList } from '@/api/generated/model
 
 import { isExpired, statusLabels, stripeTone, trackerState } from '../stock-status';
 
+import { trackerFixture } from './kit-fixture';
+
 /**
  * The prototype stores `stripe` as a literal string per row and never computes
  * it, so there is no rule to copy — the one under test is reverse-engineered
@@ -121,12 +123,14 @@ describe('status labels', () => {
 describe('tracker state', () => {
   it('distinguishes tracked, pairing and untracked', () => {
     expect(trackerState(row({ tracker: null }))).toBe('untracked');
-    expect(trackerState(row({ tracker: { id: 1, beacon_id: 'HM-1', is_active: true } }))).toBe(
-      'tracked',
-    );
-    expect(trackerState(row({ tracker: { id: 1, beacon_id: 'HM-1', is_active: false } }))).toBe(
-      'pairing',
-    );
+    expect(
+      trackerState(row({ tracker: trackerFixture({ id: 1, beacon_id: 'HM-1', is_active: true }) })),
+    ).toBe('tracked');
+    expect(
+      trackerState(
+        row({ tracker: trackerFixture({ id: 1, beacon_id: 'HM-1', is_active: false }) }),
+      ),
+    ).toBe('pairing');
   });
 });
 

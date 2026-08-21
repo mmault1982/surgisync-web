@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { KitLocationPanel } from '../components/kit-location-panel';
 
-import { eventFixture, kitFixture } from './kit-fixture';
+import { eventFixture, kitFixture, trackerFixture } from './kit-fixture';
 
 /**
  * **No test in this file supplies parseable coordinates**, and that is load-
@@ -34,7 +34,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
-const TRACKER = { id: 7, beacon_id: 'HSL-99887', is_active: true };
+const TRACKER = trackerFixture();
 const BASE = { events: undefined, isPending: false, isError: false };
 
 /** A real event, minus the fix — the autoclave-cycle shape, and the empty state. */

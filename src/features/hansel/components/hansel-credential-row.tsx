@@ -115,6 +115,15 @@ export function HanselCredentialRow({
           breath as a check the user just watched run.
         */}
         <Detail label="Last verified" value={lastCheckedLabel(credential)} />
+        {/*
+          Shown whether or not sync is on, and `||` rather than `??` because the
+          server can answer either null or an empty string. A missing asset type
+          is the single thing that blocks turning sync on, so an em-dash here is
+          the answer to "why can I not enable this?" — which hiding the row
+          until sync was already enabled would make unanswerable.
+        */}
+        <Detail label="Asset type" value={credential.default_asset_type_id || '—'} mono />
+        <Detail label="Manufacturer" value={credential.default_manufacturer_id || '—'} mono />
       </dl>
 
       {!credential.secret_readable ? (

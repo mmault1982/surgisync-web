@@ -2,6 +2,7 @@ import type {
   InventoryKitDetail,
   InventoryKitHistory,
   InventoryTransferDetail,
+  KitTracker,
   TrackingEvent,
 } from '@/api/generated/model';
 
@@ -12,6 +13,25 @@ import type {
  * the prototype's TRC-MTP-2200 row, which is also the kit in the design mock —
  * so a failure message names something recognisable.
  */
+
+/**
+ * An attached tracker.
+ *
+ * A helper rather than an inline literal because `KitTracker`'s read fields are
+ * all `required`, so every field the backend adds breaks every literal at once
+ * — which is exactly what the Hansel sync fields did to three test files.
+ */
+export function trackerFixture(overrides: Partial<KitTracker> = {}): KitTracker {
+  return {
+    id: 7,
+    beacon_id: 'HSL-99887',
+    is_active: true,
+    sync_state: 'not_synced',
+    sync_error: '',
+    synced_at: null,
+    ...overrides,
+  };
+}
 
 export function kitFixture(overrides: Partial<InventoryKitDetail> = {}): InventoryKitDetail {
   return {

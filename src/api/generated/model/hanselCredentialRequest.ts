@@ -30,4 +30,16 @@ export interface HanselCredentialRequest {
   client_secret: string;
   /** Operational state of the integration (distinct from soft-delete). */
   is_active?: boolean;
+  /** Use this workspace for outbound asset sync. At most one active credential per organization may have this set. */
+  sync_enabled?: boolean;
+  /**
+     * Hansel manufacturer UUID used when a part's manufacturer has no explicit mapping. Required to create assets, since Hansel's asset create demands a manufacturer from their UUID space.
+     * @nullable
+     */
+  default_manufacturer_id?: string | null;
+  /**
+     * Hansel asset-type UUID applied to every asset we create. Required to create assets; we have no local equivalent to map from.
+     * @nullable
+     */
+  default_asset_type_id?: string | null;
 }

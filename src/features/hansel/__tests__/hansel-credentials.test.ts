@@ -16,6 +16,7 @@ import {
 import { credentialFixture, organizationFixture, userFixture } from './credential-fixture';
 
 const WORKSPACE = '3f1c9e2a-5b6d-4f7a-8c9d-0e1f2a3b4c5d';
+const ASSET_TYPE = 'c85ab63c-ebb4-4dac-a8e0-b10b1eca8ae6';
 
 function values(overrides: Partial<HanselCredentialValues> = {}): HanselCredentialValues {
   return {
@@ -24,6 +25,9 @@ function values(overrides: Partial<HanselCredentialValues> = {}): HanselCredenti
     clientSecret: 'a-long-enough-secret',
     workspaceId: WORKSPACE,
     isActive: true,
+    syncEnabled: false,
+    defaultAssetTypeId: '',
+    defaultManufacturerId: '',
     ...overrides,
   };
 }
@@ -134,6 +138,66 @@ describe('validateHanselCredential', () => {
       validateHanselCredential(values({ organizationId: '' }), 'create').organization,
     ).toBeTruthy();
   });
+
+  it('refuses sync with no asset type', () => {
+    // The server's own rule. Without it, enabling sync fails on every attach,
+    // as a code on a tracker nobody is looking at.
+    expect(
+      validateHanselCredential(values({ syncEnabled: true }), 'create').defaultAssetTypeId,
+    ).toBeTruthy();
+  });
+
+  it('allows sync once an asset type is set', () => {
+    expect(
+      validateHanselCredential(
+        values({ syncEnabled: true, defaultAssetTypeId: ASSET_TYPE }),
+        'create',
+      ),
+    ).toEqual({});
+  });
+
+  it('does not ask for an asset type while sync is off', () => {
+    expect(
+      validateHanselCredential(values({ syncEnabled: false }), 'create').defaultAssetTypeId,
+    ).toBeUndefined();
+  });
+
+  it('does not require a manufacturer alongside sync', () => {
+    // Deliberate: an organization may map every manufacturer explicitly through
+    // HanselManufacturerMap instead of leaning on a default.
+    expect(
+      validateHanselCredential(
+        values({ syncEnabled: true, defaultAssetTypeId: ASSET_TYPE }),
+        'create',
+      ).defaultManufacturerId,
+    ).toBeUndefined();
+  });
+
+  it('rejects a sync target that is not a UUID', () => {
+    expect(
+      validateHanselCredential(values({ defaultAssetTypeId: 'not-a-uuid' }), 'create')
+        .defaultAssetTypeId,
+    ).toBeTruthy();
+    expect(
+      validateHanselCredential(values({ defaultManufacturerId: 'nope' }), 'create')
+        .defaultManufacturerId,
+    ).toBeTruthy();
+  });
+
+  it('accepts every UUID spelling the server would, for the sync targets', () => {
+    for (const spelling of [
+      ASSET_TYPE,
+      ASSET_TYPE.toUpperCase(),
+      ASSET_TYPE.replaceAll('-', ''),
+      `{${ASSET_TYPE}}`,
+      `urn:uuid:${ASSET_TYPE}`,
+    ]) {
+      expect(
+        validateHanselCredential(values({ defaultAssetTypeId: spelling }), 'create')
+          .defaultAssetTypeId,
+      ).toBeUndefined();
+    }
+  });
 });
 
 describe('initialCredentialValues', () => {
@@ -154,7 +218,7 @@ describe('initialCredentialValues', () => {
 });
 
 describe('buildCredentialCreateBody', () => {
-  it('sends the five fields the create endpoint declares, trimmed', () => {
+  it('sends the fields the create endpoint declares, trimmed', () => {
     expect(
       buildCredentialCreateBody(
         values({ clientId: '  hansel-client-abc  ', clientSecret: '  a-long-enough-secret  ' }),
@@ -165,7 +229,28 @@ describe('buildCredentialCreateBody', () => {
       workspace_id: WORKSPACE,
       client_secret: 'a-long-enough-secret',
       is_active: true,
+      sync_enabled: false,
+      default_asset_type_id: null,
+      default_manufacturer_id: null,
     });
+  });
+
+  it('sends the sync targets as null when blank, never as an empty string', () => {
+    // An empty string is a stored value that reads as configured and resolves
+    // to nothing; only an explicit null leaves the column empty.
+    const body = buildCredentialCreateBody(values({ defaultAssetTypeId: '   ' }));
+
+    expect(body.default_asset_type_id).toBeNull();
+    expect(body.default_manufacturer_id).toBeNull();
+  });
+
+  it('trims the sync targets when given', () => {
+    const body = buildCredentialCreateBody(
+      values({ syncEnabled: true, defaultAssetTypeId: `  ${ASSET_TYPE}  ` }),
+    );
+
+    expect(body.sync_enabled).toBe(true);
+    expect(body.default_asset_type_id).toBe(ASSET_TYPE);
   });
 });
 
@@ -182,7 +267,20 @@ describe('buildCredentialPatch', () => {
       client_id: 'hansel-client-abc',
       workspace_id: WORKSPACE,
       is_active: true,
+      sync_enabled: false,
+      default_asset_type_id: null,
+      default_manufacturer_id: null,
     });
+  });
+
+  it('sends null to clear a sync target that was previously set', () => {
+    // The counterpart to the omission above: `client_secret` is left out to
+    // keep what is stored, but these two are sent as null precisely so that
+    // clearing the field clears the column. Omitting them would make a stored
+    // asset type impossible to remove from this form.
+    const patch = buildCredentialPatch(values({ defaultAssetTypeId: '' }));
+
+    expect(patch).toHaveProperty('default_asset_type_id', null);
   });
 
   it('sends client_secret when one was typed', () => {

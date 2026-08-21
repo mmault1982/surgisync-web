@@ -85,6 +85,13 @@ export function credentialBadges(credential: HanselCredential): CredentialBadge[
 
   if (credential.is_active === false) badges.push({ label: 'Inactive', tone: 'muted' });
 
+  // Only when on. `sync_enabled` defaults to false and nearly every credential
+  // will keep it that way, so a badge for the off state would appear on almost
+  // every row and say nothing — the same reason `is_active` announces only
+  // "Inactive". The two UUIDs it depends on are shown unconditionally in the
+  // row's `<dl>`, so a half-configured credential is still readable there.
+  if (credential.sync_enabled) badges.push({ label: 'Sync on', tone: 'ok' });
+
   if (!credential.secret_readable) {
     badges.push({ label: 'Secret unreadable', tone: 'bad' });
   } else if (!credential.client_secret_set) {

@@ -12,6 +12,11 @@ export function credentialFixture(overrides: Partial<HanselCredential> = {}): Ha
     client_secret_last4: '9f2c',
     secret_readable: true,
     is_active: true,
+    // Sync off with no targets — the state every credential starts in, and the
+    // one nearly all of them stay in. Tests that care override all three.
+    sync_enabled: false,
+    default_asset_type_id: null,
+    default_manufacturer_id: null,
     last_verified_at: '2026-08-17T14:05:00Z',
     last_verification_error: '',
     created_at: '2026-08-01T09:00:00Z',

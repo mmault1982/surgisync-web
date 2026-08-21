@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { KitActions } from '../components/kit-actions';
 
-import { kitFixture } from './kit-fixture';
+import { kitFixture, trackerFixture } from './kit-fixture';
 
 /**
  * Three of the four cards open a dialog now — Update Status, Transfer and
@@ -34,9 +34,7 @@ describe('KitActions', () => {
   it('drops the add-tracker action once a beacon is attached', () => {
     // A tracked kit gets the Live Location panel instead — offering to pair a
     // second beacon is an action the backend rejects with `kit_has_tracker`.
-    render(
-      <KitActions kit={kitFixture({ tracker: { id: 7, beacon_id: 'HSL-1', is_active: true } })} />,
-    );
+    render(<KitActions kit={kitFixture({ tracker: trackerFixture({ beacon_id: 'HSL-1' }) })} />);
 
     expect(screen.queryByRole('button', { name: /Add Hansel Tracker/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button')).toHaveLength(3);

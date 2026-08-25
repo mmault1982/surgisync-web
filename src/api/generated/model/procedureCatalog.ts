@@ -13,6 +13,6 @@ export interface ProcedureCatalog {
   readonly id: number;
   /** @maxLength 100 */
   name: string;
-  /** True when this row belongs to your organization and may be renamed or removed. False for the shared catalog, which is readable by everyone and writable by nobody. */
+  /** True when this row belongs to your organization and may be renamed or removed. Always true for ordinary callers, who only ever see their own; false only for a superuser looking at another organization's row. */
   readonly is_owned: boolean;
 }

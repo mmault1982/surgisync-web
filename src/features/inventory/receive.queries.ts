@@ -74,7 +74,15 @@ export const catalogQueries = {
           // `kind` is not optional in practice. Without it the picker offers
           // loose components too, and the create endpoint would accept one —
           // filing a component as though it were a kit, with no error.
-          { manufacturer_id: manufacturerId ?? undefined, kind: ListPartsKind.kit },
+          //
+          // `manufacturer_id` is a list because the parameter is repeatable and
+          // now says so in the schema. This picker only ever asks about one
+          // manufacturer, so it sends a one-element list; the `enabled` guard
+          // below is what keeps `null` from reaching here.
+          {
+            manufacturer_id: manufacturerId === null ? undefined : [manufacturerId],
+            kind: ListPartsKind.kit,
+          },
           { signal },
         ),
       enabled: manufacturerId !== null,

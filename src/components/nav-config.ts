@@ -5,6 +5,7 @@ import {
   StethoscopeIcon,
   UserRoundIcon,
   LayoutDashboardIcon,
+  LibraryBigIcon,
   PackageIcon,
   PackageOpenIcon,
   PackagePlusIcon,
@@ -68,6 +69,11 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: PackageIcon,
     items: [
       { title: 'Dashboard', to: '/inventory/dashboard', icon: LayoutDashboardIcon },
+      // Not in the prototype, which lists only the three below. Placed second
+      // because it is the reference data the other two are *about*: On-Hand
+      // shows stock of these parts, and Receive / Load files new stock against
+      // them.
+      { title: 'Product Catalog', to: '/inventory/product-catalog', icon: LibraryBigIcon },
       { title: 'Manage On-Hand', to: '/inventory/on-hand', icon: PackageOpenIcon },
       { title: 'Receive / Load', to: '/inventory/receive', icon: PackagePlusIcon },
     ],

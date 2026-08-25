@@ -247,6 +247,9 @@ export function HanselCredentialForm({
           className="font-mono"
           onChange={(event) => update('workspaceId', event.target.value)}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Use the standard Hansel Workspace (not the Admin Workspace).
+        </p>
       </Field>
 
       <div className="flex items-center gap-2">

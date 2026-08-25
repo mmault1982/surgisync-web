@@ -4325,7 +4325,8 @@ paths:
         shared-catalog rows plus any belonging to its own manufacturers. Not stock
         on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response
         shape does not vary with the query parameters, and the default page is wide
-        enough to hold the whole catalog in one response. Sorted by name.'
+        enough to hold the whole catalog in one response. Sorted by name unless `ordering`
+        says otherwise.'
       parameters:
       - in: query
         name: kind
@@ -4339,9 +4340,26 @@ paths:
       - in: query
         name: manufacturer_id
         schema:
-          type: integer
+          type: array
+          items:
+            type: integer
         description: Restrict to parts of these manufacturers. Repeatable — send the
           key once per value (`?manufacturer_id=5&manufacturer_id=9`), which ORs them.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -manufacturer_name
+          - -name
+          - -reference_number
+          - manufacturer_name
+          - name
+          - reference_number
+        description: Sort column. Both directions are listed explicitly because an
+          enum cannot express a prefix. Defaults to `name`. Any other value is a 400.
+          Note kits never carry a reference number, so `reference_number` groups every
+          kit at one end.
       - name: page
         required: false
         in: query
@@ -4365,7 +4383,10 @@ paths:
         name: search
         schema:
           type: string
-        description: Case-insensitive substring match on name.
+        description: Case-insensitive substring match across name, description, reference
+          number and manufacturer name. `description` is in that list because components
+          carry a description and no name, so a search that skipped it could not find
+          a component by its own label.
       tags:
       - Inventory
       security:
@@ -4388,6 +4409,36 @@ paths:
                     type: string
           description: Validation failed. Keys are field names, plus `non_field_errors`
             for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/manufacturers/:
+    get:
+      operationId: list_part_manufacturer_facets
+      description: |-
+        Manufacturers that actually have parts in the requesting organization's catalog, for the Product Catalog table's Manufacturer column filter menu. Sorted by name.
+
+        Not `/api/v1/manufacturers/`, which is the **global** list: that one answers "who exists", and `has_items` narrows it only to manufacturers with a catalog *somewhere*. This endpoint is scoped the same way `/api/v1/parts/` is, so every value it offers returns at least one row.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+          description: ''
         '401':
           content:
             application/json:
@@ -4653,7 +4704,8 @@ paths:
   /api/v1/procedure_names/:
     get:
       operationId: list_procedures
-      description: Get list of active procedures with optional search.
+      description: Get list of active procedures for your organization, with optional
+        search.
       parameters:
       - in: query
         name: search
@@ -4676,8 +4728,9 @@ paths:
   /api/v1/procedures/:
     get:
       operationId: list_procedures_catalog
-      description: 'Procedures this organization may choose from, sorted by name:
-        the shared catalog plus any the organization owns. Always paginated.'
+      description: 'Procedures this organization owns, sorted by name. Always paginated.
+        Procedures are tenant-scoped: there is no shared catalog, and a caller with
+        no organization sees nothing.'
       parameters:
       - name: page
         required: false
@@ -4723,7 +4776,7 @@ paths:
       operationId: create_procedure
       description: Add a procedure to this organization. Organization admins only.
         The new row belongs to the caller's organization and is invisible to every
-        other one; the shared catalog is not writable.
+        other one.
       tags:
       - Inventory
       requestBody:
@@ -10051,9 +10104,9 @@ components:
 
         `name` is the only writable field, and unlike `Manufacturer` it is a real
         column rather than a mirror of a `Company` row — so creating one is a
-        single insert with no identity row to make first. `parent_company` comes
-        from the caller's session; accepting it from the body would let a client
-        file a row in another tenant's list.
+        single insert with no identity row to make first. `parent_company` is
+        required on the model and comes from the caller's session; accepting it
+        from the body would let a client file a row in another tenant's list.
 
         Read responses use `ProcedureSerializer`; this one never renders.
       properties:
@@ -10308,8 +10361,9 @@ components:
           type: boolean
           readOnly: true
           description: True when this row belongs to your organization and may be
-            renamed or removed. False for the shared catalog, which is readable by
-            everyone and writable by nobody.
+            renamed or removed. Always true for ordinary callers, who only ever see
+            their own; false only for a superuser looking at another organization's
+            row.
       required:
       - id
       - is_owned
@@ -10321,9 +10375,9 @@ components:
 
         `name` is the only writable field, and unlike `Manufacturer` it is a real
         column rather than a mirror of a `Company` row — so creating one is a
-        single insert with no identity row to make first. `parent_company` comes
-        from the caller's session; accepting it from the body would let a client
-        file a row in another tenant's list.
+        single insert with no identity row to make first. `parent_company` is
+        required on the model and comes from the caller's session; accepting it
+        from the body would let a client file a row in another tenant's list.
 
         Read responses use `ProcedureSerializer`; this one never renders.
       properties:

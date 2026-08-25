@@ -102,6 +102,13 @@ const ALLOWED_OPERATIONS = new Set([
   //
   // `list_manufacturers` also still carries a deprecated `data` key
   // duplicating `results`, for shipped Flutter builds only. Read `results`.
+  //
+  // Note this is NOT the Product Catalog screen's Manufacturer filter source —
+  // that is `list_part_manufacturer_facets` below. This one is the global list
+  // and `has_items` only narrows it to manufacturers with a catalog
+  // *somewhere*, so on the dev seed 7 of its 12 values return nothing for a
+  // given org. It stays here for the Receive form, which asks a different
+  // question: who might I take delivery from.
   'list_manufacturers',
   'create_manufacturer',
   'retrieve_manufacturer',
@@ -145,7 +152,18 @@ const ALLOWED_OPERATIONS = new Set([
   'delete_surgeon',
   'import_surgeons',
   'surgeon_import_template',
+
+  // The catalog, on /api/v1/parts/ — inside the response accuracy gate from
+  // its first commit, so both of these are verified rather than merely
+  // documented. `list_parts` backs the Receive form's pickers and the Product
+  // Catalog table; the facet operation is that table's Manufacturer column
+  // menu, scoped by the same queryset as the listing so it cannot offer a
+  // value that returns no rows.
+  //
+  // There is deliberately no retrieve: /api/v1/parts/{id}/ does not exist, and
+  // the catalog table has no detail view to want one.
   'list_parts',
+  'list_part_manufacturer_facets',
 
   // Configuration / Hansel. `/api/v1/integrations/` was added to the backend's
   // VALIDATED_PATH_PREFIXES in the same commit that created it, so these are

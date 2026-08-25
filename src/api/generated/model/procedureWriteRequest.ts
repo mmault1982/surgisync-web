@@ -11,9 +11,9 @@
  *
  * `name` is the only writable field, and unlike `Manufacturer` it is a real
  * column rather than a mirror of a `Company` row — so creating one is a
- * single insert with no identity row to make first. `parent_company` comes
- * from the caller's session; accepting it from the body would let a client
- * file a row in another tenant's list.
+ * single insert with no identity row to make first. `parent_company` is
+ * required on the model and comes from the caller's session; accepting it
+ * from the body would let a client file a row in another tenant's list.
  *
  * Read responses use `ProcedureSerializer`; this one never renders.
  */

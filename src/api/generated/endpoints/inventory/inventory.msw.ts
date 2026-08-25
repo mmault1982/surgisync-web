@@ -84,6 +84,8 @@ export const getManufacturerImportTemplateResponseMock = (): ArrayBuffer => (new
 
 export const getListPartsResponseMock = (overrideResponse: Partial<Extract<PaginatedPartListList, object>> = {}): PaginatedPartListList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), uuid: faker.string.uuid(), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), description: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(KindEnum)), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), is_serialized: faker.datatype.boolean(), manufacturer: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
+export const getListPartManufacturerFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
 export const getListProceduresCatalogResponseMock = (overrideResponse: Partial<Extract<PaginatedProcedureCatalogList, object>> = {}): PaginatedProcedureCatalogList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), is_owned: faker.datatype.boolean()})), ...overrideResponse})
 
 export const getCreateProcedureResponseMock = (overrideResponse: Partial<Extract<ProcedureCatalog, object>> = {}): ProcedureCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), is_owned: faker.datatype.boolean(), ...overrideResponse})
@@ -357,6 +359,18 @@ export const getListPartsMockHandler = (overrideResponse?: PaginatedPartListList
   }, options)
 }
 
+export const getListPartManufacturerFacetsMockHandler = (overrideResponse?: FacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<FacetResponse> | FacetResponse), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/parts/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListPartManufacturerFacetsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getListProceduresCatalogMockHandler = (overrideResponse?: PaginatedProcedureCatalogList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedProcedureCatalogList> | PaginatedProcedureCatalogList), options?: RequestHandlerOptions) => {
   return http.get('/api/v1/procedures/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -606,6 +620,7 @@ export const getInventoryMock = () => [
   getImportManufacturersMockHandler(),
   getManufacturerImportTemplateMockHandler(),
   getListPartsMockHandler(),
+  getListPartManufacturerFacetsMockHandler(),
   getListProceduresCatalogMockHandler(),
   getCreateProcedureMockHandler(),
   getRetrieveProcedureMockHandler(),

@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { ListPartsKind } from './listPartsKind';
+import type { ListPartsOrdering } from './listPartsOrdering';
 
 export type ListPartsParams = {
 /**
@@ -15,7 +16,11 @@ kind?: ListPartsKind;
 /**
  * Restrict to parts of these manufacturers. Repeatable — send the key once per value (`?manufacturer_id=5&manufacturer_id=9`), which ORs them.
  */
-manufacturer_id?: number;
+manufacturer_id?: number[];
+/**
+ * Sort column. Both directions are listed explicitly because an enum cannot express a prefix. Defaults to `name`. Any other value is a 400. Note kits never carry a reference number, so `reference_number` groups every kit at one end.
+ */
+ordering?: ListPartsOrdering;
 /**
  * A page number within the paginated result set.
  */
@@ -29,7 +34,7 @@ page_size?: number;
  */
 reference_number?: string;
 /**
- * Case-insensitive substring match on name.
+ * Case-insensitive substring match across name, description, reference number and manufacturer name. `description` is in that list because components carry a description and no name, so a search that skipped it could not find a component by its own label.
  */
 search?: string;
 };

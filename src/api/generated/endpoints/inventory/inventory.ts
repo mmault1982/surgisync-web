@@ -1791,7 +1791,7 @@ export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * The catalog of parts the requesting organization can choose from: shared-catalog rows plus any belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response shape does not vary with the query parameters, and the default page is wide enough to hold the whole catalog in one response. Sorted by name.
+ * The catalog of parts the requesting organization can choose from: shared-catalog rows plus any belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response shape does not vary with the query parameters, and the default page is wide enough to hold the whole catalog in one response. Sorted by name unless `ordering` says otherwise.
  */
 export const listParts = (
     params?: ListPartsParams,
@@ -1881,7 +1881,98 @@ export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TErr
 
 
 /**
- * Procedures this organization may choose from, sorted by name: the shared catalog plus any the organization owns. Always paginated.
+ * Manufacturers that actually have parts in the requesting organization's catalog, for the Product Catalog table's Manufacturer column filter menu. Sorted by name.
+ *
+ * Not `/api/v1/manufacturers/`, which is the **global** list: that one answers "who exists", and `has_items` narrows it only to manufacturers with a catalog *somewhere*. This endpoint is scoped the same way `/api/v1/parts/` is, so every value it offers returns at least one row.
+ */
+export const listPartManufacturerFacets = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacetResponse>(
+      {url: `/api/v1/parts/manufacturers/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPartManufacturerFacetsQueryKey = () => {
+    return [
+    `/api/v1/parts/manufacturers/`
+    ] as const;
+    }
+
+
+export const getListPartManufacturerFacetsQueryOptions = <TData = Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPartManufacturerFacetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPartManufacturerFacets>>> = ({ signal }) => listPartManufacturerFacets(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPartManufacturerFacetsQueryResult = NonNullable<Awaited<ReturnType<typeof listPartManufacturerFacets>>>
+export type ListPartManufacturerFacetsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListPartManufacturerFacets<TData = Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPartManufacturerFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listPartManufacturerFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPartManufacturerFacets<TData = Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPartManufacturerFacets>>,
+          TError,
+          Awaited<ReturnType<typeof listPartManufacturerFacets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPartManufacturerFacets<TData = Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPartManufacturerFacets<TData = Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartManufacturerFacets>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPartManufacturerFacetsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Procedures this organization owns, sorted by name. Always paginated. Procedures are tenant-scoped: there is no shared catalog, and a caller with no organization sees nothing.
  */
 export const listProceduresCatalog = (
     params?: ListProceduresCatalogParams,
@@ -1971,7 +2062,7 @@ export function useListProceduresCatalog<TData = Awaited<ReturnType<typeof listP
 
 
 /**
- * Add a procedure to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one; the shared catalog is not writable.
+ * Add a procedure to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
  */
 export const createProcedure = (
     procedureWriteRequest: BodyType<ProcedureWriteRequest>,

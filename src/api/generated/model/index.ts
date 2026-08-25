@@ -55,6 +55,7 @@ export * from './listInventoryKitManufacturerKitIdsParams';
 export * from './listManufacturersParams';
 export * from './listParts400';
 export * from './listPartsKind';
+export * from './listPartsOrdering';
 export * from './listPartsParams';
 export * from './listProceduresCatalogParams';
 export * from './listSurgeonsCatalogParams';

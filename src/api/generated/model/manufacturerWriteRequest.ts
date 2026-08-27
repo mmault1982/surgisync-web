@@ -10,10 +10,10 @@
  * Create/update payload for a manufacturer an organization owns.
  *
  * `name` is the only writable field, and that is the whole model rather than
- * a simplification: `barcode` is generated from the name, `parent_company`
- * comes from the caller's organization, and `is_active`/`deleted_at` are what
- * DELETE writes. Accepting `parent_company` from the body would let a client
- * file a row in another tenant's list.
+ * a simplification: `barcode` is generated from the name, `parent_company` is
+ * required on the model and comes from the caller's organization, and
+ * `is_active`/`deleted_at` are what DELETE writes. Accepting `parent_company`
+ * from the body would let a client file a row in another tenant's list.
  *
  * Read responses use `ManufacturerSerializer`; this one never renders.
  */

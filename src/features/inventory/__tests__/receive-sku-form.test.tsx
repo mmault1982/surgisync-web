@@ -37,11 +37,13 @@ function part(overrides: Partial<PartList> = {}): PartList {
   return {
     id: 314,
     uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-    // Shaped like real catalog data: components carry a description and no
-    // name, kits the other way round. A fixture with a name here would have
-    // hidden a permanently blank Description field.
-    name: null,
+    // `name` mirrors `description` — it is a deprecated read-only alias of it
+    // since the label fold, kept on the wire for shipped Flutter builds. The
+    // two split the job by kind before that, and a fixture carrying only a
+    // name would have hidden a permanently blank Description field.
+    name: 'REAMER CANNULATED ACORN 4.5MM',
     description: 'REAMER CANNULATED ACORN 4.5MM',
+    category: 'Reamers',
     kind: 'component',
     reference_number: 'CS-3510',
     is_serialized: false,

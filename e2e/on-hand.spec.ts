@@ -57,7 +57,11 @@ test('sorting puts the ordering in the URL', async ({ page }) => {
 
   await expect.poll(() => decodeURIComponent(page.url())).toContain('ordering=part_name');
   const firstCell = page.locator('tbody tr').first().locator('td').nth(2);
-  await expect(firstCell).toHaveText('Accolade Hip Stem');
+  // The full seeded label, suffix included. `part_name` is `part.description`
+  // since the backend's label fold (migration 0126) merged the catalog's two
+  // label columns into one, and the seed's description carries the suffix its
+  // old `name` did not.
+  await expect(firstCell).toHaveText('Accolade Hip Stem (seeded demo data)');
 });
 
 test('an empty result explains itself and offers a way out', async ({ page }) => {

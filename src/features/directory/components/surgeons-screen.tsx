@@ -9,6 +9,7 @@ import {
 } from '@/api/generated/endpoints/inventory/inventory';
 import type { SurgeonCatalog } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
+import { canManageOrgRecords } from '@/auth/permissions';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
@@ -16,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { surgeonKeys } from '../directory.keys';
-import { canManageDirectory } from '../permissions';
 import { surgeonListQuery } from '../surgeons.queries';
 import { hasActiveSearch, type SurgeonSearch } from '../surgeons.search';
 
@@ -42,7 +42,7 @@ export function SurgeonsScreen({
   onPageChange: (page: number) => void;
 }) {
   const query = useQuery(surgeonListQuery(search));
-  const canManage = canManageDirectory(useAuth().user?.role);
+  const canManage = canManageOrgRecords(useAuth().user?.role);
 
   const [editing, setEditing] = useState<SurgeonCatalog | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<SurgeonCatalog | null>(null);

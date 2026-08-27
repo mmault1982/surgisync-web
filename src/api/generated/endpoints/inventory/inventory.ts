@@ -29,6 +29,7 @@ import type {
   CreateInventoryKitPhoto400,
   CreateInventoryTransfer400,
   CreateManufacturer400,
+  CreatePart400,
   CreateProcedure400,
   CreateSurgeonCatalog400,
   ErrorDetail,
@@ -60,11 +61,15 @@ import type {
   PaginatedPartListList,
   PaginatedProcedureCatalogList,
   PaginatedSurgeonCatalogList,
+  PartDetail,
+  PartWriteRequest,
   PartialUpdateManufacturer400,
+  PartialUpdatePart400,
   PartialUpdateProcedure400,
   PartialUpdateSurgeon400,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
+  PatchedPartWriteRequest,
   PatchedProcedureWriteRequest,
   PatchedSurgeonWriteRequest,
   ProcedureCatalog,
@@ -1148,7 +1153,7 @@ export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeo
 
 
 /**
- * Manufacturers this organization may choose from, sorted by name: the shared catalog plus any the organization owns. **Always paginated** — the response shape does not vary with the query parameters. `page` and `page_size` are optional; the default page is wide enough to hold the whole catalog in one response.
+ * Manufacturers this organization owns, sorted by name. There is no shared catalog: every manufacturer belongs to exactly one organization, and a caller with no resolvable one sees nothing. **Always paginated** — the response shape does not vary with the query parameters. `page` and `page_size` are optional; the default page is wide enough to hold the whole catalog in one response.
  */
 export const listManufacturers = (
     params?: ListManufacturersParams,
@@ -1238,7 +1243,7 @@ export function useListManufacturers<TData = Awaited<ReturnType<typeof listManuf
 
 
 /**
- * Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one; the shared catalog is not writable.
+ * Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
  */
 export const createManufacturer = (
     manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>,
@@ -1791,7 +1796,7 @@ export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * The catalog of parts the requesting organization can choose from: shared-catalog rows plus any belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response shape does not vary with the query parameters, and the default page is wide enough to hold the whole catalog in one response. Sorted by name unless `ordering` says otherwise.
+ * The catalog of parts the requesting organization can choose from: those belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response shape does not vary with the query parameters, and the default page is wide enough to hold the whole catalog in one response. Sorted by name unless `ordering` says otherwise.
  */
 export const listParts = (
     params?: ListPartsParams,
@@ -1869,6 +1874,381 @@ export function useListParts<TData = Awaited<ReturnType<typeof listParts>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListPartsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a part to this organization's catalog. Organization admins only.
+ *
+ * The new part belongs to the manufacturer named in the body, and that manufacturer must be one this organization owns — a `Part` has no owner of its own, so its manufacturer is what scopes it.
+ *
+ * Answers with the detail shape, which carries `udi` and `list_price` that the listing does not.
+ */
+export const createPart = (
+    partWriteRequest: BodyType<PartWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartDetail>(
+      {url: `/api/v1/parts/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: partWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreatePartQueryKey = (partWriteRequest?: BodyType<PartWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/parts/`, partWriteRequest
+    ] as const;
+    }
+
+
+export const getCreatePartQueryOptions = <TData = Awaited<ReturnType<typeof createPart>>, TError = ErrorType<CreatePart400 | ErrorDetail>>(partWriteRequest: BodyType<PartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreatePartQueryKey(partWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createPart>>> = ({ signal }) => createPart(partWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreatePartQueryResult = NonNullable<Awaited<ReturnType<typeof createPart>>>
+export type CreatePartQueryError = ErrorType<CreatePart400 | ErrorDetail>
+
+
+export function useCreatePart<TData = Awaited<ReturnType<typeof createPart>>, TError = ErrorType<CreatePart400 | ErrorDetail>>(
+ partWriteRequest: BodyType<PartWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createPart>>,
+          TError,
+          Awaited<ReturnType<typeof createPart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreatePart<TData = Awaited<ReturnType<typeof createPart>>, TError = ErrorType<CreatePart400 | ErrorDetail>>(
+ partWriteRequest: BodyType<PartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createPart>>,
+          TError,
+          Awaited<ReturnType<typeof createPart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreatePart<TData = Awaited<ReturnType<typeof createPart>>, TError = ErrorType<CreatePart400 | ErrorDetail>>(
+ partWriteRequest: BodyType<PartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreatePart<TData = Awaited<ReturnType<typeof createPart>>, TError = ErrorType<CreatePart400 | ErrorDetail>>(
+ partWriteRequest: BodyType<PartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreatePartQueryOptions(partWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * One catalog part, if this organization may see it.
+ *
+ * Carries `udi` and `list_price`, which the listing deliberately does not — that one is also the Receive form's picker source and has no business being read as a pricing feed.
+ */
+export const retrievePart = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartDetail>(
+      {url: `/api/v1/parts/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetrievePartQueryKey = (id: number,) => {
+    return [
+    `/api/v1/parts/${id}/`
+    ] as const;
+    }
+
+
+export const getRetrievePartQueryOptions = <TData = Awaited<ReturnType<typeof retrievePart>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetrievePartQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrievePart>>> = ({ signal }) => retrievePart(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetrievePartQueryResult = NonNullable<Awaited<ReturnType<typeof retrievePart>>>
+export type RetrievePartQueryError = ErrorType<ErrorDetail>
+
+
+export function useRetrievePart<TData = Awaited<ReturnType<typeof retrievePart>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrievePart>>,
+          TError,
+          Awaited<ReturnType<typeof retrievePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrievePart<TData = Awaited<ReturnType<typeof retrievePart>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrievePart>>,
+          TError,
+          Awaited<ReturnType<typeof retrievePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrievePart<TData = Awaited<ReturnType<typeof retrievePart>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetrievePart<TData = Awaited<ReturnType<typeof retrievePart>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrievePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetrievePartQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Amend a catalog part this organization owns. Organization admins only.
+ *
+ * `kind` is **not** writable here, though it is on create. It decides which identity space the row lives in — `source_kind` is stamped once, at creation, and the sync service, the CSV export and the orphan sweep all partition the table on it. A component relabelled `kit` would keep `source_kind='item'`, becoming invisible to kit resolution while staying prunable against items.csv.
+ */
+export const partialUpdatePart = (
+    id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartDetail>(
+      {url: `/api/v1/parts/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedPartWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdatePartQueryKey = (id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/parts/${id}/`, patchedPartWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdatePartQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdatePart>>, TError = ErrorType<PartialUpdatePart400 | ErrorDetail>>(id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdatePartQueryKey(id,patchedPartWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdatePart>>> = ({ signal }) => partialUpdatePart(id,patchedPartWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdatePartQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdatePart>>>
+export type PartialUpdatePartQueryError = ErrorType<PartialUpdatePart400 | ErrorDetail>
+
+
+export function usePartialUpdatePart<TData = Awaited<ReturnType<typeof partialUpdatePart>>, TError = ErrorType<PartialUpdatePart400 | ErrorDetail>>(
+ id: number,
+    patchedPartWriteRequest: undefined |  BodyType<PatchedPartWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdatePart>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdatePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdatePart<TData = Awaited<ReturnType<typeof partialUpdatePart>>, TError = ErrorType<PartialUpdatePart400 | ErrorDetail>>(
+ id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdatePart>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdatePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdatePart<TData = Awaited<ReturnType<typeof partialUpdatePart>>, TError = ErrorType<PartialUpdatePart400 | ErrorDetail>>(
+ id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdatePart<TData = Awaited<ReturnType<typeof partialUpdatePart>>, TError = ErrorType<PartialUpdatePart400 | ErrorDetail>>(
+ id: number,
+    patchedPartWriteRequest?: BodyType<PatchedPartWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdatePartQueryOptions(id,patchedPartWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove a catalog part this organization owns. Organization admins only. A soft delete — the row stops being listed and frees its reference number and UDI, but stays for the stock history that references it. Refused while any stock is held against it.
+ */
+export const deletePart = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartDetail>(
+      {url: `/api/v1/parts/${id}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeletePartQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/parts/${id}/`
+    ] as const;
+    }
+
+
+export const getDeletePartQueryOptions = <TData = Awaited<ReturnType<typeof deletePart>>, TError = ErrorType<ErrorDetail | Conflict>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeletePartQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deletePart>>> = ({ signal }) => deletePart(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeletePartQueryResult = NonNullable<Awaited<ReturnType<typeof deletePart>>>
+export type DeletePartQueryError = ErrorType<ErrorDetail | Conflict>
+
+
+export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deletePart>>,
+          TError,
+          Awaited<ReturnType<typeof deletePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deletePart>>,
+          TError,
+          Awaited<ReturnType<typeof deletePart>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePart>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeletePartQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -11,6 +11,7 @@ import {
 } from '@/api/generated/endpoints/inventory/inventory';
 import type { Manufacturer } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
+import { canManageOrgRecords } from '@/auth/permissions';
 import { catalogKeys } from '@/features/inventory/inventory.keys';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
@@ -19,7 +20,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { manufacturerKeys } from '../directory.keys';
-import { canManageDirectory } from '../permissions';
 import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
@@ -58,7 +58,7 @@ export function ManufacturersScreen({
   const query = useQuery(manufacturerListQuery(search));
   // Writes are org-admin only server-side. Offering the controls to
   // everyone would mean a rep fills in the form and learns on submit.
-  const canManage = canManageDirectory(useAuth().user?.role);
+  const canManage = canManageOrgRecords(useAuth().user?.role);
 
   // `undefined` closed, `null` open-for-create, a row open-for-rename. One
   // piece of state rather than two booleans, so "adding" and "renaming" cannot

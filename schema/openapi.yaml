@@ -1709,6 +1709,7 @@ paths:
           - -manufacturer_kit_id
           - -manufacturer_name
           - -ownership_type
+          - -part_description
           - -part_name
           - -physical_location
           - -quantity
@@ -1721,6 +1722,7 @@ paths:
           - manufacturer_kit_id
           - manufacturer_name
           - ownership_type
+          - part_description
           - part_name
           - physical_location
           - quantity
@@ -3018,7 +3020,10 @@ paths:
       description: Create an item and optionally attach it to a case OR quote. Pass
         `case_id` to create a CaseItems entry, or `quote_id` to create a QuoteItems
         entry. Exactly one of the two must be provided; if neither is set, returns
-        only the created item; if both are set, returns 400.
+        only the created item; if both are set, returns 400. `manufacturer_name` is
+        matched against **your organization's** manufacturers and created there if
+        absent, so a name another organization owns yields a new row of your own rather
+        than theirs. The caller must belong to an organization; 400 otherwise.
       parameters:
       - in: query
         name: case_id
@@ -3711,9 +3716,10 @@ paths:
   /api/v1/manufacturers/:
     get:
       operationId: list_manufacturers
-      description: 'Manufacturers this organization may choose from, sorted by name:
-        the shared catalog plus any the organization owns. **Always paginated** —
-        the response shape does not vary with the query parameters. `page` and `page_size`
+      description: 'Manufacturers this organization owns, sorted by name. There is
+        no shared catalog: every manufacturer belongs to exactly one organization,
+        and a caller with no resolvable one sees nothing. **Always paginated** — the
+        response shape does not vary with the query parameters. `page` and `page_size`
         are optional; the default page is wide enough to hold the whole catalog in
         one response.'
       parameters:
@@ -3766,7 +3772,7 @@ paths:
       operationId: create_manufacturer
       description: Add a manufacturer to this organization. Organization admins only.
         The new row belongs to the caller's organization and is invisible to every
-        other one; the shared catalog is not writable.
+        other one.
       tags:
       - Inventory
       requestBody:
@@ -4322,11 +4328,10 @@ paths:
     get:
       operationId: list_parts
       description: 'The catalog of parts the requesting organization can choose from:
-        shared-catalog rows plus any belonging to its own manufacturers. Not stock
-        on hand — see `/api/v1/stock-items/` for that. **Always paginated**; the response
-        shape does not vary with the query parameters, and the default page is wide
-        enough to hold the whole catalog in one response. Sorted by name unless `ordering`
-        says otherwise.'
+        those belonging to its own manufacturers. Not stock on hand — see `/api/v1/stock-items/`
+        for that. **Always paginated**; the response shape does not vary with the
+        query parameters, and the default page is wide enough to hold the whole catalog
+        in one response. Sorted by name unless `ordering` says otherwise.'
       parameters:
       - in: query
         name: kind
@@ -4350,16 +4355,20 @@ paths:
         schema:
           type: string
           enum:
+          - -category
+          - -description
           - -manufacturer_name
           - -name
           - -reference_number
+          - category
+          - description
           - manufacturer_name
           - name
           - reference_number
         description: Sort column. Both directions are listed explicitly because an
-          enum cannot express a prefix. Defaults to `name`. Any other value is a 400.
-          Note kits never carry a reference number, so `reference_number` groups every
-          kit at one end.
+          enum cannot express a prefix. Defaults to `description`; `name` is a deprecated
+          alias of it. Any other value is a 400. Note kits never carry a reference
+          number, so `reference_number` groups every kit at one end.
       - name: page
         required: false
         in: query
@@ -4383,10 +4392,9 @@ paths:
         name: search
         schema:
           type: string
-        description: Case-insensitive substring match across name, description, reference
-          number and manufacturer name. `description` is in that list because components
-          carry a description and no name, so a search that skipped it could not find
-          a component by its own label.
+        description: Case-insensitive substring match across description, reference
+          number and manufacturer name. `description` is the catalog label for every
+          row, so it covers what a search over the deprecated `name` used to.
       tags:
       - Inventory
       security:
@@ -4409,6 +4417,218 @@ paths:
                     type: string
           description: Validation failed. Keys are field names, plus `non_field_errors`
             for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_part
+      description: |-
+        Add a part to this organization's catalog. Organization admins only.
+
+        The new part belongs to the manufacturer named in the body, and that manufacturer must be one this organization owns — a `Part` has no owner of its own, so its manufacturer is what scopes it.
+
+        Answers with the detail shape, which carries `udi` and `list_price` that the listing does not.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/{id}/:
+    get:
+      operationId: retrieve_part
+      description: |-
+        One catalog part, if this organization may see it.
+
+        Carries `udi` and `list_price`, which the listing deliberately does not — that one is also the Receive form's picker source and has no business being read as a pricing feed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    patch:
+      operationId: partial_update_part
+      description: |-
+        Amend a catalog part this organization owns. Organization admins only.
+
+        `kind` is **not** writable here, though it is on create. It decides which identity space the row lives in — `source_kind` is stamped once, at creation, and the sync service, the CSV export and the orphan sweep all partition the table on it. A component relabelled `kit` would keep `source_kind='item'`, becoming invisible to kit resolution while staying prunable against items.csv.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: delete_part
+      description: Remove a catalog part this organization owns. Organization admins
+        only. A soft delete — the row stops being listed and frees its reference number
+        and UDI, but stays for the stock history that references it. Refused while
+        any stock is held against it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: Stock is still held against this part (`part_in_use`). The
+            message names how many rows. `StockItem.part` is `PROTECT`ed, but removing
+            a part is a soft delete, which never trips a foreign key — the same reason
+            `manufacturer_in_use` exists.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
         '401':
           content:
             application/json:
@@ -5780,6 +6000,7 @@ paths:
           - -manufacturer_kit_id
           - -manufacturer_name
           - -ownership_type
+          - -part_description
           - -part_name
           - -physical_location
           - -quantity
@@ -5792,6 +6013,7 @@ paths:
           - manufacturer_kit_id
           - manufacturer_name
           - ownership_type
+          - part_description
           - part_name
           - physical_location
           - quantity
@@ -7214,7 +7436,7 @@ components:
         name:
           type: string
           minLength: 1
-          description: Name of the item
+          description: Label for the item; stored as its description
           maxLength: 150
         manufacturer_name:
           type: string
@@ -7230,12 +7452,6 @@ components:
           minLength: 1
           description: Unique reference number (optional)
           maxLength: 20
-        consignment_price:
-          type: integer
-          description: Consignment price (optional)
-        contracted_price:
-          type: integer
-          description: Contracted price (optional)
         quantity_per_kit:
           type: integer
           description: Quantity per kit (optional)
@@ -9058,6 +9274,10 @@ components:
         id:
           type: integer
           readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: DEPRECATED — use description.
         kind:
           allOf:
           - $ref: '#/components/schemas/KindEnum'
@@ -9076,10 +9296,6 @@ components:
           format: uuid
           readOnly: true
           description: Stable external identifier; survives the catalog merge.
-        name:
-          type: string
-          nullable: true
-          maxLength: 250
         source_kind:
           type: string
           readOnly: true
@@ -9108,16 +9324,6 @@ components:
           description: Item usage type (standard, loaner, consignment).
           maxLength: 150
         list_price:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        consignment_price:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        contracted_price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
@@ -9199,6 +9405,7 @@ components:
       - is_serialized
       - kind
       - manufacturer
+      - name
       - reference_number
       - source_id
       - source_kind
@@ -9231,8 +9438,7 @@ components:
           type: boolean
           readOnly: true
           description: True when this row belongs to your organization and may be
-            renamed or removed. False for the shared catalog, which is readable by
-            everyone and writable by nobody.
+            renamed or removed.
       required:
       - id
       - is_owned
@@ -9253,10 +9459,10 @@ components:
         Create/update payload for a manufacturer an organization owns.
 
         `name` is the only writable field, and that is the whole model rather than
-        a simplification: `barcode` is generated from the name, `parent_company`
-        comes from the caller's organization, and `is_active`/`deleted_at` are what
-        DELETE writes. Accepting `parent_company` from the body would let a client
-        file a row in another tenant's list.
+        a simplification: `barcode` is generated from the name, `parent_company` is
+        required on the model and comes from the caller's organization, and
+        `is_active`/`deleted_at` are what DELETE writes. Accepting `parent_company`
+        from the body would let a client file a row in another tenant's list.
 
         Read responses use `ManufacturerSerializer`; this one never renders.
       properties:
@@ -9679,13 +9885,102 @@ components:
       required:
       - id
       - name
+    PartDetail:
+      type: object
+      description: |-
+        One catalog part, on its own.
+
+        `PartListSerializer` widened by `udi` and `list_price` — the two fields the
+        Product Catalog's detail screen shows and the listing deliberately does
+        not. Widening a projection is backward-compatible; the list stays narrow
+        because it is also the Receive form's picker source, and a picker has no
+        business carrying pricing.
+
+        Subclassing rather than restating the nine shared fields: the `name` alias
+        and the `manufacturer_name` flattening are the same declarations, and two
+        copies of them is how they drift.
+
+        This is the read shape for retrieve, create, update **and** delete —
+        `PartWriteSerializer` never renders.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Stable external identifier; survives the catalog merge.
+        name:
+          type: string
+          readOnly: true
+          description: DEPRECATED — use description.
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+          description: Classification for grouping similar items.
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+          description: |-
+            Whether this part is a kit (has a bill of materials) or a loose component.
+
+            * `kit` - Kit
+            * `component` - Component
+        reference_number:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Unique catalog number used for scanning and inventory lookup.
+            Empty for kits.
+        is_serialized:
+          type: boolean
+          readOnly: true
+          description: Serialized parts are stocked one row per physical unit (quantity
+            1, own lot/expiry); bulk parts are stocked one row per location with a
+            quantity.
+        manufacturer:
+          type: integer
+          readOnly: true
+        manufacturer_name:
+          type: string
+          readOnly: true
+        udi:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Unique Device Identifier - FDA-required tracking number for
+            medical devices.
+        list_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+      required:
+      - category
+      - description
+      - id
+      - is_serialized
+      - kind
+      - list_price
+      - manufacturer
+      - manufacturer_name
+      - name
+      - reference_number
+      - udi
+      - uuid
     PartList:
       type: object
       description: |-
         One catalog part in a `/api/v1/parts/` listing.
 
         Deliberately narrow. `Part` carries thirty-odd fields including four
-        barcode images and three price columns; this is the picker projection —
+        barcode images and a price column; this is the picker projection —
         enough to identify a part and show it in a dropdown, and nothing that
         invites a client to treat the list as a pricing or media source. Widening
         it later is backward-compatible; narrowing it is not.
@@ -9707,10 +10002,14 @@ components:
         name:
           type: string
           readOnly: true
-          nullable: true
+          description: DEPRECATED — use description.
         description:
           type: string
           readOnly: true
+        category:
+          type: string
+          readOnly: true
+          description: Classification for grouping similar items.
         kind:
           allOf:
           - $ref: '#/components/schemas/KindEnum'
@@ -9739,6 +10038,7 @@ components:
           type: string
           readOnly: true
       required:
+      - category
       - description
       - id
       - is_serialized
@@ -9748,6 +10048,64 @@ components:
       - name
       - reference_number
       - uuid
+    PartWriteRequest:
+      type: object
+      description: |-
+        Create/update payload for a catalog part.
+
+        Eight writable fields against `Part`'s thirty-odd. What is absent is as
+        deliberate as what is here: the four barcode images are generated by
+        `Part.save()` and never accepted from a client; `uuid`, `source_kind` and
+        `source_id` are identity the pipeline owns; `is_user_created` must stay
+        False or `catalog_queryset` filters the new row straight back out.
+
+        Read responses use `PartDetailSerializer`; this one never renders.
+      properties:
+        manufacturer:
+          type: integer
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          description: |-
+            Whether this part is a kit (has a bill of materials) or a loose component.
+
+            * `kit` - Kit
+            * `component` - Component
+        is_serialized:
+          type: boolean
+          description: Serialized parts are stocked one row per physical unit (quantity
+            1, own lot/expiry); bulk parts are stocked one row per location with a
+            quantity.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 256
+        category:
+          type: string
+          description: Classification for grouping similar items.
+          maxLength: 100
+        reference_number:
+          type: string
+          nullable: true
+          description: Unique catalog number used for scanning and inventory lookup.
+            Empty for kits.
+          maxLength: 20
+        udi:
+          type: string
+          nullable: true
+          description: Unique Device Identifier - FDA-required tracking number for
+            medical devices.
+          maxLength: 50
+        list_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - description
+      - is_serialized
+      - kind
+      - manufacturer
     PatchedFacilityAssignmentDetailRequest:
       type: object
       description: Full serializer for detail/create/update views.
@@ -10032,10 +10390,10 @@ components:
         Create/update payload for a manufacturer an organization owns.
 
         `name` is the only writable field, and that is the whole model rather than
-        a simplification: `barcode` is generated from the name, `parent_company`
-        comes from the caller's organization, and `is_active`/`deleted_at` are what
-        DELETE writes. Accepting `parent_company` from the body would let a client
-        file a row in another tenant's list.
+        a simplification: `barcode` is generated from the name, `parent_company` is
+        required on the model and comes from the caller's organization, and
+        `is_active`/`deleted_at` are what DELETE writes. Accepting `parent_company`
+        from the body would let a client file a row in another tenant's list.
 
         Read responses use `ManufacturerSerializer`; this one never renders.
       properties:
@@ -10067,6 +10425,59 @@ components:
           maxLength: 200
         is_active:
           type: boolean
+    PatchedPartWriteRequest:
+      type: object
+      description: |-
+        Create/update payload for a catalog part.
+
+        Eight writable fields against `Part`'s thirty-odd. What is absent is as
+        deliberate as what is here: the four barcode images are generated by
+        `Part.save()` and never accepted from a client; `uuid`, `source_kind` and
+        `source_id` are identity the pipeline owns; `is_user_created` must stay
+        False or `catalog_queryset` filters the new row straight back out.
+
+        Read responses use `PartDetailSerializer`; this one never renders.
+      properties:
+        manufacturer:
+          type: integer
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          description: |-
+            Whether this part is a kit (has a bill of materials) or a loose component.
+
+            * `kit` - Kit
+            * `component` - Component
+        is_serialized:
+          type: boolean
+          description: Serialized parts are stocked one row per physical unit (quantity
+            1, own lot/expiry); bulk parts are stocked one row per location with a
+            quantity.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 256
+        category:
+          type: string
+          description: Classification for grouping similar items.
+          maxLength: 100
+        reference_number:
+          type: string
+          nullable: true
+          description: Unique catalog number used for scanning and inventory lookup.
+            Empty for kits.
+          maxLength: 20
+        udi:
+          type: string
+          nullable: true
+          description: Unique Device Identifier - FDA-required tracking number for
+            medical devices.
+          maxLength: 50
+        list_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
     PatchedPriceFileDetailRequest:
       type: object
       description: Full serializer for detail/create/update views.

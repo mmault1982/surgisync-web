@@ -8,21 +8,22 @@
 import type { KindEnum } from './kindEnum';
 
 /**
- * One catalog part in a `/api/v1/parts/` listing.
+ * One catalog part, on its own.
  *
- * Deliberately narrow. `Part` carries thirty-odd fields including four
- * barcode images and a price column; this is the picker projection —
- * enough to identify a part and show it in a dropdown, and nothing that
- * invites a client to treat the list as a pricing or media source. Widening
- * it later is backward-compatible; narrowing it is not.
+ * `PartListSerializer` widened by `udi` and `list_price` — the two fields the
+ * Product Catalog's detail screen shows and the listing deliberately does
+ * not. Widening a projection is backward-compatible; the list stays narrow
+ * because it is also the Receive form's picker source, and a picker has no
+ * business carrying pricing.
  *
- * `kind` is on the wire because one endpoint serves kits and loose
- * components, so a client that omits the filter still has to tell them apart.
+ * Subclassing rather than restating the nine shared fields: the `name` alias
+ * and the `manufacturer_name` flattening are the same declarations, and two
+ * copies of them is how they drift.
  *
- * Modelled on `KitSerializer` above, which is the same projection from before
- * the catalog merge gave kits and items one table.
+ * This is the read shape for retrieve, create, update **and** delete —
+ * `PartWriteSerializer` never renders.
  */
-export interface PartList {
+export interface PartDetail {
   readonly id: number;
   /** Stable external identifier; survives the catalog merge. */
   readonly uuid: string;
@@ -47,4 +48,14 @@ export interface PartList {
   readonly is_serialized: boolean;
   readonly manufacturer: number;
   readonly manufacturer_name: string;
+  /**
+     * Unique Device Identifier - FDA-required tracking number for medical devices.
+     * @nullable
+     */
+  readonly udi: string | null;
+  /**
+     * @nullable
+     * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+     */
+  readonly list_price: string | null;
 }

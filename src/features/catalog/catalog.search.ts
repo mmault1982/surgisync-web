@@ -32,7 +32,10 @@ const asList = <T extends z.ZodTypeAny>(item: T) =>
   );
 
 export const DEFAULT_PAGE_SIZE = 25;
-export const DEFAULT_ORDERING = Ordering.name;
+// The server's own default too, so an unsorted request and this agree. `name`
+// would sort identically — it is a deprecated alias of the same column — but
+// it is not the value the contract now documents as the default.
+export const DEFAULT_ORDERING = Ordering.description;
 
 export const catalogSearchSchema = z.object({
   page: z.coerce.number().int().min(1).catch(1).default(1),
@@ -101,23 +104,26 @@ export function hasActiveFilters(search: CatalogSearch): boolean {
 }
 
 /**
- * What to call a catalog row under a column headed "Name".
+ * What to call a catalog row under a column headed "Description".
  *
- * Name first, then description — the **inverse** of `partLabel()` in
- * `receive-sku.ts`, and deliberately so rather than by oversight. That one
- * labels the result of a scanned catalog-number lookup, which only ever
- * resolves components, and every one of the catalog's components has a
- * description and none has a name; description-first is right there.
+ * `description`, which since the label fold is the only label a part has.
  *
- * This table shows both kinds. A kit has a real name and a column headed
- * "Name" should show it; a component has none and falls through to the
- * description it does have. Preferring description here would label a kit by
- * whatever prose happened to be attached to it — which is exactly what the
- * seeded demo data looks like ("Lapidus Fixation Set (seeded demo data)").
+ * This used to prefer `name` and fall through to `description`, because the
+ * two split the job by kind: kits carried a name and a blank description,
+ * components a description and a NULL name, so a column reading either one
+ * alone was blank for half the catalog. Backend migration 0126 folded them
+ * into `description`. `name` is still on the wire as a read-only alias of it,
+ * which is why the old expression still compiled and still returned the right
+ * string — it was reading the same value by its deprecated name. Read the
+ * one that is not deprecated.
+ *
+ * `partLabel()` in `receive-sku.ts` already read `description` first and
+ * needed no change; the two functions now agree, and the note there about
+ * being each other's inverse is what went away.
  *
  * The em dash is the last resort, matching the on-hand table's fallback for
  * any absent cell value.
  */
 export function catalogLabel(part: PartList): string {
-  return part.name?.trim() || part.description.trim() || part.reference_number?.trim() || '—';
+  return part.description.trim() || part.reference_number?.trim() || '—';
 }

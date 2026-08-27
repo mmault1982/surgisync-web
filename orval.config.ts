@@ -154,16 +154,33 @@ const ALLOWED_OPERATIONS = new Set([
   'surgeon_import_template',
 
   // The catalog, on /api/v1/parts/ — inside the response accuracy gate from
-  // its first commit, so both of these are verified rather than merely
+  // its first commit, so all six of these are verified rather than merely
   // documented. `list_parts` backs the Receive form's pickers and the Product
   // Catalog table; the facet operation is that table's Manufacturer column
   // menu, scoped by the same queryset as the listing so it cannot offer a
   // value that returns no rows.
   //
-  // There is deliberately no retrieve: /api/v1/parts/{id}/ does not exist, and
-  // the catalog table has no detail view to want one.
+  // The four writes are the Product Catalog's Add / Edit / Delete and the
+  // detail screen behind a row click. `/api/v1/parts/{id}/` did not exist
+  // when this list was first written, which is what the note here used to
+  // say; the screen needing it was a backend change rather than a reason to
+  // hand-write the call.
+  //
+  // `retrieve_part` answers with a *wider* projection than `list_parts` —
+  // `PartDetail` adds `udi` and `list_price`. The listing stays narrow on
+  // purpose: it is also the Receive picker's source, and a picker has no
+  // business being read as a pricing feed.
+  //
+  // Note `partial_update_part` is a PATCH and there is no PUT, the same
+  // shape as manufacturers and procedures. `kind` is writable on create only
+  // — it decides which identity space the row lives in, and the sync service
+  // partitions the catalog table on the `source_kind` it is stamped with.
   'list_parts',
   'list_part_manufacturer_facets',
+  'create_part',
+  'retrieve_part',
+  'partial_update_part',
+  'delete_part',
 
   // Configuration / Hansel. `/api/v1/integrations/` was added to the backend's
   // VALIDATED_PATH_PREFIXES in the same commit that created it, so these are

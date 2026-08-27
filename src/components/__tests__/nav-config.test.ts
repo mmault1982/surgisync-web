@@ -10,9 +10,7 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manage On-Hand');
   });
 
-  it('locates a section with a single child', () => {
-    // Configuration has one item where Inventory has three, and a section is
-    // still a section — the sidebar renders it collapsible either way.
+  it('locates the Configuration section', () => {
     const trail = findNavTrail('/configuration/hansel');
 
     expect(trail?.section.title).toBe('Configuration');
@@ -36,18 +34,19 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manufacturers');
   });
 
-  it('locates Surgeons, the third item in its section', () => {
+  it('locates Surgeons, the second item in its section', () => {
     const trail = findNavTrail('/directory/surgeons');
 
     expect(trail?.section.title).toBe('Directory Profiles');
     expect(trail?.item.title).toBe('Surgeons');
   });
 
-  it('locates Procedures beside Manufacturers', () => {
-    // A second item within one section, which nothing covered before.
-    const trail = findNavTrail('/directory/procedures');
+  it('locates Procedures, the second item under Configuration', () => {
+    // A second item within one section, which nothing else covers now that
+    // Hansel has company.
+    const trail = findNavTrail('/configuration/procedures');
 
-    expect(trail?.section.title).toBe('Directory Profiles');
+    expect(trail?.section.title).toBe('Configuration');
     expect(trail?.item.title).toBe('Procedures');
   });
 

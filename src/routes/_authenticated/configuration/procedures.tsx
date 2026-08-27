@@ -4,7 +4,14 @@ import { ProceduresScreen } from '@/features/directory/components/procedures-scr
 import { procedureListQuery } from '@/features/directory/procedures.queries';
 import { PROCEDURE_DEFAULTS, procedureSearchSchema } from '@/features/directory/procedures.search';
 
-export const Route = createFileRoute('/_authenticated/directory/procedures')({
+/**
+ * Procedures lives under Configuration in the nav, so the route moved here to
+ * match. The screen itself stays in `src/features/directory/` — it shares
+ * `NameDialog`, `ImportDialog` and the import-report parsing with
+ * Manufacturers, and splitting the module to chase the nav would fracture
+ * that for nothing.
+ */
+export const Route = createFileRoute('/_authenticated/configuration/procedures')({
   validateSearch: procedureSearchSchema,
   search: {
     middlewares: [retainSearchParams(['page_size']), stripSearchParams(PROCEDURE_DEFAULTS)],

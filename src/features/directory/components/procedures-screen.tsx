@@ -27,7 +27,9 @@ import { NameDialog } from './name-dialog';
 import { ProceduresTable } from './procedures-table';
 
 /**
- * Procedures, under Directory Profiles.
+ * Procedures, under Configuration. The screen stays in this directory-profiles
+ * module because it shares its dialogs and import parsing with Manufacturers;
+ * only the route moved.
  *
  * The list is the shared catalog — the procedures every organization reads —
  * plus the ones this organization added. Only the latter can be edited, and

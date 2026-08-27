@@ -41,7 +41,7 @@ export interface NavSection {
  * The prototype's section order, as far as it is built. Five more are still to
  * come (Cases / Restocks, Ordering, Quotes, Pricing, Reports), and each arrives
  * with the screens behind it rather than as a row of dead links — which is also
- * why Directory Profiles lists Manufacturers, Procedures and Surgeons, not the
+ * why Directory Profiles lists just Manufacturers and Surgeons, not the
  * Facilities and Users the prototype shows beside them.
  *
  * **Configuration is not the prototype's name for it — that is "Setup"** — and
@@ -55,12 +55,6 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: FolderIcon,
     items: [
       { title: 'Manufacturers', to: '/directory/manufacturers', icon: FactoryIcon },
-      // Not in the prototype's Directory Profiles, which lists Facilities,
-      // Manufacturers, Surgeons and Users. A deliberate addition: procedures
-      // are reference data an organization maintains the same way, and the
-      // spec simply never covered them. Surgeons below *is* in the
-      // prototype's list; Facilities and Users are what remain.
-      { title: 'Procedures', to: '/directory/procedures', icon: StethoscopeIcon },
       { title: 'Surgeons', to: '/directory/surgeons', icon: UserRoundIcon },
     ],
   },
@@ -81,7 +75,15 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Configuration',
     icon: SettingsIcon,
-    items: [{ title: 'Hansel', to: '/configuration/hansel', icon: PlugIcon }],
+    items: [
+      { title: 'Hansel', to: '/configuration/hansel', icon: PlugIcon },
+      // Not in the prototype at all, under either name: it lists Facilities,
+      // Manufacturers, Surgeons and Users under Directory Profiles and says
+      // nothing about procedures. A deliberate addition, and it sits here
+      // rather than beside those four because a procedure is something the
+      // organization configures for its own use, not a party it deals with.
+      { title: 'Procedures', to: '/configuration/procedures', icon: StethoscopeIcon },
+    ],
   },
 ];
 

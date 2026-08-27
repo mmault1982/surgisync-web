@@ -1,11 +1,13 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 
 import {
+  listManufacturers,
   listPartManufacturerFacets,
   listParts,
+  retrievePart,
 } from '@/api/generated/endpoints/inventory/inventory';
 
-import { productCatalogKeys } from './catalog.keys';
+import { partFormKeys, productCatalogKeys } from './catalog.keys';
 import { toListParams, type CatalogSearch } from './catalog.search';
 
 export function catalogListQuery(search: CatalogSearch) {
@@ -15,6 +17,20 @@ export function catalogListQuery(search: CatalogSearch) {
     // Keeps the current page on screen while the next one loads, so typing in
     // the search box does not blank the table on every keystroke.
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * One catalog part, for the detail screen and the edit form.
+ *
+ * No `placeholderData`: unlike the list, there is no previous value worth
+ * keeping on screen — a different id is a different part, and showing the
+ * last one while this one loads would be showing the wrong record.
+ */
+export function productDetailQuery(id: number) {
+  return queryOptions({
+    queryKey: productCatalogKeys.detail(id),
+    queryFn: ({ signal }) => retrievePart(id, undefined, signal),
   });
 }
 
@@ -51,3 +67,35 @@ export const catalogFacetQueries = {
       staleTime: FACET_STALE_TIME,
     }),
 };
+
+/**
+ * Manufacturers the product form may file a part under.
+ *
+ * **Not** `catalogFacetQueries.manufacturers()` above, and not
+ * `catalogQueries.manufacturers()` in the Receive form either — three lists,
+ * three different questions:
+ *
+ * - the facet endpoint answers "whose parts are in my catalog", which is right
+ *   for the table's filter menu and wrong here, since it cannot offer a
+ *   manufacturer that has no parts yet — the exact case of adding the first
+ *   one.
+ * - the Receive form passes `has_items: true`, which excludes the same set for
+ *   the same reason.
+ * - this one omits the filter, so every manufacturer the organization owns is
+ *   selectable.
+ *
+ * `/api/v1/manufacturers/` is org-scoped server-side, so no extra narrowing is
+ * needed here. One page holds the lot — the endpoint's page is 500 — so
+ * nothing pages.
+ */
+export function partFormManufacturersQuery() {
+  return queryOptions({
+    queryKey: partFormKeys.manufacturers(),
+    queryFn: ({ signal }) => listManufacturers(undefined, { signal }),
+    staleTime: FACET_STALE_TIME,
+    // The response also carries a deprecated `data` duplicating `results`,
+    // alive only until the shipped Flutter build that reads it is replaced.
+    // Selecting here keeps that fact in the two lines that get deleted with it.
+    select: (page) => page.results,
+  });
+}

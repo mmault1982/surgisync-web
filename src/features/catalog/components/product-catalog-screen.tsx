@@ -1,22 +1,45 @@
 import { useQuery } from '@tanstack/react-query';
+import { PlusIcon } from 'lucide-react';
+import { useState } from 'react';
 
+import { deletePart } from '@/api/generated/endpoints/inventory/inventory';
+import type { PartList } from '@/api/generated/model';
+import { useAuth } from '@/auth/auth-context';
+import { canManageOrgRecords } from '@/auth/permissions';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { catalogKeys } from '@/features/inventory/inventory.keys';
 
+import { productCatalogKeys } from '../catalog.keys';
 import { catalogListQuery } from '../catalog.queries';
-import { hasActiveFilters, type CatalogSearch } from '../catalog.search';
+import { catalogLabel, hasActiveFilters, type CatalogSearch } from '../catalog.search';
 
 import { CatalogFilterChips } from './catalog-filter-chips';
 import { ProductCatalogTable } from './product-catalog-table';
 
 /**
+ * Both roots. `catalogKeys` is the Receive form's picker cache, which reads
+ * the same endpoint under a separate root with a five-minute staleTime — a
+ * part removed here would otherwise stay receivable for five minutes.
+ */
+const INVALIDATES = [productCatalogKeys.all, catalogKeys.all] as const;
+
+/**
  * Product Catalog, under Inventory.
  *
- * What the organization can *choose* — the shared catalog plus the parts of
- * manufacturers it owns — as against Manage On-Hand, which is what it
- * physically *holds*. The two read different endpoints and a part appears here
- * whether or not any stock of it exists.
+ * What the organization can *choose* — the parts of the manufacturers it owns
+ * — as against Manage On-Hand, which is what it physically *holds*. The two
+ * read different endpoints and a part appears here whether or not any stock of
+ * it exists.
+ *
+ * There is no shared tier. `Manufacturer.parent_company` is NOT NULL, so every
+ * part belongs to exactly one organization, and `scope_parts_to_org` reaches
+ * the owner through the manufacturer. That is also what makes every row here
+ * writable by an admin — unlike the Directory screens, which have shared rows
+ * to render an inert `Shared` label against.
  *
  * Presentational: it takes its state and its callbacks as props, so it renders
  * without a router. Navigation lives in the route file, the same split the
@@ -27,13 +50,24 @@ export function ProductCatalogScreen({
   onSearchChange,
   onClearAll,
   onPageChange,
+  onAdd,
+  onOpenRow,
+  onEdit,
 }: {
   search: CatalogSearch;
   onSearchChange: (patch: Partial<CatalogSearch>) => void;
   onClearAll: () => void;
   onPageChange: (page: number) => void;
+  onAdd: () => void;
+  onOpenRow: (id: number) => void;
+  onEdit: (id: number) => void;
 }) {
   const query = useQuery(catalogListQuery(search));
+  const canManage = canManageOrgRecords(useAuth().user?.role);
+
+  // Delete stays here rather than in the route: it is a dialog over this list,
+  // and the list is what has to refetch afterwards.
+  const [deleting, setDeleting] = useState<PartList | null>(null);
 
   const rows = query.data?.results ?? [];
 
@@ -41,9 +75,8 @@ export function ProductCatalogScreen({
     <div className="p-6">
       <h1 className="mb-1 text-2xl font-semibold text-primary">Product Catalog</h1>
       <p className="mb-4 text-sm text-muted-foreground">
-        Parts your organization can receive stock against — the shared catalog alongside those of
-        the manufacturers you own. This is not stock on hand; a part is listed here whether or not
-        you hold any.
+        Parts your organization can receive stock against — the catalogs of the manufacturers you
+        own. This is not stock on hand; a part is listed here whether or not you hold any.
       </p>
 
       <header className="mb-3 flex flex-wrap items-center gap-3">
@@ -57,6 +90,14 @@ export function ProductCatalogScreen({
           onChange={(event) => onSearchChange({ search: event.target.value.trim() || undefined })}
           className="max-w-sm min-w-64"
         />
+        {canManage ? (
+          <div className="ml-auto flex gap-2">
+            <Button type="button" onClick={onAdd}>
+              <PlusIcon />
+              Add product
+            </Button>
+          </div>
+        ) : null}
       </header>
 
       <CatalogFilterChips search={search} onChange={onSearchChange} onClearAll={onClearAll} />
@@ -83,15 +124,24 @@ export function ProductCatalogScreen({
             <TableEmpty
               title="No catalog parts yet"
               description={
-                'Your organization can see the shared catalog plus the parts of manufacturers ' +
-                'it owns. Loading a manufacturer’s catalog is done separately from this ' +
-                'screen.'
+                canManage
+                  ? 'Add one, or load a manufacturer’s catalog separately from this screen.'
+                  : 'An administrator can add one for your organization.'
               }
+              action={canManage ? { label: 'Add product', onClick: onAdd } : undefined}
             />
           )
         ) : (
           <>
-            <ProductCatalogTable rows={rows} search={search} onSearchChange={onSearchChange} />
+            <ProductCatalogTable
+              rows={rows}
+              search={search}
+              onSearchChange={onSearchChange}
+              canManage={canManage}
+              onOpenRow={onOpenRow}
+              onEdit={(row) => onEdit(row.id)}
+              onDelete={setDeleting}
+            />
             <Pagination
               page={query.data.current_page}
               pageSize={search.page_size}
@@ -102,6 +152,20 @@ export function ProductCatalogScreen({
           </>
         )}
       </div>
+
+      {deleting ? (
+        <DeleteDialog
+          title={`Remove ${catalogLabel(deleting)}?`}
+          description={
+            'It stops appearing in your catalog and in the Receive form’s pickers. Stock you ' +
+            'already hold keeps it, and it cannot be removed while any of that stock exists.'
+          }
+          conflictCode="part_in_use"
+          onDelete={() => deletePart(deleting.id)}
+          invalidates={INVALIDATES}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </div>
   );
 }

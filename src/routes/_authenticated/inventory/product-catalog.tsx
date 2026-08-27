@@ -48,6 +48,21 @@ function ProductCatalogPage() {
       onPageChange={(page) => {
         void navigate({ search: (prev) => ({ ...prev, page }) });
       }}
+      onAdd={() => {
+        void navigate({ to: '/inventory/product-catalog/new' });
+      }}
+      onOpenRow={(id) => {
+        void navigate({
+          to: '/inventory/product-catalog/$partId',
+          params: { partId: String(id) },
+        });
+      }}
+      onEdit={(id) => {
+        void navigate({
+          to: '/inventory/product-catalog/$partId/edit',
+          params: { partId: String(id) },
+        });
+      }}
     />
   );
 }

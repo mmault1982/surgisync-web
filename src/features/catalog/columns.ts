@@ -2,7 +2,7 @@ import { ListPartsOrdering as Ordering } from '@/api/generated/model';
 
 import type { CatalogSearch } from './catalog.search';
 
-export type ColumnKey = 'name' | 'manufacturer' | 'reference_number' | 'kind';
+export type ColumnKey = 'description' | 'category' | 'manufacturer' | 'reference_number' | 'kind';
 
 /**
  * The ascending half of the ordering enum.
@@ -18,9 +18,19 @@ export type AscendingOrdering = Exclude<keyof typeof Ordering, `-${string}`>;
 
 /** Which ordering values a column sorts by, if any. */
 export const SORT_FIELD: Partial<Record<ColumnKey, AscendingOrdering>> = {
-  name: 'name',
+  // The enum still carries `name` as well, but since the label fold it is a
+  // deprecated alias of this same column and sorts identically. Key, header
+  // and ordering value now all say `description` — the one field a part
+  // actually has.
+  description: 'description',
   manufacturer: 'manufacturer_name',
   reference_number: 'reference_number',
+  // Sorts, but does not filter — there is no `category` query parameter and no
+  // facet endpoint to seed a checklist from, unlike Manufacturer. Ascending
+  // banks every uncategorised row first: the column is NOT NULL with `''` as
+  // its default, so blank is a value rather than an absence, and `-category`
+  // is what pushes those to the end.
+  category: 'category',
   // `kind` is absent on purpose. It is a two-valued enum, so sorting it is a
   // filter wearing a hat — and the column already offers that filter. The
   // backend declines to sort on it for the same reason.

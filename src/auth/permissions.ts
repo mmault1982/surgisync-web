@@ -1,11 +1,11 @@
 /**
- * Who may change directory records.
+ * Who may change their organization's records.
  *
- * All that survives of what was `manufacturers.ts`: the form logic it held —
- * seed, validate, build a body, map field errors — moved into `NameDialog` and
- * `DeleteDialog` (since lifted again, to `@/components/delete-dialog`) when
- * procedures became the second entity and made it obvious that none of it was
- * about manufacturers.
+ * Lifted out of `features/directory/permissions.ts` when the Product Catalog
+ * became the fourth screen to ask — the same move `field.tsx` and
+ * `delete-dialog.tsx` each record making on their second caller. Nothing about
+ * the rule was ever about the directory: it mirrors one backend permission
+ * class, which every write in this app is gated by.
  */
 
 /**
@@ -32,6 +32,6 @@ const ADMIN_ROLES = new Set(['entity_global_admin', 'admin']);
  * could still write through the API. Hiding a control someone may use beats
  * showing one most people may not.
  */
-export function canManageDirectory(role: string | null | undefined): boolean {
+export function canManageOrgRecords(role: string | null | undefined): boolean {
   return role !== null && role !== undefined && ADMIN_ROLES.has(role);
 }

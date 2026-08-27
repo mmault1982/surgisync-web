@@ -168,6 +168,31 @@ describe('CatalogColumnMenu', () => {
     });
   });
 
+  describe('the category column', () => {
+    const column = { key: 'category' as ColumnKey, label: 'Category' };
+
+    it('sorts both ways', async () => {
+      const { user, onChange } = renderMenu({}, column);
+
+      await user.click(screen.getByRole('button', { name: 'Category' }));
+      await user.click(await screen.findByRole('button', { name: '↑ Asc' }));
+      expect(onChange).toHaveBeenCalledWith({ ordering: 'category' });
+
+      await user.click(screen.getByRole('button', { name: '↓ Desc' }));
+      expect(onChange).toHaveBeenCalledWith({ ordering: '-category' });
+    });
+
+    it('says it has no filter rather than offering an empty one', async () => {
+      // No `category` query parameter and no facet endpoint to seed a
+      // checklist from, unlike Manufacturer.
+      const { user } = renderMenu({}, column);
+
+      await user.click(screen.getByRole('button', { name: 'Category' }));
+
+      expect(await screen.findByText('No filter for this column.')).toBeInTheDocument();
+    });
+  });
+
   describe('the header indicator', () => {
     it('says what the column can do, and what it is doing', () => {
       const cases: {
@@ -187,23 +212,50 @@ describe('CatalogColumnMenu', () => {
         // capability glyph.
         { column: { key: 'reference_number', label: 'Reference #' }, search: {}, state: 'sort' },
         {
-          column: { key: 'name', label: 'Name' },
+          column: { key: 'description', label: 'Description' },
           search: { ordering: '-reference_number' },
           state: 'sort',
         },
-        { column: { key: 'name', label: 'Name' }, search: {}, state: 'sort-asc' },
-        // Filters only — Kind has no sort, so it must not show a sort glyph.
-        { column: { key: 'kind', label: 'Kind' }, search: {}, state: 'filter' },
-        // Active sort replaces the capability glyph with the direction.
+        { column: { key: 'description', label: 'Description' }, search: {}, state: 'sort-asc' },
+        // Category sorts but has no filter: there is no `category` query
+        // parameter and no facet endpoint to seed a checklist from, so it must
+        // show the bare sort glyph rather than Manufacturer's funnel.
+        { column: { key: 'category', label: 'Category' }, search: {}, state: 'sort' },
         {
-          column: { key: 'name', label: 'Name' },
-          search: { ordering: 'name' },
+          column: { key: 'category', label: 'Category' },
+          search: { ordering: 'category' },
           state: 'sort-asc',
         },
         {
-          column: { key: 'name', label: 'Name' },
-          search: { ordering: '-name' },
+          column: { key: 'category', label: 'Category' },
+          search: { ordering: '-category' },
           state: 'sort-desc',
+        },
+        // Filters only — Kind has no sort, so it must not show a sort glyph.
+        { column: { key: 'kind', label: 'Kind' }, search: {}, state: 'filter' },
+        // Active sort replaces the capability glyph with the direction. The
+        // Name column sorts on `description` — the enum still carries `name`,
+        // but it is a deprecated alias of the same column since the label
+        // fold.
+        {
+          column: { key: 'description', label: 'Description' },
+          search: { ordering: 'description' },
+          state: 'sort-asc',
+        },
+        {
+          column: { key: 'description', label: 'Description' },
+          search: { ordering: '-description' },
+          state: 'sort-desc',
+        },
+        // A hand-written or bookmarked `?ordering=-name` still sorts
+        // correctly — the server treats the alias as the same column — but
+        // the header shows the capability glyph rather than a direction.
+        // Matching the alias here too would mean carrying a special case for
+        // a deprecated value indefinitely; the app never emits one.
+        {
+          column: { key: 'description', label: 'Description' },
+          search: { ordering: '-name' },
+          state: 'sort',
         },
       ];
 

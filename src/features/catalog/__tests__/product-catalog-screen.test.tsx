@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PartList } from '@/api/generated/model';
+import { renderWithRouter } from '@/test/router';
 import { server } from '@/test/msw/server';
 
 import { CATALOG_DEFAULTS, type CatalogSearch } from '../catalog.search';
@@ -27,12 +28,22 @@ beforeAll(() => {
 const PARTS = '/api/v1/parts/';
 const FACETS = '/api/v1/parts/manufacturers/';
 
+let role: string | null = 'admin';
+vi.mock('@/auth/auth-context', () => ({
+  useAuth: () => ({
+    user: { id: 1, email: 'a@b.c', name: 'A', role, organization_name: null, organizations: [] },
+  }),
+}));
+
 function part(overrides: Partial<PartList> = {}): PartList {
   return {
     id: 1,
     uuid: 'aaaaaaaa-0000-0000-0000-000000000000',
+    // Both, mirroring the wire: `name` is a deprecated read-only alias of
+    // `description` since the label fold. Only `description` is read.
     name: 'Lapidus Fixation Set',
-    description: '',
+    description: 'Lapidus Fixation Set',
+    category: 'Trays',
     kind: 'kit',
     reference_number: null,
     is_serialized: true,
@@ -53,10 +64,18 @@ const page = (results: PartList[]) => ({
 
 /** The query params the screen actually sent, for the request-shape tests. */
 let lastRequest: URLSearchParams;
+/** The ids the screen actually asked the server to remove. */
+let deleted: string[];
 
 beforeEach(() => {
+  role = 'admin';
   lastRequest = new URLSearchParams();
+  deleted = [];
   server.use(
+    http.delete(`${PARTS}:id/`, ({ params }) => {
+      deleted.push(String(params.id));
+      return HttpResponse.json(part());
+    }),
     http.get(PARTS, ({ request }) => {
       lastRequest = new URL(request.url).searchParams;
       return HttpResponse.json(page([part()]));
@@ -69,20 +88,38 @@ function renderScreen(search: Partial<CatalogSearch> = {}) {
   const onSearchChange = vi.fn();
   const onClearAll = vi.fn();
   const onPageChange = vi.fn();
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const onAdd = vi.fn();
+  const onOpenRow = vi.fn();
+  const onEdit = vi.fn();
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
 
-  render(
+  // Through a stub router: the table's Name cell is a real `<Link>`, which
+  // reads the router from context. See `src/test/router.tsx`.
+  renderWithRouter(
     <QueryClientProvider client={client}>
       <ProductCatalogScreen
         search={{ ...CATALOG_DEFAULTS, ...search }}
         onSearchChange={onSearchChange}
         onClearAll={onClearAll}
         onPageChange={onPageChange}
+        onAdd={onAdd}
+        onOpenRow={onOpenRow}
+        onEdit={onEdit}
       />
     </QueryClientProvider>,
   );
 
-  return { onSearchChange, onClearAll, onPageChange, user: userEvent.setup() };
+  return {
+    onSearchChange,
+    onClearAll,
+    onPageChange,
+    onAdd,
+    onOpenRow,
+    onEdit,
+    user: userEvent.setup(),
+  };
 }
 
 describe('ProductCatalogScreen', () => {
@@ -94,17 +131,16 @@ describe('ProductCatalogScreen', () => {
     expect(screen.getByText('Treace Medical')).toBeInTheDocument();
   });
 
-  it('labels a component by its description, since it has no name', async () => {
+  it('labels a component by its description', async () => {
     // The whole reason `catalogLabel` exists — asserted here as well as in the
     // unit test, because it is the table wiring that can silently go back to
-    // rendering `row.name`.
+    // rendering `row.name`, which is now the deprecated alias.
     server.use(
       http.get(PARTS, () =>
         HttpResponse.json(
           page([
             part({
               kind: 'component',
-              name: null,
               description: 'REAMER CANNULATED ACORN 4.5MM',
               reference_number: 'RC-4500',
             }),
@@ -202,5 +238,113 @@ describe('ProductCatalogScreen', () => {
     renderScreen();
 
     expect(await screen.findByText('Could not load the catalog')).toBeInTheDocument();
+  });
+});
+
+describe('who may write', () => {
+  it('offers Add product and the Actions column to an admin', async () => {
+    renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    expect(screen.getByRole('button', { name: 'Add product' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Actions' })).toBeInTheDocument();
+  });
+
+  it('offers neither to a rep', async () => {
+    // Whole controls, not disabled ones: a control nobody can use is noise,
+    // and the server gates every write regardless.
+    role = 'non_admin';
+    renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
+  it('still lets a rep read the catalog', async () => {
+    role = 'non_admin';
+    renderScreen();
+
+    expect(await screen.findByText('Lapidus Fixation Set')).toBeInTheDocument();
+  });
+
+  it('hands Add product to the route', async () => {
+    const { onAdd, user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Add product' }));
+
+    expect(onAdd).toHaveBeenCalledOnce();
+  });
+
+  it('offers Add product from the empty state too', async () => {
+    server.use(http.get(PARTS, () => HttpResponse.json(page([]))));
+    const { onAdd, user } = renderScreen();
+
+    await user.click(await screen.findByRole('button', { name: 'Add product' }));
+
+    expect(onAdd).toHaveBeenCalledOnce();
+  });
+
+  it('does not offer it from the empty state to a rep', async () => {
+    role = 'non_admin';
+    server.use(http.get(PARTS, () => HttpResponse.json(page([]))));
+    renderScreen();
+
+    expect(await screen.findByText('No catalog parts yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+  });
+});
+
+describe('removing a part', () => {
+  it('asks first, then deletes', async () => {
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Remove Lapidus Fixation Set' }));
+    expect(await screen.findByText('Remove Lapidus Fixation Set?')).toBeInTheDocument();
+    expect(deleted).toEqual([]);
+
+    await user.click(screen.getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => expect(deleted).toEqual(['1']));
+  });
+
+  it('keeps the dialog open on a 409 so the reason can be read', async () => {
+    // The case that matters: `StockItem.part` is PROTECTed but the delete is
+    // soft, so the server refusing is the only thing between the user and a
+    // part that vanishes from every picker while stock still points at it.
+    server.use(
+      http.delete(`${PARTS}:id/`, () =>
+        HttpResponse.json(
+          {
+            error: 'part_in_use',
+            message: 'Lapidus Fixation Set is held by 3 stock items and cannot be removed.',
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Remove Lapidus Fixation Set' }));
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    expect(
+      await screen.findByText(
+        'Lapidus Fixation Set is held by 3 stock items and cannot be removed.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Remove Lapidus Fixation Set?')).toBeInTheDocument();
+  });
+
+  it('hands Edit to the route rather than opening a dialog', async () => {
+    const { onEdit, user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Edit Lapidus Fixation Set' }));
+
+    expect(onEdit).toHaveBeenCalledWith(1);
   });
 });

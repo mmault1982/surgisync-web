@@ -12,6 +12,6 @@ export interface Manufacturer {
   name: string;
   /** @nullable */
   barcode?: string | null;
-  /** True when this row belongs to your organization and may be renamed or removed. False for the shared catalog, which is readable by everyone and writable by nobody. */
+  /** True when this row belongs to your organization and may be renamed or removed. */
   readonly is_owned: boolean;
 }

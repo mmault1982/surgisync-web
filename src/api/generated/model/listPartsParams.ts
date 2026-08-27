@@ -18,7 +18,7 @@ kind?: ListPartsKind;
  */
 manufacturer_id?: number[];
 /**
- * Sort column. Both directions are listed explicitly because an enum cannot express a prefix. Defaults to `name`. Any other value is a 400. Note kits never carry a reference number, so `reference_number` groups every kit at one end.
+ * Sort column. Both directions are listed explicitly because an enum cannot express a prefix. Defaults to `description`; `name` is a deprecated alias of it. Any other value is a 400. Note kits never carry a reference number, so `reference_number` groups every kit at one end.
  */
 ordering?: ListPartsOrdering;
 /**
@@ -34,7 +34,7 @@ page_size?: number;
  */
 reference_number?: string;
 /**
- * Case-insensitive substring match across name, description, reference number and manufacturer name. `description` is in that list because components carry a description and no name, so a search that skipped it could not find a component by its own label.
+ * Case-insensitive substring match across description, reference number and manufacturer name. `description` is the catalog label for every row, so it covers what a search over the deprecated `name` used to.
  */
 search?: string;
 };

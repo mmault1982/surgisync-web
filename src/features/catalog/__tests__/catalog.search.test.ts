@@ -17,8 +17,11 @@ function part(overrides: Partial<PartList>): PartList {
   return {
     id: 1,
     uuid: 'aaaaaaaa-0000-0000-0000-000000000000',
-    name: null,
+    // `name` is a deprecated read-only alias of `description` since the label
+    // fold; the rows here set `description`, which is what the code reads.
+    name: '',
     description: '',
+    category: 'Trays',
     kind: 'kit',
     reference_number: null,
     is_serialized: true,
@@ -95,39 +98,36 @@ describe('catalogSearchSchema', () => {
 });
 
 describe('catalogLabel', () => {
-  it('shows a kit its own name', () => {
-    expect(catalogLabel(part({ name: 'Lapidus Fixation Set' }))).toBe('Lapidus Fixation Set');
-  });
-
-  it('falls back to the description for a component', () => {
-    // Every one of the catalog's components has a description and none has a
-    // name, so a column reading `name` alone is blank for all of them.
-    expect(
-      catalogLabel(
-        part({ kind: 'component', name: null, description: 'REAMER CANNULATED ACORN 4.5MM' }),
-      ),
-    ).toBe('REAMER CANNULATED ACORN 4.5MM');
-  });
-
-  it('prefers the name when a row carries both', () => {
-    // The inverse of `partLabel` in receive-sku.ts, and the case that separates
-    // them: the seeded demo data gives kits a description too, and a column
-    // headed "Name" showing "Alpha Kit (seeded demo data)" is wrong.
-    expect(catalogLabel(part({ name: 'Alpha Kit', description: 'Alpha Kit (seeded demo)' }))).toBe(
-      'Alpha Kit',
+  it('shows a kit its description', () => {
+    expect(catalogLabel(part({ description: 'Lapidus Fixation Set' }))).toBe(
+      'Lapidus Fixation Set',
     );
   });
 
-  it('ignores a name that is only whitespace', () => {
-    expect(catalogLabel(part({ name: '   ', description: 'Cortical screw' }))).toBe(
+  it('shows a component its description too', () => {
+    // One label for both kinds is the point of the fold. This used to be the
+    // interesting case: components carried a description and a NULL name, so
+    // a column reading `name` was blank for every one of them.
+    expect(
+      catalogLabel(part({ kind: 'component', description: 'REAMER CANNULATED ACORN 4.5MM' })),
+    ).toBe('REAMER CANNULATED ACORN 4.5MM');
+  });
+
+  it('ignores the deprecated name alias', () => {
+    // `name` is `description` under another key. A row cannot really carry
+    // two different values here, but reading the deprecated one would make
+    // this table the last thing depending on it.
+    expect(catalogLabel(part({ name: 'Stale Alias', description: 'Cortical screw' }))).toBe(
       'Cortical screw',
     );
   });
 
+  it('ignores a description that is only whitespace', () => {
+    expect(catalogLabel(part({ description: '   ', reference_number: 'CS-3510' }))).toBe('CS-3510');
+  });
+
   it('falls back to the reference number when there is no label at all', () => {
-    expect(catalogLabel(part({ name: null, description: '', reference_number: 'CS-3510' }))).toBe(
-      'CS-3510',
-    );
+    expect(catalogLabel(part({ description: '', reference_number: 'CS-3510' }))).toBe('CS-3510');
   });
 
   it('renders an em dash rather than an empty cell', () => {

@@ -1,7 +1,10 @@
+import { Link } from '@tanstack/react-router';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { KindEnum, type PartList } from '@/api/generated/model';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 import { catalogLabel, type CatalogSearch } from '../catalog.search';
@@ -37,13 +40,37 @@ interface Column {
  */
 const COLUMNS: Column[] = [
   {
-    key: 'name',
-    label: 'Name',
+    key: 'description',
+    label: 'Description',
     headerClassName: 'min-w-[280px]',
     cellClassName: 'font-medium text-gray-900',
-    // Not `row.name`. Components carry a description and no name, so a literal
-    // name column is blank for every one of them — see `catalogLabel`.
-    cell: (row) => catalogLabel(row),
+    // A real anchor, not just the row's click handler. It is the keyboard path
+    // (a tabbable `<tr>` would make every row a tab stop and wreck the table's
+    // row/gridcell semantics), it gives cmd-click and "open in new tab", and
+    // `defaultPreload: 'intent'` prefetches the detail route on hover. Same
+    // call the on-hand table's Kit ID column makes.
+    //
+    // The label is `catalogLabel(row)`, not `row.name` — that one is the
+    // deprecated alias of this column.
+    cell: (row) => (
+      <Link
+        to="/inventory/product-catalog/$partId"
+        params={{ partId: String(row.id) }}
+        className="rounded-sm hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        {catalogLabel(row)}
+      </Link>
+    ),
+  },
+  {
+    key: 'category',
+    label: 'Category',
+    headerClassName: 'w-[160px]',
+    cellClassName: 'text-gray-800',
+    // Free text the CSV pipeline supplies, blank on anything created through
+    // this app before the field was writable — hence the em dash, matching
+    // every other absent cell value on this table and on on-hand's.
+    cell: (row) => row.category || '—',
   },
   {
     key: 'manufacturer',
@@ -72,9 +99,22 @@ interface Props {
   rows: PartList[];
   search: CatalogSearch;
   onSearchChange: (patch: Partial<CatalogSearch>) => void;
+  /** Whole column, not disabled buttons: a control nobody can use is noise. */
+  canManage: boolean;
+  onOpenRow: (id: number) => void;
+  onEdit: (row: PartList) => void;
+  onDelete: (row: PartList) => void;
 }
 
-export function ProductCatalogTable({ rows, search, onSearchChange }: Props) {
+export function ProductCatalogTable({
+  rows,
+  search,
+  onSearchChange,
+  canManage,
+  onOpenRow,
+  onEdit,
+  onDelete,
+}: Props) {
   return (
     // Horizontal scroll on the wrapper, not the page. Note this also clips
     // vertically, which is why the column panels portal — see the note in
@@ -98,21 +138,107 @@ export function ProductCatalogTable({ rows, search, onSearchChange }: Props) {
                 />
               </th>
             ))}
+            {canManage ? (
+              // The only plain-label header on this table — every other one
+              // holds a column menu, and there is nothing to sort or filter
+              // a pair of buttons by.
+              <th scope="col" className="w-28 px-3 py-2 text-right font-semibold">
+                Actions
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-gray-100 even:bg-gray-50/60 last:border-0">
-              {COLUMNS.map((column) => (
-                <td key={column.key} className={cn('px-3 py-2', column.cellClassName)}>
-                  {column.cell(row)}
-                </td>
-              ))}
-            </tr>
+            <Row
+              key={row.id}
+              row={row}
+              canManage={canManage}
+              onOpen={() => onOpenRow(row.id)}
+              onEdit={() => onEdit(row)}
+              onDelete={() => onDelete(row)}
+            />
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * The whole row opens the part, but the Name cell's `<Link>` is what carries
+ * the semantics — see the note on that column.
+ *
+ * Deliberately no `tabIndex` or `role="button"` here: that would make every
+ * row a tab stop and replace the `row`/`gridcell` roles a screen reader
+ * navigates the table with. Deliberately not a stretched-link overlay either —
+ * one sits above every cell and makes text selection impossible, and people
+ * copy catalog numbers out of these rows. Lifted from `on-hand-table.tsx`,
+ * which carries the same three guards for the same three reasons.
+ */
+function Row({
+  row,
+  canManage,
+  onOpen,
+  onEdit,
+  onDelete,
+}: {
+  row: PartList;
+  canManage: boolean;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const label = catalogLabel(row);
+
+  return (
+    <tr
+      className="cursor-pointer border-b border-gray-100 even:bg-gray-50/60 last:border-0 hover:bg-gray-50"
+      onClick={(event) => {
+        // A modified click belongs to the Name link — new tab, new window,
+        // add-to-selection. Navigating programmatically would swallow the
+        // modifier and do the one thing the user did not ask for.
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        // Anything interactive in the row owns its own click — which is what
+        // keeps Edit and Remove from also opening the part behind their dialog.
+        if (event.target instanceof Element && event.target.closest('a,button,input,label')) return;
+        // Dragging across a catalog number to copy it should not navigate away
+        // from it. `=== false` rather than `!`, because getSelection() can be
+        // null and `!undefined` would swallow every click.
+        if (window.getSelection()?.isCollapsed === false) return;
+        onOpen();
+      }}
+    >
+      {COLUMNS.map((column) => (
+        <td key={column.key} className={cn('px-3 py-2', column.cellClassName)}>
+          {column.cell(row)}
+        </td>
+      ))}
+      {canManage ? (
+        <td className="px-3 py-2 text-right">
+          <div className="flex justify-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Edit ${label}`}
+              onClick={onEdit}
+            >
+              <PencilIcon />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Remove ${label}`}
+              onClick={onDelete}
+            >
+              <Trash2Icon />
+            </Button>
+          </div>
+        </td>
+      ) : null}
+    </tr>
   );
 }
 

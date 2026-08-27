@@ -7,8 +7,8 @@ both together.
 |                        |                                    |
 | ---------------------- | ---------------------------------- |
 | Source                 | `http://localhost:8000/schema/v1/` |
-| Pulled                 | 2026-08-25 15:51Z                  |
-| Backend `data_version` | `645c19569a76`                     |
+| Pulled                 | 2026-08-27 15:01Z                  |
+| Backend `data_version` | `2a3a4215e6e9`                     |
 
 The backend enforces this file's accuracy on its own side: `openapi.yaml` is a
 committed artifact there, CI fails on drift, and every response on

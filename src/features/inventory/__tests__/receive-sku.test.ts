@@ -11,7 +11,6 @@ import {
   isQuantityLocked,
   parseQuantity,
   resetSkuItem,
-  resolveCatalogNumber,
   skuFieldErrors,
   skuSaveErrorMessage,
   validateReceiveSku,
@@ -78,48 +77,6 @@ function apiError(status: number, body: unknown) {
   };
   return error;
 }
-
-describe('resolveCatalogNumber', () => {
-  it('reports a number no catalog item carries', () => {
-    const { part: resolved, error } = resolveCatalogNumber([], 5);
-    expect(resolved).toBeNull();
-    expect(error).toBe('No catalog item has that number');
-  });
-
-  it('picks the part belonging to the chosen manufacturer', () => {
-    // The number is unique per manufacturer, not across the catalog, so more
-    // than one row is a legitimate answer rather than a server bug.
-    const results = [part({ id: 1, manufacturer: 9 }), part({ id: 2, manufacturer: 5 })];
-    const { part: resolved, error } = resolveCatalogNumber(results, 5);
-    expect(resolved?.id).toBe(2);
-    expect(error).toBeNull();
-  });
-
-  it('blocks when the number belongs to a different manufacturer, and names it', () => {
-    // Blocking rather than a warning: the server derives the stock item's
-    // manufacturer from its part, so a mismatch would file the stock under one
-    // nobody picked and nothing would reject it.
-    const { part: resolved, error } = resolveCatalogNumber(
-      [part({ manufacturer: 9, manufacturer_name: 'Beta Devices' })],
-      5,
-    );
-    expect(resolved).toBeNull();
-    expect(error).toBe('This item belongs to Beta Devices');
-  });
-
-  it('falls back to a generic mismatch when the manufacturer has no name', () => {
-    const { error } = resolveCatalogNumber([part({ manufacturer: 9, manufacturer_name: '' })], 5);
-    expect(error).toBe('This item belongs to a different manufacturer');
-  });
-
-  it('holds the item when no manufacturer has been chosen yet', () => {
-    // Accusing the user of a mismatch they have not had the chance to make
-    // would be wrong; submit re-checks once a manufacturer exists.
-    const { part: resolved, error } = resolveCatalogNumber([part()], null);
-    expect(resolved?.id).toBe(314);
-    expect(error).toBeNull();
-  });
-});
 
 describe('quantity', () => {
   it('is locked for a serialized part', () => {

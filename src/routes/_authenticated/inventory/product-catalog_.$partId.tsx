@@ -6,7 +6,9 @@ import { errorMessage, isNotFound } from '@/api/errors';
 import { useAuth } from '@/auth/auth-context';
 import { canManageOrgRecords } from '@/auth/permissions';
 import { Button } from '@/components/ui/button';
-import { productDetailQuery } from '@/features/catalog/catalog.queries';
+import { KindEnum } from '@/api/generated/model';
+import { kitComponentsQuery, productDetailQuery } from '@/features/catalog/catalog.queries';
+import { KitComponentsCard } from '@/features/catalog/components/kit-components-card';
 import { ProductDetailScreen } from '@/features/catalog/components/product-detail-screen';
 
 /**
@@ -29,7 +31,19 @@ export const Route = createFileRoute('/_authenticated/inventory/product-catalog_
     if (!Number.isInteger(id) || id <= 0) throw notFound();
 
     try {
-      return await context.queryClient.ensureQueryData(productDetailQuery(id));
+      const part = await context.queryClient.ensureQueryData(productDetailQuery(id));
+
+      // Warm the Bill of Materials, without waiting for it. Deliberately not
+      // `ensureQueryData`: a slow or broken BOM must not hold up the record
+      // above it, which is the same call Kit Detail makes about its own
+      // secondary panels. And deliberately after the part rather than beside
+      // it — `kind` is what says whether there is a BOM to ask for, and a
+      // blind prefetch would spend a request on every loose component.
+      // Page 1, because that is the page the panel opens on.
+      if (part.kind === KindEnum.kit) {
+        void context.queryClient.prefetchQuery(kitComponentsQuery(id, 1));
+      }
+      return part;
     } catch (error) {
       // A part that does not exist and a part belonging to another
       // organization are deliberately indistinguishable. Both want the
@@ -67,6 +81,26 @@ function ProductDetailPage() {
           });
         }}
       />
+
+      {/*
+        Only for a kit. A loose component has no bill of materials by
+        definition, and a permanently empty panel on every component reads as
+        something that failed to load. The server answers an empty list either
+        way; this is the client declining to ask.
+      */}
+      {part.kind === KindEnum.kit ? (
+        <KitComponentsCard
+          kitId={id}
+          kitManufacturerId={part.manufacturer}
+          canManage={canManage}
+          onOpenRow={(componentPartId) => {
+            void navigate({
+              to: '/inventory/product-catalog/$partId',
+              params: { partId: String(componentPartId) },
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

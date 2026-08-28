@@ -36,9 +36,11 @@ import type {
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
+  PaginatedPartComponentList,
   PaginatedPartListList,
   PaginatedProcedureCatalogList,
   PaginatedSurgeonCatalogList,
+  PartComponent,
   PartDetail,
   ProcedureCatalog,
   StringFacetResponse,
@@ -92,6 +94,12 @@ export const getRetrievePartResponseMock = (overrideResponse: Partial<Extract<Pa
 export const getPartialUpdatePartResponseMock = (overrideResponse: Partial<Extract<PartDetail, object>> = {}): PartDetail => ({id: faker.number.int(), uuid: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(KindEnum)), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), is_serialized: faker.datatype.boolean(), manufacturer: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), udi: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), list_price: faker.helpers.arrayElement([faker.helpers.fromRegExp("^-?\\d{0,8}(?:\\.\\d{0,2})?$"), null]), ...overrideResponse})
 
 export const getDeletePartResponseMock = (overrideResponse: Partial<Extract<PartDetail, object>> = {}): PartDetail => ({id: faker.number.int(), uuid: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(KindEnum)), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), is_serialized: faker.datatype.boolean(), manufacturer: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}}), udi: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), list_price: faker.helpers.arrayElement([faker.helpers.fromRegExp("^-?\\d{0,8}(?:\\.\\d{0,2})?$"), null]), ...overrideResponse})
+
+export const getListPartComponentsResponseMock = (overrideResponse: Partial<Extract<PaginatedPartComponentList, object>> = {}): PaginatedPartComponentList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), item: faker.number.int(), item_uuid: faker.string.uuid(), description: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.string.alpha({length: {min: 10, max: 20}}), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int()})), ...overrideResponse})
+
+export const getCreatePartComponentResponseMock = (overrideResponse: Partial<Extract<PartComponent, object>> = {}): PartComponent => ({id: faker.number.int(), item: faker.number.int(), item_uuid: faker.string.uuid(), description: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.string.alpha({length: {min: 10, max: 20}}), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int(), ...overrideResponse})
+
+export const getPartialUpdatePartComponentResponseMock = (overrideResponse: Partial<Extract<PartComponent, object>> = {}): PartComponent => ({id: faker.number.int(), item: faker.number.int(), item_uuid: faker.string.uuid(), description: faker.string.alpha({length: {min: 10, max: 20}}), category: faker.string.alpha({length: {min: 10, max: 20}}), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int(), ...overrideResponse})
 
 export const getListPartManufacturerFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
@@ -416,6 +424,52 @@ export const getDeletePartMockHandler = (overrideResponse?: PartDetail | ((info:
   }, options)
 }
 
+export const getListPartComponentsMockHandler = (overrideResponse?: PaginatedPartComponentList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedPartComponentList> | PaginatedPartComponentList), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/parts/:id/components/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListPartComponentsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreatePartComponentMockHandler = (overrideResponse?: PartComponent | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<PartComponent> | PartComponent), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/parts/:id/components/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreatePartComponentResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getPartialUpdatePartComponentMockHandler = (overrideResponse?: PartComponent | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<PartComponent> | PartComponent), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/parts/:id/components/:componentPk/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdatePartComponentResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeletePartComponentMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/parts/:id/components/:componentPk/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
 export const getListPartManufacturerFacetsMockHandler = (overrideResponse?: FacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<FacetResponse> | FacetResponse), options?: RequestHandlerOptions) => {
   return http.get('/api/v1/parts/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -681,6 +735,10 @@ export const getInventoryMock = () => [
   getRetrievePartMockHandler(),
   getPartialUpdatePartMockHandler(),
   getDeletePartMockHandler(),
+  getListPartComponentsMockHandler(),
+  getCreatePartComponentMockHandler(),
+  getPartialUpdatePartComponentMockHandler(),
+  getDeletePartComponentMockHandler(),
   getListPartManufacturerFacetsMockHandler(),
   getListProceduresCatalogMockHandler(),
   getCreateProcedureMockHandler(),

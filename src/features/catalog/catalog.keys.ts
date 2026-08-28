@@ -19,6 +19,22 @@ export const productCatalogKeys = {
   all: ['product-catalog'] as const,
   list: (search: CatalogSearch) => [...productCatalogKeys.all, 'list', search] as const,
   detail: (id: number) => [...productCatalogKeys.all, 'detail', id] as const,
+  /**
+   * A kit's bill of materials.
+   *
+   * A sibling of `detail`, not a child of it. The two change independently — a
+   * quantity edit does not touch the part record, and editing the part does not
+   * touch its BOM — so nesting would have every refetch of one drag the other
+   * along. Eviction is still covered: the screens' `INVALIDATES` name
+   * `productCatalogKeys.all`, which is a prefix of this.
+   *
+   * `componentsAll` is the prefix a write invalidates, so amending one row
+   * refetches whichever page is on screen without the panel having to know
+   * which that is.
+   */
+  componentsAll: (kitId: number) => [...productCatalogKeys.all, 'components', kitId] as const,
+  components: (kitId: number, page: number) =>
+    [...productCatalogKeys.componentsAll(kitId), page] as const,
   facets: () => [...productCatalogKeys.all, 'facets'] as const,
   facet: (name: string) => [...productCatalogKeys.facets(), name] as const,
 };

@@ -4641,6 +4641,247 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
           description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/{id}/components/:
+    get:
+      operationId: list_part_components
+      description: |-
+        The bill of materials for a kit: the catalog parts it contains and how many of each. Always paginated, with the same wide default page as the catalog listing, so one request holds a whole BOM in practice.
+
+        Grouped by the component's category, then its description — the sectioning the printed tray lists use.
+
+        `description`, `category` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
+
+        Answers an empty list for a part whose `kind` is `component`: a loose part contains nothing, which is a fact about it rather than a missing resource.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartComponentList'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_part_component
+      description: |-
+        Add a catalog part to this kit's bill of materials. Organization admins only.
+
+        The kit comes from the path and the component from `item`, which must be a part in this organization's catalog. `quantity` defaults to 1 and must be at least 1 — a row for none of a part is that row's absence.
+
+        Refused as a field error on `item` when the part is already in the kit (amend its quantity instead), when it is the kit itself, and when adding it would create a containment cycle — both ends of the junction are parts, so a kit may contain a kit.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartComponentWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartComponentWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartComponentWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartComponent'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/{id}/components/{component_pk}/:
+    patch:
+      operationId: partial_update_part_component
+      description: |-
+        Amend how many of a component this kit contains. Organization admins only.
+
+        `quantity` is the only writable field. `item` is this row's identity together with the kit, so pointing the row at a different part is a delete and a create rather than an edit.
+      parameters:
+      - in: path
+        name: component_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPartComponentQuantityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPartComponentQuantityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPartComponentQuantityRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartComponent'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: delete_part_component
+      description: |-
+        Remove a part from this kit's bill of materials. Organization admins only.
+
+        Nothing is refused: a component's place in a kit is a template, not history, and no stock hangs off the junction row the way it does off a part.
+
+        A soft delete, and the row is also flagged as user-modified — together those are what stop the nightly catalog sync putting the component back on the next deploy. Re-adding the same part through `POST` revives this row rather than creating a second.
+      parameters:
+      - in: path
+        name: component_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/parts/manufacturers/:
     get:
       operationId: list_part_manufacturer_facets
@@ -9667,6 +9908,37 @@ components:
           deprecated: true
           description: DEPRECATED — an exact duplicate of `results`, kept for clients
             written against the pre-pagination shape. Read `results`.
+    PaginatedPartComponentList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartComponent'
     PaginatedPartListList:
       type: object
       required:
@@ -9885,6 +10157,77 @@ components:
       required:
       - id
       - name
+    PartComponent:
+      type: object
+      description: |-
+        One row of a kit's bill of materials.
+
+        The read shape for all four operations, including the two writes — a write
+        that answers with its own input is the defect the response-accuracy gate
+        caught on `/api/v1/procedures/`, and `PartDetailView.update` carries the
+        note about it.
+
+        Flattened rather than nested. A client rendering a BOM table wants four
+        strings and a number per row, and `item` alone is enough to link onward to
+        the component's own detail endpoint; nesting the whole `Part` would ship a
+        price and four barcode images per row to draw a table that shows none of
+        them.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item:
+          type: integer
+          readOnly: true
+        item_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        reference_number:
+          type: string
+          readOnly: true
+          nullable: true
+        quantity:
+          type: integer
+          readOnly: true
+      required:
+      - category
+      - description
+      - id
+      - item
+      - item_uuid
+      - quantity
+      - reference_number
+    PartComponentWriteRequest:
+      type: object
+      description: |-
+        Add a component to a kit.
+
+        `kit` is deliberately not a field: it comes from the URL, which is what
+        makes "forgot to scope this to the kit" unrepresentable rather than merely
+        untested — the failure mode `/api/v1/kit-items/?kit=` left open.
+
+        Every refusal below is raised as a **field** error rather than left to the
+        database, so a client can render it under the control the user typed into.
+        The three the model backstops — self-containment (a CHECK), duplication (a
+        UNIQUE) and cycles (`PartComponent.clean()`) — would otherwise surface as a
+        500 on an `IntegrityError`.
+      properties:
+        item:
+          type: integer
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          default: 1
+      required:
+      - item
     PartDetail:
       type: object
       description: |-
@@ -10425,6 +10768,21 @@ components:
           maxLength: 200
         is_active:
           type: boolean
+    PatchedPartComponentQuantityRequest:
+      type: object
+      description: |-
+        Amend how many of a component a kit contains.
+
+        Quantity is the only editable field, and deliberately so: `item` is this
+        row's identity together with `kit`, so "point this row at a different part"
+        is a remove and an add rather than an edit. Declaring it here would also
+        put the uniqueness and cycle rules `PartComponentWriteSerializer` enforces
+        on a path with no reason to need them.
+      properties:
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
     PatchedPartWriteRequest:
       type: object
       description: |-

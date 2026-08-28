@@ -30,6 +30,7 @@ import type {
   CreateInventoryTransfer400,
   CreateManufacturer400,
   CreatePart400,
+  CreatePartComponent400,
   CreateProcedure400,
   CreateSurgeonCatalog400,
   ErrorDetail,
@@ -49,6 +50,7 @@ import type {
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
   ListManufacturersParams,
+  ListPartComponentsParams,
   ListParts400,
   ListPartsParams,
   ListProceduresCatalogParams,
@@ -58,17 +60,22 @@ import type {
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
+  PaginatedPartComponentList,
   PaginatedPartListList,
   PaginatedProcedureCatalogList,
   PaginatedSurgeonCatalogList,
+  PartComponent,
+  PartComponentWriteRequest,
   PartDetail,
   PartWriteRequest,
   PartialUpdateManufacturer400,
   PartialUpdatePart400,
+  PartialUpdatePartComponent400,
   PartialUpdateProcedure400,
   PartialUpdateSurgeon400,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
+  PatchedPartComponentQuantityRequest,
   PatchedPartWriteRequest,
   PatchedProcedureWriteRequest,
   PatchedSurgeonWriteRequest,
@@ -2249,6 +2256,418 @@ export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDeletePartQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * The bill of materials for a kit: the catalog parts it contains and how many of each. Always paginated, with the same wide default page as the catalog listing, so one request holds a whole BOM in practice.
+ *
+ * Grouped by the component's category, then its description — the sectioning the printed tray lists use.
+ *
+ * `description`, `category` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
+ *
+ * Answers an empty list for a part whose `kind` is `component`: a loose part contains nothing, which is a fact about it rather than a missing resource.
+ */
+export const listPartComponents = (
+    id: number,
+    params?: ListPartComponentsParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedPartComponentList>(
+      {url: `/api/v1/parts/${id}/components/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPartComponentsQueryKey = (id: number,
+    params?: ListPartComponentsParams,) => {
+    return [
+    `/api/v1/parts/${id}/components/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPartComponentsQueryOptions = <TData = Awaited<ReturnType<typeof listPartComponents>>, TError = ErrorType<ErrorDetail>>(id: number,
+    params?: ListPartComponentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPartComponentsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPartComponents>>> = ({ signal }) => listPartComponents(id,params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPartComponentsQueryResult = NonNullable<Awaited<ReturnType<typeof listPartComponents>>>
+export type ListPartComponentsQueryError = ErrorType<ErrorDetail>
+
+
+export function useListPartComponents<TData = Awaited<ReturnType<typeof listPartComponents>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params: undefined |  ListPartComponentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPartComponents>>,
+          TError,
+          Awaited<ReturnType<typeof listPartComponents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPartComponents<TData = Awaited<ReturnType<typeof listPartComponents>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListPartComponentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPartComponents>>,
+          TError,
+          Awaited<ReturnType<typeof listPartComponents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPartComponents<TData = Awaited<ReturnType<typeof listPartComponents>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListPartComponentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPartComponents<TData = Awaited<ReturnType<typeof listPartComponents>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    params?: ListPartComponentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPartComponents>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPartComponentsQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a catalog part to this kit's bill of materials. Organization admins only.
+ *
+ * The kit comes from the path and the component from `item`, which must be a part in this organization's catalog. `quantity` defaults to 1 and must be at least 1 — a row for none of a part is that row's absence.
+ *
+ * Refused as a field error on `item` when the part is already in the kit (amend its quantity instead), when it is the kit itself, and when adding it would create a containment cycle — both ends of the junction are parts, so a kit may contain a kit.
+ */
+export const createPartComponent = (
+    id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartComponent>(
+      {url: `/api/v1/parts/${id}/components/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: partComponentWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreatePartComponentQueryKey = (id: number,
+    partComponentWriteRequest?: BodyType<PartComponentWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/parts/${id}/components/`, partComponentWriteRequest
+    ] as const;
+    }
+
+
+export const getCreatePartComponentQueryOptions = <TData = Awaited<ReturnType<typeof createPartComponent>>, TError = ErrorType<CreatePartComponent400 | ErrorDetail>>(id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreatePartComponentQueryKey(id,partComponentWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createPartComponent>>> = ({ signal }) => createPartComponent(id,partComponentWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreatePartComponentQueryResult = NonNullable<Awaited<ReturnType<typeof createPartComponent>>>
+export type CreatePartComponentQueryError = ErrorType<CreatePartComponent400 | ErrorDetail>
+
+
+export function useCreatePartComponent<TData = Awaited<ReturnType<typeof createPartComponent>>, TError = ErrorType<CreatePartComponent400 | ErrorDetail>>(
+ id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createPartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof createPartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreatePartComponent<TData = Awaited<ReturnType<typeof createPartComponent>>, TError = ErrorType<CreatePartComponent400 | ErrorDetail>>(
+ id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createPartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof createPartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreatePartComponent<TData = Awaited<ReturnType<typeof createPartComponent>>, TError = ErrorType<CreatePartComponent400 | ErrorDetail>>(
+ id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreatePartComponent<TData = Awaited<ReturnType<typeof createPartComponent>>, TError = ErrorType<CreatePartComponent400 | ErrorDetail>>(
+ id: number,
+    partComponentWriteRequest: BodyType<PartComponentWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createPartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreatePartComponentQueryOptions(id,partComponentWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Amend how many of a component this kit contains. Organization admins only.
+ *
+ * `quantity` is the only writable field. `item` is this row's identity together with the kit, so pointing the row at a different part is a delete and a create rather than an edit.
+ */
+export const partialUpdatePartComponent = (
+    id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PartComponent>(
+      {url: `/api/v1/parts/${id}/components/${componentPk}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedPartComponentQuantityRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdatePartComponentQueryKey = (id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>,) => {
+    return [
+    'PATCH', `/api/v1/parts/${id}/components/${componentPk}/`, patchedPartComponentQuantityRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdatePartComponentQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>>(id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdatePartComponentQueryKey(id,componentPk,patchedPartComponentQuantityRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdatePartComponent>>> = ({ signal }) => partialUpdatePartComponent(id,componentPk,patchedPartComponentQuantityRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && componentPk !== null && componentPk !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdatePartComponentQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdatePartComponent>>>
+export type PartialUpdatePartComponentQueryError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>
+
+
+export function usePartialUpdatePartComponent<TData = Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>>(
+ id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest: undefined |  BodyType<PatchedPartComponentQuantityRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdatePartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdatePartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdatePartComponent<TData = Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>>(
+ id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdatePartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdatePartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdatePartComponent<TData = Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>>(
+ id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdatePartComponent<TData = Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError = ErrorType<PartialUpdatePartComponent400 | ErrorDetail>>(
+ id: number,
+    componentPk: number,
+    patchedPartComponentQuantityRequest?: BodyType<PatchedPartComponentQuantityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdatePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdatePartComponentQueryOptions(id,componentPk,patchedPartComponentQuantityRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove a part from this kit's bill of materials. Organization admins only.
+ *
+ * Nothing is refused: a component's place in a kit is a template, not history, and no stock hangs off the junction row the way it does off a part.
+ *
+ * A soft delete, and the row is also flagged as user-modified — together those are what stop the nightly catalog sync putting the component back on the next deploy. Re-adding the same part through `POST` revives this row rather than creating a second.
+ */
+export const deletePartComponent = (
+    id: number,
+    componentPk: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<void>(
+      {url: `/api/v1/parts/${id}/components/${componentPk}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeletePartComponentQueryKey = (id: number,
+    componentPk: number,) => {
+    return [
+    'DELETE', `/api/v1/parts/${id}/components/${componentPk}/`
+    ] as const;
+    }
+
+
+export const getDeletePartComponentQueryOptions = <TData = Awaited<ReturnType<typeof deletePartComponent>>, TError = ErrorType<ErrorDetail>>(id: number,
+    componentPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeletePartComponentQueryKey(id,componentPk);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deletePartComponent>>> = ({ signal }) => deletePartComponent(id,componentPk, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && componentPk !== null && componentPk !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeletePartComponentQueryResult = NonNullable<Awaited<ReturnType<typeof deletePartComponent>>>
+export type DeletePartComponentQueryError = ErrorType<ErrorDetail>
+
+
+export function useDeletePartComponent<TData = Awaited<ReturnType<typeof deletePartComponent>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    componentPk: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deletePartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof deletePartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeletePartComponent<TData = Awaited<ReturnType<typeof deletePartComponent>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    componentPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deletePartComponent>>,
+          TError,
+          Awaited<ReturnType<typeof deletePartComponent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeletePartComponent<TData = Awaited<ReturnType<typeof deletePartComponent>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    componentPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeletePartComponent<TData = Awaited<ReturnType<typeof deletePartComponent>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    componentPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deletePartComponent>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeletePartComponentQueryOptions(id,componentPk,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

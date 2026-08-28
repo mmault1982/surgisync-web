@@ -182,6 +182,28 @@ const ALLOWED_OPERATIONS = new Set([
   'partial_update_part',
   'delete_part',
 
+  // The detail screen's Bill of Materials panel: a kit's components, nested
+  // *under* the part at `/api/v1/parts/{id}/components/`. Nesting is what puts
+  // them inside the response accuracy gate without a new prefix, and it is why
+  // they are tagged `Inventory` and survive `input.filters.tags` below.
+  //
+  // Deliberately not `/api/v1/kit-items/`, which already models this junction
+  // and is unusable from here for four separate reasons: every operation is
+  // tagged `api`, so the filter drops it silently; the prefix is outside the
+  // accuracy gate; `by-kit/{kit_id}/` declares one object while returning an
+  // array; and the `?kit=` filter it documents in prose is not a declared
+  // parameter, so a generated client could not pass it and would render every
+  // BOM row in the organization. It stays where it is for the mobile and
+  // pricing clients that read it.
+  //
+  // Note `delete_part_component` is a real 204, unlike `delete_part` next to
+  // it — a junction row is template membership, so there is no updated record
+  // to hand back.
+  'list_part_components',
+  'create_part_component',
+  'partial_update_part_component',
+  'delete_part_component',
+
   // Configuration / Hansel. `/api/v1/integrations/` was added to the backend's
   // VALIDATED_PATH_PREFIXES in the same commit that created it, so these are
   // gated from the start — no repeat of the tracker_tracking_events dig.

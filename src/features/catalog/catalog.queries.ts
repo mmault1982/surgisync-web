@@ -2,13 +2,14 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 
 import {
   listManufacturers,
+  listPartComponents,
   listPartManufacturerFacets,
   listParts,
   retrievePart,
 } from '@/api/generated/endpoints/inventory/inventory';
 
 import { partFormKeys, productCatalogKeys } from './catalog.keys';
-import { toListParams, type CatalogSearch } from './catalog.search';
+import { DEFAULT_PAGE_SIZE, toListParams, type CatalogSearch } from './catalog.search';
 
 export function catalogListQuery(search: CatalogSearch) {
   return queryOptions({
@@ -31,6 +32,38 @@ export function productDetailQuery(id: number) {
   return queryOptions({
     queryKey: productCatalogKeys.detail(id),
     queryFn: ({ signal }) => retrievePart(id, undefined, signal),
+  });
+}
+
+/**
+ * One page of a kit's bill of materials.
+ *
+ * **Paged, and not optionally.** The endpoint's own default page is the
+ * catalog's 500, wide enough to answer any real BOM in one request — but the
+ * *table* cannot render one. Against the current catalog the median kit holds
+ * 59 components and the largest holds 315, and 315 rows each carrying a
+ * `<Link>` (which subscribes to router state and builds an href apiece) locks
+ * the renderer hard enough that the tab stops responding. So the page size here
+ * is the table's limit, not the transport's.
+ *
+ * `DEFAULT_PAGE_SIZE` rather than a number of its own: this table sits inside
+ * the Product Catalog and pages like the listing does.
+ *
+ * No `select` unwrapping the envelope — the panel needs `total_data` and
+ * `total_pages` to draw its pager.
+ *
+ * Only ever called for a part whose `kind` is `kit`. A loose component has no
+ * components, and the route declines to ask rather than rendering a panel that
+ * can only ever be empty; the server answers an empty list either way.
+ */
+export function kitComponentsQuery(kitId: number, page: number) {
+  return queryOptions({
+    queryKey: productCatalogKeys.components(kitId, page),
+    queryFn: ({ signal }) =>
+      listPartComponents(kitId, { page, page_size: DEFAULT_PAGE_SIZE }, undefined, signal),
+    // Keeps the current page on screen while the next one loads, so paging does
+    // not blank the table — the same call `catalogListQuery` makes.
+    placeholderData: keepPreviousData,
   });
 }
 

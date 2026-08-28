@@ -90,24 +90,3 @@ export const catalogQueries = {
       select: (page) => page.results,
     }),
 };
-
-/**
- * Resolve a typed catalog number to the parts that carry it.
- *
- * A function rather than a `queryOptions`, because this is a lookup the user
- * triggers by finishing the field, not a list the screen keeps in view — there
- * is nothing to cache against and nothing to re-render when it changes.
- *
- * **Deliberately unscoped by manufacturer.** `reference_number` is unique per
- * manufacturer rather than across the catalog, so this can return more than one
- * row — and asking the server to narrow it would collapse "this number belongs
- * to a different manufacturer" into a bare "no such part", which is the one
- * distinction the user needs. `resolveCatalogNumber` in `receive-sku.ts` picks
- * from what comes back.
- *
- * Not scoped by `kind` either: kits carry no reference number at all, so the
- * filter already excludes them.
- */
-export function lookupByReference(referenceNumber: string, signal?: AbortSignal) {
-  return listParts({ reference_number: referenceNumber }, { signal });
-}

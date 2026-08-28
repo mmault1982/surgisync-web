@@ -16,13 +16,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { lookupByReference, partLabel, resolveCatalogNumber } from '@/features/catalog/part-lookup';
 import { formatCalendarDate, fromDateInput, toDateInput } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 import { stockItemKeys } from '../inventory.keys';
 import { facetQueries } from '../on-hand.queries';
 import { locationOptions, MAX_PHOTOS, OWNERSHIP_TYPES, type StagedPhoto } from '../receive-kit';
-import { catalogQueries, lookupByReference } from '../receive.queries';
+import { catalogQueries } from '../receive.queries';
 import {
   initialReceiveSaveState,
   isReceiveSaveComplete,
@@ -37,9 +38,7 @@ import {
   isQuantityLocked,
   MAX_LOT_CODE_LENGTH,
   MAX_UDI_LENGTH,
-  partLabel,
   resetSkuItem,
-  resolveCatalogNumber,
   skuFieldErrors,
   skuSaveErrorMessage,
   validateReceiveSku,

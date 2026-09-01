@@ -4113,7 +4113,7 @@ paths:
   /api/v1/manufacturers/kits/items/:
     get:
       operationId: get_category_items
-      description: Get items by category with wildcard search for a case or quote.
+      description: Get a case or quote's kit items, with wildcard search.
       parameters:
       - in: query
         name: case_id
@@ -4355,12 +4355,10 @@ paths:
         schema:
           type: string
           enum:
-          - -category
           - -description
           - -manufacturer_name
           - -name
           - -reference_number
-          - category
           - description
           - manufacturer_name
           - name
@@ -4647,9 +4645,9 @@ paths:
       description: |-
         The bill of materials for a kit: the catalog parts it contains and how many of each. Always paginated, with the same wide default page as the catalog listing, so one request holds a whole BOM in practice.
 
-        Grouped by the component's category, then its description — the sectioning the printed tray lists use.
+        Ordered by the component's description, which since migration 0129 leads with its catalog group — so this reproduces the sectioning the printed tray lists use.
 
-        `description`, `category` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
+        `description` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
 
         Answers an empty list for a part whose `kind` is `component`: a loose part contains nothing, which is a fact about it rather than a missing resource.
       parameters:
@@ -7639,14 +7637,6 @@ components:
       required:
       - error
       - message
-    CoreEnum:
-      enum:
-      - true
-      - false
-      type: boolean
-      description: |-
-        * `True` - Yes
-        * `False` - No
     CreateCaseItemRequest:
       type: object
       properties:
@@ -7693,18 +7683,11 @@ components:
           minLength: 1
           description: Unique reference number (optional)
           maxLength: 20
-        quantity_per_kit:
-          type: integer
-          description: Quantity per kit (optional)
         udi:
           type: string
           minLength: 1
           description: UDI code (optional)
           maxLength: 50
-        core:
-          type: boolean
-          default: false
-          description: Is core item (optional)
         item_type:
           allOf:
           - $ref: '#/components/schemas/ItemTypeEnum'
@@ -9553,10 +9536,6 @@ components:
           description: Unique catalog number used for scanning and inventory lookup.
             Empty for kits.
           maxLength: 20
-        category:
-          type: string
-          description: Classification for grouping similar items.
-          maxLength: 100
         description:
           type: string
           maxLength: 256
@@ -9568,11 +9547,6 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-          nullable: true
-        quantity_per_kit:
-          type: integer
-          maximum: 2147483647
-          minimum: -2147483648
           nullable: true
         udi:
           type: string
@@ -9606,21 +9580,6 @@ components:
           type: string
           format: date-time
           nullable: true
-        core:
-          nullable: true
-          description: |-
-            If Yes, item must be returned to manufacturer after use for refurbishment.
-
-            * `True` - Yes
-            * `False` - No
-          oneOf:
-          - $ref: '#/components/schemas/CoreEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        expiration_date:
-          type: string
-          format: date
-          nullable: true
-          description: Expired items cannot be added to new cases.
         is_active:
           type: boolean
         is_user_created:
@@ -9639,7 +9598,6 @@ components:
         manufacturer:
           type: integer
       required:
-      - category
       - created_at
       - description
       - id
@@ -10186,9 +10144,6 @@ components:
         description:
           type: string
           readOnly: true
-        category:
-          type: string
-          readOnly: true
         reference_number:
           type: string
           readOnly: true
@@ -10197,7 +10152,6 @@ components:
           type: integer
           readOnly: true
       required:
-      - category
       - description
       - id
       - item
@@ -10261,10 +10215,6 @@ components:
         description:
           type: string
           readOnly: true
-        category:
-          type: string
-          readOnly: true
-          description: Classification for grouping similar items.
         kind:
           allOf:
           - $ref: '#/components/schemas/KindEnum'
@@ -10305,7 +10255,6 @@ components:
           readOnly: true
           nullable: true
       required:
-      - category
       - description
       - id
       - is_serialized
@@ -10349,10 +10298,6 @@ components:
         description:
           type: string
           readOnly: true
-        category:
-          type: string
-          readOnly: true
-          description: Classification for grouping similar items.
         kind:
           allOf:
           - $ref: '#/components/schemas/KindEnum'
@@ -10381,7 +10326,6 @@ components:
           type: string
           readOnly: true
       required:
-      - category
       - description
       - id
       - is_serialized
@@ -10423,10 +10367,6 @@ components:
           type: string
           minLength: 1
           maxLength: 256
-        category:
-          type: string
-          description: Classification for grouping similar items.
-          maxLength: 100
         reference_number:
           type: string
           nullable: true
@@ -10815,10 +10755,6 @@ components:
           type: string
           minLength: 1
           maxLength: 256
-        category:
-          type: string
-          description: Classification for grouping similar items.
-          maxLength: 100
         reference_number:
           type: string
           nullable: true

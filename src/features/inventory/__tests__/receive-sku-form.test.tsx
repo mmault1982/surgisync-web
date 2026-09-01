@@ -43,7 +43,6 @@ function part(overrides: Partial<PartList> = {}): PartList {
     // name would have hidden a permanently blank Description field.
     name: 'REAMER CANNULATED ACORN 4.5MM',
     description: 'REAMER CANNULATED ACORN 4.5MM',
-    category: 'Reamers',
     kind: 'component',
     reference_number: 'CS-3510',
     is_serialized: false,

@@ -25,7 +25,6 @@ export interface PartComponent {
   readonly item: number;
   readonly item_uuid: string;
   readonly description: string;
-  readonly category: string;
   /** @nullable */
   readonly reference_number: string | null;
   readonly quantity: number;

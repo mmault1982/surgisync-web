@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -14,7 +14,6 @@ function part(overrides: Partial<PartList> = {}): PartList {
     uuid: 'aaaaaaaa-0000-0000-0000-000000000000',
     name: 'Locking Screw 3.5mm',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     kind: 'component',
     reference_number: 'LS-3500',
     is_serialized: false,
@@ -147,37 +146,13 @@ describe('the actions column', () => {
   });
 });
 
-describe('the category column', () => {
-  it('sits second, between Description and Manufacturer', async () => {
+describe('the column set', () => {
+  it('leads with Description, then Manufacturer — Category is gone', async () => {
     await renderTable();
 
     const headers = screen.getAllByRole('columnheader').map((th) => th.textContent);
 
-    expect(headers.slice(0, 3)).toEqual(['Description', 'Category', 'Manufacturer']);
-  });
-
-  it('shows the value', async () => {
-    await renderTable({ rows: [part({ category: 'Reamers' })] });
-
-    expect(screen.getByText('Reamers')).toBeInTheDocument();
-  });
-
-  it('falls back to an em dash when the part has none', async () => {
-    // Every row created through this app before the field was writable.
-    await renderTable({ rows: [part({ category: '' })] });
-
-    expect(screen.getByText('—')).toBeInTheDocument();
-  });
-
-  it('offers a sort menu, but no filter — the contract has no category param', async () => {
-    const { user } = await renderTable();
-
-    await user.click(
-      within(screen.getByRole('columnheader', { name: /Category/ })).getByRole('button'),
-    );
-
-    const panel = await screen.findByRole('dialog');
-    expect(within(panel).getByText('Sort')).toBeInTheDocument();
-    expect(within(panel).getByText('No filter for this column.')).toBeInTheDocument();
+    expect(headers.slice(0, 2)).toEqual(['Description', 'Manufacturer']);
+    expect(headers).not.toContain('Category');
   });
 });

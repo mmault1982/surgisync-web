@@ -35,11 +35,6 @@ export interface PartWriteRequest {
      */
   description: string;
   /**
-     * Classification for grouping similar items.
-     * @maxLength 100
-     */
-  category?: string;
-  /**
      * Unique catalog number used for scanning and inventory lookup. Empty for kits.
      * @maxLength 20
      * @nullable

@@ -21,7 +21,6 @@ function part(overrides: Partial<PartList>): PartList {
     // fold; the rows here set `description`, which is what the code reads.
     name: '',
     description: '',
-    category: 'Trays',
     kind: 'kit',
     reference_number: null,
     is_serialized: true,

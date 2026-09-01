@@ -24,7 +24,6 @@ function row(overrides: Partial<PartComponent> = {}): PartComponent {
     item: 7,
     item_uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     reference_number: 'LS-3500',
     quantity: 4,
     ...overrides,

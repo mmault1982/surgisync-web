@@ -32,7 +32,6 @@ function part(overrides: Partial<PartDetail> = {}): PartDetail {
     uuid: 'aaaaaaaa-0000-0000-0000-000000000000',
     name: 'Locking Screw 3.5mm',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     kind: 'component',
     reference_number: 'LS-3500',
     is_serialized: false,
@@ -127,7 +126,6 @@ describe('adding a product', () => {
 
     await choose(user, /Manufacturer/, 'Arthrex');
     await user.type(screen.getByLabelText(/Description/), '  Cortical Screw 4.0mm  ');
-    await user.type(screen.getByLabelText(/Category/), '  Screws  ');
     await user.type(screen.getByLabelText(/Reference #/), 'CS-4000');
     await user.type(screen.getByLabelText(/UDI/), '00860000000024');
     await user.type(screen.getByLabelText(/Price/), '19.99');
@@ -140,7 +138,6 @@ describe('adding a product', () => {
           kind: 'component',
           is_serialized: false,
           description: 'Cortical Screw 4.0mm',
-          category: 'Screws',
           reference_number: 'CS-4000',
           udi: '00860000000024',
           list_price: '19.99',
@@ -206,27 +203,6 @@ describe('amending a product', () => {
     expect(screen.getByLabelText(/Reference #/)).toHaveValue('LS-3500');
     expect(screen.getByLabelText(/UDI/)).toHaveValue('00860000000017');
     expect(screen.getByLabelText(/Price/)).toHaveValue('42.50');
-    expect(screen.getByLabelText(/Category/)).toHaveValue('Screws');
-  });
-
-  it('patches a changed category', async () => {
-    const { user } = renderForm(part());
-    const category = await screen.findByLabelText(/Category/);
-
-    await user.clear(category);
-    await user.type(category, 'Reamers');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(patched).toEqual([{ id: '7', body: { category: 'Reamers' } }]));
-  });
-
-  it('lets a category be cleared, the column having no null to distinguish', async () => {
-    const { user } = renderForm(part());
-
-    await user.clear(await screen.findByLabelText(/Category/));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(patched).toEqual([{ id: '7', body: { category: '' } }]));
   });
 
   it('patches only what changed', async () => {

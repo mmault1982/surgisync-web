@@ -23,7 +23,6 @@ function part(overrides: Partial<PartDetail> = {}): PartDetail {
     // `name` mirrors `description` on the wire — it is the deprecated alias.
     name: 'Locking Screw 3.5mm',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     kind: 'component',
     reference_number: 'LS-3500',
     is_serialized: false,
@@ -77,11 +76,6 @@ describe('seedProductValues', () => {
   it('carries the manufacturer as the string a Select uses', () => {
     expect(seedProductValues(part()).manufacturer).toBe('9');
   });
-
-  it('takes category straight across, the column having no null to coalesce', () => {
-    expect(seedProductValues(part({ category: '' })).category).toBe('');
-    expect(seedProductValues(part({ category: 'Reamers' })).category).toBe('Reamers');
-  });
 });
 
 describe('initialProductValues', () => {
@@ -99,15 +93,6 @@ describe('validateProduct', () => {
 
   it('requires a description that is not only whitespace', () => {
     expect(validateProduct(values({ description: '   ' })).description).toBeDefined();
-  });
-
-  it('accepts a blank category, which is optional on the wire', () => {
-    expect(validateProduct(values({ category: '' })).category).toBeUndefined();
-  });
-
-  it('caps category at the column width', () => {
-    expect(validateProduct(values({ category: 'x'.repeat(101) })).category).toBeDefined();
-    expect(validateProduct(values({ category: 'x'.repeat(100) })).category).toBeUndefined();
   });
 
   it('accepts a part with no reference number, UDI or price', () => {
@@ -152,7 +137,6 @@ describe('buildProductBody', () => {
         values({
           manufacturer: '9',
           description: '  Locking Screw 3.5mm  ',
-          category: '  Screws  ',
           referenceNumber: '  LS-3500  ',
           udi: '  00860000000017  ',
           listPrice: ' 42.50 ',
@@ -163,7 +147,6 @@ describe('buildProductBody', () => {
       kind: 'component',
       is_serialized: false,
       description: 'Locking Screw 3.5mm',
-      category: 'Screws',
       reference_number: 'LS-3500',
       udi: '00860000000017',
       list_price: '42.50',
@@ -209,12 +192,6 @@ describe('buildProductPatch', () => {
     expect(buildProductPatch(values({ listPrice: '' }), part())).toEqual({ list_price: null });
   });
 
-  it('sends a cleared category as an empty string, its only blank', () => {
-    // NOT NULL with `''` as the server-side default, so unlike UDI there is no
-    // null spelling to choose between.
-    expect(buildProductPatch(values({ category: '' }), part())).toEqual({ category: '' });
-  });
-
   it('ignores whitespace-only edits', () => {
     expect(buildProductPatch(values({ description: '  Locking Screw 3.5mm  ' }), part())).toEqual(
       {},
@@ -244,9 +221,6 @@ describe('productFieldErrors', () => {
     ).toEqual({
       referenceNumber: 'This manufacturer already has a part with this reference number.',
       udi: 'Another active part already carries this UDI.',
-    });
-    expect(productFieldErrors(fieldError({ category: ['Too long.'] }))).toEqual({
-      category: 'Too long.',
     });
   });
 

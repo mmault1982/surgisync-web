@@ -6,9 +6,9 @@ import type { PartDetail, PartWriteRequest, PatchedPartWriteRequest } from '@/ap
  * Everything the product form decides, with no DOM in sight.
  *
  * The same split `surgeons.ts` makes, and for the same reason: the form is
- * eight controls and a mutation, and none of the rules below need a render to
+ * seven controls and a mutation, and none of the rules below need a render to
  * be tested. It is a module rather than a dialog's internals because the
- * Product Catalog's create and edit are pages, not dialogs — eight fields is
+ * Product Catalog's create and edit are pages, not dialogs — seven fields is
  * well past where `NameDialog`'s docstring says sharing should stop.
  *
  * Every value is a string, including the two that are not strings on the wire.
@@ -18,7 +18,6 @@ import type { PartDetail, PartWriteRequest, PatchedPartWriteRequest } from '@/ap
  */
 
 export const MAX_DESCRIPTION_LENGTH = 256;
-export const MAX_CATEGORY_LENGTH = 100;
 export const MAX_REFERENCE_NUMBER_LENGTH = 20;
 export const MAX_UDI_LENGTH = 50;
 
@@ -36,7 +35,6 @@ export interface ProductValues {
   kind: KindEnum;
   isSerialized: boolean;
   description: string;
-  category: string;
   referenceNumber: string;
   udi: string;
   listPrice: string;
@@ -50,7 +48,6 @@ export function initialProductValues(): ProductValues {
     kind: KindEnum.component,
     isSerialized: false,
     description: '',
-    category: '',
     referenceNumber: '',
     udi: '',
     listPrice: '',
@@ -65,9 +62,6 @@ export function seedProductValues(part: PartDetail): ProductValues {
     // `description`, never `name` — the latter is a deprecated read-only
     // alias of it, and seeding from it would write the alias back.
     description: part.description,
-    // Not nullable, unlike the two below it: the column is NOT NULL and the
-    // server's default is `''`, so there is nothing to coalesce.
-    category: part.category,
     referenceNumber: part.reference_number ?? '',
     udi: part.udi ?? '',
     listPrice: part.list_price ?? '',
@@ -78,7 +72,6 @@ export interface ProductErrors {
   manufacturer?: string;
   kind?: string;
   description?: string;
-  category?: string;
   referenceNumber?: string;
   udi?: string;
   listPrice?: string;
@@ -105,14 +98,6 @@ export function validateProduct(values: ProductValues): ProductErrors {
     errors.description = 'Enter a description.';
   } else if (description.length > MAX_DESCRIPTION_LENGTH) {
     errors.description = `Use ${MAX_DESCRIPTION_LENGTH} characters or fewer.`;
-  }
-
-  // Length only. Category is optional and free text — there is no vocabulary
-  // to validate against, because the CSV pipeline is the only thing that has
-  // ever written it and it never declared one.
-  const category = values.category.trim();
-  if (category.length > MAX_CATEGORY_LENGTH) {
-    errors.category = `Use ${MAX_CATEGORY_LENGTH} characters or fewer.`;
   }
 
   const referenceNumber = values.referenceNumber.trim();
@@ -146,11 +131,9 @@ export function hasProductErrors(errors: ProductErrors): boolean {
  * is the same as omitting them, and it keeps this function's output one shape
  * rather than one per combination of filled-in controls.
  *
- * `''` rather than `null` for the three strings, though for two different
- * reasons. `reference_number` and `udi` are nullable columns whose uniqueness
- * constraints exempt empty and NULL alike, so either spelling of "blank"
- * behaves identically. `category` is NOT NULL with `''` as its server-side
- * default, so `''` is not merely equivalent — it is the only blank it has.
+ * `''` rather than `null` for the two nullable strings: `reference_number`
+ * and `udi` have uniqueness constraints that exempt empty and NULL alike, so
+ * either spelling of "blank" behaves identically.
  */
 export function buildProductBody(values: ProductValues): PartWriteRequest {
   return {
@@ -158,7 +141,6 @@ export function buildProductBody(values: ProductValues): PartWriteRequest {
     kind: values.kind,
     is_serialized: values.isSerialized,
     description: values.description.trim(),
-    category: values.category.trim(),
     reference_number: values.referenceNumber.trim(),
     udi: values.udi.trim(),
     // `null`, not `''`: the column is a decimal, and the server reads an empty
@@ -191,9 +173,6 @@ export function buildProductPatch(
   if (values.description.trim() !== seeded.description) {
     patch.description = values.description.trim();
   }
-  if (values.category.trim() !== seeded.category) {
-    patch.category = values.category.trim();
-  }
   if (values.referenceNumber.trim() !== seeded.referenceNumber) {
     patch.reference_number = values.referenceNumber.trim();
   }
@@ -216,7 +195,6 @@ const FIELD_SLOTS: Record<string, keyof ProductErrors> = {
   manufacturer: 'manufacturer',
   kind: 'kind',
   description: 'description',
-  category: 'category',
   reference_number: 'referenceNumber',
   udi: 'udi',
   list_price: 'listPrice',

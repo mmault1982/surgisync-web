@@ -24,7 +24,6 @@ function component(overrides: Partial<PartComponent> = {}): PartComponent {
     item: 7,
     item_uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     reference_number: 'LS-3500',
     quantity: 4,
     ...overrides,
@@ -68,7 +67,6 @@ describe('KitComponentsTable', () => {
     await renderTable();
 
     expect(cellUnder('Description')).toHaveTextContent('Locking Screw 3.5mm');
-    expect(cellUnder('Category')).toHaveTextContent('Screws');
     expect(cellUnder('Reference #')).toHaveTextContent('LS-3500');
     expect(cellUnder('Qty')).toHaveTextContent('4');
   });
@@ -85,7 +83,9 @@ describe('KitComponentsTable', () => {
   it('opens the component part when the row is clicked', async () => {
     const { onOpenRow, user } = await renderTable();
 
-    await user.click(screen.getByText('Screws'));
+    // A plain cell, not the description link — the row handler is what is
+    // under test here, and the link has its own navigation.
+    await user.click(screen.getByText('LS-3500'));
 
     expect(onOpenRow).toHaveBeenCalledWith(7);
   });
@@ -96,7 +96,7 @@ describe('KitComponentsTable', () => {
     const { onOpenRow, user } = await renderTable();
 
     await user.keyboard('{Meta>}');
-    await user.click(screen.getByText('Screws'));
+    await user.click(screen.getByText('LS-3500'));
     await user.keyboard('{/Meta}');
 
     expect(onOpenRow).not.toHaveBeenCalled();
@@ -116,10 +116,9 @@ describe('KitComponentsTable', () => {
     expect(onOpenRow).not.toHaveBeenCalled();
   });
 
-  it('renders an em dash for a blank category and a missing catalog number', async () => {
-    await renderTable({ rows: [component({ category: '', reference_number: null })] });
+  it('renders an em dash for a missing catalog number', async () => {
+    await renderTable({ rows: [component({ reference_number: null })] });
 
-    expect(cellUnder('Category')).toHaveTextContent('—');
     expect(cellUnder('Reference #')).toHaveTextContent('—');
   });
 

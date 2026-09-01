@@ -74,19 +74,14 @@ export function ProductDetailScreen({
             </Detail>
             <Detail label="Price">{formatPrice(part.list_price)}</Detail>
             {/*
-              Description and Category share the last row rather than
-              Description spanning it. Description is up to 256 characters, so
-              a half-width cell wraps it over several lines — which the grid
-              absorbs, since a row stretches to its tallest cell and Category
-              simply sits top-aligned beside it.
+              Spans the row rather than sharing it. Description is up to 256
+              characters — and since the category fold it carries the catalog
+              group at its head too — so a half-width cell wraps it over
+              several lines for no benefit.
             */}
-            <Detail label="Description">{part.description}</Detail>
-            {/*
-              Blank on every row created through this app before the field was
-              writable, so the em dash carries the same "nothing here" meaning
-              it does on the listing.
-            */}
-            <Detail label="Category">{part.category || '—'}</Detail>
+            <Detail label="Description" wrapperClassName="@sm:col-span-2">
+              {part.description}
+            </Detail>
           </dl>
 
           {canManage ? (
@@ -106,14 +101,18 @@ export function ProductDetailScreen({
 function Detail({
   label,
   className,
+  wrapperClassName,
   children,
 }: {
   label: string;
+  /** Applied to the <dd>, for the value's own type treatment. */
   className?: string;
+  /** Applied to the grid item, for spanning. */
+  wrapperClassName?: string;
   children: ReactNode;
 }) {
   return (
-    <div>
+    <div className={wrapperClassName}>
       <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {label}
       </dt>

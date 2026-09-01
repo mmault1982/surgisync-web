@@ -70,24 +70,46 @@ jobs:
       # re-checked rather than assumed.
       - run: pnpm verify
 
-      # Kept identical to web-deploy-prod.yml's Build step. The tile variables
-      # are exported only when non-empty: Vite defines import.meta.env.VITE_X
-      # whenever the variable is *present*, and map-tiles.ts uses `??`, which
+      # Kept identical to web-deploy-prod.yml's Build step. Every variable is
+      # exported only when non-empty: Vite defines import.meta.env.VITE_X
+      # whenever the variable is *present*, and both map modules use `??`, which
       # does not treat an empty string as absent — so passing an empty
-      # VITE_MAP_TILE_URL would bake a blank tile URL into the bundle.
+      # VITE_GOOGLE_MAPS_API_KEY would build a Static Maps URL with no key on
+      # it, which 403s on every request and renders "Map unavailable".
       #
-      # It lives here as well as in production so that setting the repository
-      # variable changes BOTH environments at once. Setting it on production
-      # alone would end the property that the same artifact is deployable to
-      # either environment.
+      # The key ships in the bundle; that is expected for Static Maps and is why
+      # it must be restricted by HTTP referrer and to the Static Maps SKU in
+      # Cloud Console. It is a repository *secret* only to keep it out of logs
+      # and out of the tree — it is not a confidential value once deployed.
+      #
+      # These live here as well as in production so that setting them changes BOTH
+      # environments at once. Setting them on one alone would end the property
+      # that the same artifact is deployable to either environment.
       - name: Build
+        id: build
         run: |
+          if [ -n "${GOOGLE_MAPS_KEY}" ]; then
+            export VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
+          fi
           if [ -n "${TILE_URL}" ]; then
             export VITE_MAP_TILE_URL="$TILE_URL"
             export VITE_MAP_TILE_ATTRIBUTION="$TILE_ATTRIBUTION"
           fi
+
+          # Recorded as an output because the `secrets` context is not available
+          # to a step-level `if:`, and production's tripwire below has to gate on
+          # whether a key was actually present.
+          if [ -n "${GOOGLE_MAPS_KEY}" ]; then
+            echo "provider=google" >> "$GITHUB_OUTPUT"
+          elif [ -n "${TILE_URL}" ]; then
+            echo "provider=custom-tiles" >> "$GITHUB_OUTPUT"
+          else
+            echo "provider=osm" >> "$GITHUB_OUTPUT"
+          fi
+
           pnpm build
         env:
+          GOOGLE_MAPS_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           TILE_URL: ${{ vars.VITE_MAP_TILE_URL }}
           TILE_ATTRIBUTION: ${{ vars.VITE_MAP_TILE_ATTRIBUTION }}
 

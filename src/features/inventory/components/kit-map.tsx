@@ -2,12 +2,18 @@ import L from 'leaflet';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 
 import type { Position } from '../kit-detail';
+import { PIN_SIZE, PIN_SVG } from '../map-pin';
 import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL } from '../map-tiles';
 
 import 'leaflet/dist/leaflet.css';
 
 /**
  * A small, static basemap with one pin.
+ *
+ * The **fallback** renderer, used only when this build has no Google Maps key —
+ * see `google-static-map.ts` and the branch in `kit-location-panel.tsx`. That is
+ * every local checkout and every PR, so it is not dead code; it is just not what
+ * staging and production draw.
  *
  * The only module in the app that imports leaflet, and it is reached solely
  * through `lazy(() => import(…))` — so ~150kB of mapping library and this
@@ -61,15 +67,15 @@ export default function KitMap({ position, label }: { position: Position; label:
  * the hashed production build, so it survives review. Inline SVG has no asset
  * to resolve, and `currentColor` lets the pin take the brand token instead of
  * hardcoding a hex.
+ *
+ * The markup comes from `map-pin.ts` because the static renderer draws the same
+ * pin as a real element; keeping one path string is what stops the two drifting.
  */
 const pin = L.divIcon({
   // Leaflet's default `leaflet-div-icon` class draws a white box with a border
   // around whatever you give it; this replaces it outright.
   className: 'text-primary drop-shadow-sm',
-  html: `<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true">
-    <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Z" />
-    <circle cx="12" cy="9" r="2.5" fill="white" />
-  </svg>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
+  html: PIN_SVG,
+  iconSize: [PIN_SIZE, PIN_SIZE],
+  iconAnchor: [PIN_SIZE / 2, PIN_SIZE],
 });

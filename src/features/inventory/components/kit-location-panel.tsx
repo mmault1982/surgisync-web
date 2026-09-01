@@ -7,15 +7,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatLogDateTime, formatRelative } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
+import { hasGoogleMaps } from '../google-static-map';
 import { addressLine, currentPosition } from '../kit-detail';
 
 import { DetachTrackerDialog } from './detach-tracker-dialog';
+import { KitStaticMap } from './kit-static-map';
 
-// Lazy so leaflet and its stylesheet never load for an untracked kit, and never
-// enter a jsdom test's module graph. Note that lazy() alone is not a barrier —
-// Vitest resolves a dynamic import on the next microtask — so the real guard is
-// that this panel only renders the map when coordinates parse, and no unit test
-// supplies coordinates that do.
+// Lazy so leaflet and its stylesheet never load for an untracked kit, never
+// load at all in a build that has a Google Maps key, and never enter a jsdom
+// test's module graph. Note that lazy() alone is not a barrier — Vitest resolves
+// a dynamic import on the next microtask — so the real guard is that this panel
+// only reaches it with coordinates *and* no key, and no unit test supplies both.
 const KitMap = lazy(() => import('./kit-map'));
 
 interface Props {
@@ -66,9 +68,21 @@ export function KitLocationPanel({ kit, events, isPending, isError, className }:
         <MapSlot>Location unavailable right now.</MapSlot>
       ) : position ? (
         <div className="p-3">
-          <Suspense fallback={<Skeleton className="h-[180px] w-full" />}>
-            <KitMap position={position} label={address ?? kit.part_name} />
-          </Suspense>
+          {/*
+            Google Static Maps where a key is configured, OpenStreetMap through
+            Leaflet where it is not. The condition is the key rather than a
+            provider name because there is nothing to choose between: OSM's tile
+            policy rules it out for a commercial product, so it exists only to
+            keep a keyless checkout — every local dev and every PR — drawing a
+            map for free. See `google-static-map.ts`.
+          */}
+          {hasGoogleMaps() ? (
+            <KitStaticMap position={position} label={address ?? kit.part_name} />
+          ) : (
+            <Suspense fallback={<Skeleton className="h-[180px] w-full" />}>
+              <KitMap position={position} label={address ?? kit.part_name} />
+            </Suspense>
+          )}
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${position[0]},${position[1]}`}
             target="_blank"

@@ -88,33 +88,60 @@ jobs:
       # re-checked rather than assumed.
       - run: pnpm verify
 
-      # The tile variables are exported only when non-empty. Vite defines
-      # import.meta.env.VITE_X whenever the variable is *present*, and
-      # map-tiles.ts uses `??`, which does not treat an empty string as absent —
-      # so passing VITE_MAP_TILE_URL="" would bake an empty tile URL into the
-      # bundle and render a blank map. Absent is not the same as empty here.
+      # Kept identical to web-deploy.yml's Build step. Every variable is
+      # exported only when non-empty: Vite defines import.meta.env.VITE_X
+      # whenever the variable is *present*, and both map modules use `??`, which
+      # does not treat an empty string as absent — so passing an empty
+      # VITE_GOOGLE_MAPS_API_KEY would build a Static Maps URL with no key on
+      # it, which 403s on every request and renders "Map unavailable".
+      #
+      # The key ships in the bundle; that is expected for Static Maps and is why
+      # it must be restricted by HTTP referrer and to the Static Maps SKU in
+      # Cloud Console. It is a repository *secret* only to keep it out of logs
+      # and out of the tree — it is not a confidential value once deployed.
+      #
+      # These live here as well as in staging so that setting them changes BOTH
+      # environments at once. Setting them on one alone would end the property
+      # that the same artifact is deployable to either environment.
       - name: Build
+        id: build
         run: |
+          if [ -n "${GOOGLE_MAPS_KEY}" ]; then
+            export VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_KEY"
+          fi
           if [ -n "${TILE_URL}" ]; then
             export VITE_MAP_TILE_URL="$TILE_URL"
             export VITE_MAP_TILE_ATTRIBUTION="$TILE_ATTRIBUTION"
           fi
+
+          # Recorded as an output because the `secrets` context is not available
+          # to a step-level `if:`, and production's tripwire below has to gate on
+          # whether a key was actually present.
+          if [ -n "${GOOGLE_MAPS_KEY}" ]; then
+            echo "provider=google" >> "$GITHUB_OUTPUT"
+          elif [ -n "${TILE_URL}" ]; then
+            echo "provider=custom-tiles" >> "$GITHUB_OUTPUT"
+          else
+            echo "provider=osm" >> "$GITHUB_OUTPUT"
+          fi
+
           pnpm build
         env:
+          GOOGLE_MAPS_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           TILE_URL: ${{ vars.VITE_MAP_TILE_URL }}
           TILE_ATTRIBUTION: ${{ vars.VITE_MAP_TILE_ATTRIBUTION }}
 
       # A tripwire, not a note in a document. It fires on every production
-      # deploy until the variables are set, and then disappears by itself.
+      # deploy until a provider is configured, and then disappears by itself.
       #
       # OpenStreetMap's tile usage policy names distributing an app that draws
       # from their servers as forbidden heavy use, and SurgiSync is a commercial
-      # product. Shipping the default was accepted deliberately while production
+      # product. Shipping the fallback was accepted deliberately while production
       # is test-only; it stops being acceptable the moment real users arrive.
       - name: Tile provider tripwire
-        if: ${{ vars.VITE_MAP_TILE_URL == '' }}
+        if: ${{ steps.build.outputs.provider == 'osm' }}
         run: |
-          MSG="Built with the OpenStreetMap default tile server. Acceptable only while production is test-only. Set VITE_MAP_TILE_URL and VITE_MAP_TILE_ATTRIBUTION as repository variables BEFORE the first non-staff user, and set them for BOTH web-deploy.yml and web-deploy-prod.yml — setting them on production alone means staging and production stop building the same artifact."
+          MSG="Built with the OpenStreetMap fallback, not Google. Acceptable only while production is test-only. Set VITE_GOOGLE_MAPS_API_KEY as a repository secret — referrer-restricted, Maps Static API only — BEFORE the first non-staff user, and set it for BOTH web-deploy.yml and web-deploy-prod.yml, or staging and production stop building the same artifact."
           echo "::warning::$MSG"
           { echo "### Tile provider"; echo ""; echo "$MSG"; } >> "$GITHUB_STEP_SUMMARY"
 

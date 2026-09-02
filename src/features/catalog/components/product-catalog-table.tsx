@@ -63,16 +63,6 @@ const COLUMNS: Column[] = [
     ),
   },
   {
-    key: 'category',
-    label: 'Category',
-    headerClassName: 'w-[160px]',
-    cellClassName: 'text-gray-800',
-    // Free text the CSV pipeline supplies, blank on anything created through
-    // this app before the field was writable — hence the em dash, matching
-    // every other absent cell value on this table and on on-hand's.
-    cell: (row) => row.category || '—',
-  },
-  {
     key: 'manufacturer',
     label: 'Manufacturer',
     headerClassName: 'w-[200px]',

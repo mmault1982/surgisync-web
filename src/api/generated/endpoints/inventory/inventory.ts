@@ -2270,9 +2270,9 @@ export function useDeletePart<TData = Awaited<ReturnType<typeof deletePart>>, TE
 /**
  * The bill of materials for a kit: the catalog parts it contains and how many of each. Always paginated, with the same wide default page as the catalog listing, so one request holds a whole BOM in practice.
  *
- * Grouped by the component's category, then its description — the sectioning the printed tray lists use.
+ * Ordered by the component's description, which since migration 0129 leads with its catalog group — so this reproduces the sectioning the printed tray lists use.
  *
- * `description`, `category` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
+ * `description` and `reference_number` are the **component part's** own, so a client can render a row without a second request, and `item` is that part's id for linking onward to `/api/v1/parts/{id}/`.
  *
  * Answers an empty list for a part whose `kind` is `component`: a loose part contains nothing, which is a fact about it rather than a missing resource.
  */

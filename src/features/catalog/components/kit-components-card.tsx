@@ -66,7 +66,7 @@ export function KitComponentsCard({
 
   return (
     // Wider than the record card above it, which is `max-w-3xl`. That card is a
-    // two-column definition list and reads better narrow; this is a five-column
+    // two-column definition list and reads better narrow; this is a four-column
     // table whose Description column carries strings like "Screw, Multi-Thread,
     // Compression, 2.7mm x 10mm, Ti". At 3xl the row overflows and the Actions
     // column lands off the right edge behind a horizontal scrollbar — present,

@@ -10,12 +10,10 @@ export type ListPartsOrdering = typeof ListPartsOrdering[keyof typeof ListPartsO
 
 
 export const ListPartsOrdering = {
-  '-category': '-category',
   '-description': '-description',
   '-manufacturer_name': '-manufacturer_name',
   '-name': '-name',
   '-reference_number': '-reference_number',
-  category: 'category',
   description: 'description',
   manufacturer_name: 'manufacturer_name',
   name: 'name',

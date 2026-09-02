@@ -43,7 +43,6 @@ function part(overrides: Partial<PartList> = {}): PartList {
     // `description` since the label fold. Only `description` is read.
     name: 'Lapidus Fixation Set',
     description: 'Lapidus Fixation Set',
-    category: 'Trays',
     kind: 'kit',
     reference_number: null,
     is_serialized: true,

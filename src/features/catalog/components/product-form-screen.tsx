@@ -23,7 +23,6 @@ import { catalogKeys } from '@/features/inventory/inventory.keys';
 import { productCatalogKeys } from '../catalog.keys';
 import { partFormManufacturersQuery } from '../catalog.queries';
 import {
-  MAX_CATEGORY_LENGTH,
   MAX_DESCRIPTION_LENGTH,
   MAX_REFERENCE_NUMBER_LENGTH,
   MAX_UDI_LENGTH,
@@ -45,12 +44,12 @@ import {
  *
  * One component for create and edit. They differ in three places — the
  * heading, whether `kind` is editable, and the request — and two
- * near-identical eight-field forms is how the required markers on one of them
+ * near-identical seven-field forms is how the required markers on one of them
  * go stale.
  *
  * A page rather than a `Dialog`, unlike the Directory screens' create/edit.
  * `NameDialog`'s docstring says a second writable field is where sharing that
- * component should stop; this has eight, and the prototype's `.form-card` — a
+ * component should stop; this has seven, and the prototype's `.form-card` — a
  * two-column grid with a full-width submit — is a page layout, not a modal.
  *
  * Presentational: it takes the part and its callbacks as props, so it renders
@@ -209,34 +208,8 @@ export function ProductFormScreen({
               onChange={(event) => update('description', event.target.value)}
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              The catalog label — what every list, picker and stock row shows for this part.
-            </p>
-          </Field>
-
-          <Field
-            label="Category"
-            hint=" (optional)"
-            htmlFor="product-category"
-            error={shown.category}
-          >
-            <Input
-              id="product-category"
-              value={values.category}
-              maxLength={MAX_CATEGORY_LENGTH}
-              disabled={disabled}
-              onChange={(event) => update('category', event.target.value)}
-            />
-            {/*
-              A plain text input, not a picker. `category` is a free-text
-              column with no choices declared anywhere — the CSV pipeline is
-              the only thing that has ever written it — and there is no facet
-              endpoint to seed a list from, unlike Manufacturer. Offering a
-              dropdown would mean inventing a vocabulary the server does not
-              have.
-            */}
-            <p className="mt-1 text-xs text-muted-foreground">
-              How this part is grouped — “Screws”, “Reamers”. Matched exactly, so reuse the spelling
-              already on your other parts.
+              The catalog label — what every list, picker and stock row shows for this part. Lead
+              with the group it belongs to, as the catalog does: “Screws 08mm Ti”.
             </p>
           </Field>
 

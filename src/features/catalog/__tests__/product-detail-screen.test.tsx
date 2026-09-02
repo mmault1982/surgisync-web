@@ -12,7 +12,6 @@ function part(overrides: Partial<PartDetail> = {}): PartDetail {
     uuid: 'aaaaaaaa-0000-0000-0000-000000000000',
     name: 'Locking Screw 3.5mm',
     description: 'Locking Screw 3.5mm',
-    category: 'Screws',
     kind: 'component',
     reference_number: 'LS-3500',
     is_serialized: false,
@@ -48,21 +47,15 @@ describe('the record', () => {
     expect(detail('UDI')).toHaveTextContent('00860000000017');
     expect(detail('Price')).toHaveTextContent('$42.50');
     expect(detail('Description')).toHaveTextContent('Locking Screw 3.5mm');
-    expect(detail('Category')).toHaveTextContent('Screws');
   });
 
-  it('puts Category immediately after Description, which is what places it alongside', () => {
+  it('ends on Description, which spans the last row on its own', () => {
     renderDetail();
 
     const labels = screen.getAllByRole('term').map((dt) => dt.textContent);
 
-    expect(labels.slice(-2)).toEqual(['Description', 'Category']);
-  });
-
-  it('falls back to an em dash for a part with no category', () => {
-    renderDetail({ category: '' });
-
-    expect(detail('Category')).toHaveTextContent('—');
+    expect(labels.at(-1)).toBe('Description');
+    expect(labels).not.toContain('Category');
   });
 
   it('reads description rather than the deprecated name alias', () => {

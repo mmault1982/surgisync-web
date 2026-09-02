@@ -58,17 +58,6 @@ const COLUMNS: Column[] = [
     ),
   },
   {
-    key: 'category',
-    label: 'Category',
-    headerClassName: 'w-[160px]',
-    cellClassName: 'text-gray-800',
-    // The component part's own category, which is what the catalog table and
-    // the panel above show for the same part. The junction carries a `category`
-    // column of its own that nothing has ever written; the server deliberately
-    // does not publish it.
-    cell: (row) => row.category || '—',
-  },
-  {
     key: 'reference_number',
     label: 'Reference #',
     headerClassName: 'w-[150px]',

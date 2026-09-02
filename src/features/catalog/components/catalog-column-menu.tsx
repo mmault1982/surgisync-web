@@ -107,7 +107,7 @@ export function CatalogColumnMenu({ columnKey, label, search, onChange }: Props)
  * What a header is asking to be clicked for.
  *
  * At rest the icon names the column's capability, because it is not uniform
- * across the five: Manufacturer sorts and filters; Description, Category and
+ * across the four: Manufacturer sorts and filters; Description and
  * Reference # only sort; and Kind only filters. Putting the same funnel on all
  * of them would promise Description a filter it does not have.
  *

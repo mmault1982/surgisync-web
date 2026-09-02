@@ -29,8 +29,6 @@ export interface PartList {
   /** DEPRECATED — use description. */
   readonly name: string;
   readonly description: string;
-  /** Classification for grouping similar items. */
-  readonly category: string;
   /**
      * Whether this part is a kit (has a bill of materials) or a loose component.
      *

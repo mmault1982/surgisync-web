@@ -168,26 +168,16 @@ describe('CatalogColumnMenu', () => {
     });
   });
 
-  describe('the category column', () => {
-    const column = { key: 'category' as ColumnKey, label: 'Category' };
-
-    it('sorts both ways', async () => {
-      const { user, onChange } = renderMenu({}, column);
-
-      await user.click(screen.getByRole('button', { name: 'Category' }));
-      await user.click(await screen.findByRole('button', { name: '↑ Asc' }));
-      expect(onChange).toHaveBeenCalledWith({ ordering: 'category' });
-
-      await user.click(screen.getByRole('button', { name: '↓ Desc' }));
-      expect(onChange).toHaveBeenCalledWith({ ordering: '-category' });
-    });
+  describe('the reference number column', () => {
+    const column = { key: 'reference_number' as ColumnKey, label: 'Reference #' };
 
     it('says it has no filter rather than offering an empty one', async () => {
-      // No `category` query parameter and no facet endpoint to seed a
-      // checklist from, unlike Manufacturer.
+      // Sorts but does not filter — there is no `reference_number` query
+      // parameter and no facet endpoint to seed a checklist from, unlike
+      // Manufacturer.
       const { user } = renderMenu({}, column);
 
-      await user.click(screen.getByRole('button', { name: 'Category' }));
+      await user.click(screen.getByRole('button', { name: 'Reference #' }));
 
       expect(await screen.findByText('No filter for this column.')).toBeInTheDocument();
     });
@@ -217,18 +207,18 @@ describe('CatalogColumnMenu', () => {
           state: 'sort',
         },
         { column: { key: 'description', label: 'Description' }, search: {}, state: 'sort-asc' },
-        // Category sorts but has no filter: there is no `category` query
-        // parameter and no facet endpoint to seed a checklist from, so it must
-        // show the bare sort glyph rather than Manufacturer's funnel.
-        { column: { key: 'category', label: 'Category' }, search: {}, state: 'sort' },
+        // Reference # sorts but has no filter: there is no query parameter
+        // and no facet endpoint to seed a checklist from, so it must show the
+        // bare sort glyph rather than Manufacturer's funnel.
+        { column: { key: 'reference_number', label: 'Reference #' }, search: {}, state: 'sort' },
         {
-          column: { key: 'category', label: 'Category' },
-          search: { ordering: 'category' },
+          column: { key: 'reference_number', label: 'Reference #' },
+          search: { ordering: 'reference_number' },
           state: 'sort-asc',
         },
         {
-          column: { key: 'category', label: 'Category' },
-          search: { ordering: '-category' },
+          column: { key: 'reference_number', label: 'Reference #' },
+          search: { ordering: '-reference_number' },
           state: 'sort-desc',
         },
         // Filters only — Kind has no sort, so it must not show a sort glyph.

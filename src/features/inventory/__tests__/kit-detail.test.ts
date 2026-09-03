@@ -7,11 +7,12 @@ import {
   eventPosition,
   historyActor,
   kitFields,
+  kitPhotos,
   ownershipLabel,
   parseCoordinate,
 } from '../kit-detail';
 
-import { eventFixture as event, kitFixture as kit } from './kit-fixture';
+import { eventFixture as event, kitFixture as kit, photoFixture as photo } from './kit-fixture';
 
 const TODAY = new Date('2026-04-22T12:00:00Z');
 
@@ -221,5 +222,82 @@ describe('addressLine', () => {
       addressLine(event({ location_name: '', location_city: '', location_state: '' })),
     ).toBeNull();
     expect(addressLine(undefined)).toBeNull();
+  });
+});
+
+describe('kitPhotos', () => {
+  /** Three photos in the order the API sends them: oldest first. */
+  const chronological = [
+    photo({ id: 1, created_at: '2026-01-15T08:00:00Z' }),
+    photo({ id: 2, created_at: '2026-01-28T09:00:00Z' }),
+    photo({ id: 3, created_at: '2026-04-20T17:30:00Z' }),
+  ];
+
+  it('reverses the API order to newest first', () => {
+    expect(kitPhotos(kit({ photos: chronological }), TODAY).map((p) => p.id)).toEqual([3, 2, 1]);
+  });
+
+  it('formats the timestamp as a date and time', () => {
+    // A regex, not a literal: the format renders in the runner's local zone,
+    // and newer ICU builds separate the time from AM/PM with U+202F.
+    const newest = kitPhotos(kit({ photos: chronological }), TODAY).at(0);
+    expect(newest?.takenAt).toMatch(/^Apr 2[01], \d{1,2}:\d{2}\s[AP]M$/);
+  });
+
+  it('sorts an undated photo last without dropping it', () => {
+    const photos = [photo({ id: 9, created_at: null }), ...chronological];
+
+    const ordered = kitPhotos(kit({ photos }), TODAY);
+    expect(ordered.map((p) => p.id)).toEqual([3, 2, 1, 9]);
+    expect(ordered.at(-1)?.takenAt).toBeNull();
+  });
+
+  it('treats a malformed timestamp as undated rather than shuffling the list', () => {
+    const photos = [photo({ id: 9, created_at: 'not a date' }), ...chronological];
+
+    expect(kitPhotos(kit({ photos }), TODAY).map((p) => p.id)).toEqual([3, 2, 1, 9]);
+  });
+
+  it('keeps the API order among photos it cannot date', () => {
+    const photos = [
+      photo({ id: 1, created_at: null }),
+      photo({ id: 2, created_at: null }),
+      photo({ id: 3, created_at: null }),
+    ];
+
+    // Nothing to sort on, so the reversal is the whole answer — still the
+    // newest-first reading the caller asked for.
+    expect(kitPhotos(kit({ photos }), TODAY).map((p) => p.id)).toEqual([3, 2, 1]);
+  });
+
+  it('carries the url through, null included', () => {
+    const photos = [
+      photo({ id: 1, url: null }),
+      photo({ id: 2, url: 'https://example.test/2.png' }),
+    ];
+
+    expect(kitPhotos(kit({ photos }), TODAY).map((p) => p.url)).toEqual([
+      'https://example.test/2.png',
+      null,
+    ]);
+  });
+
+  it('normalises a blank caption to null', () => {
+    const photos = [photo({ id: 1, caption: '   ' }), photo({ id: 2, caption: 'Seal intact' })];
+
+    expect(kitPhotos(kit({ photos }), TODAY).map((p) => p.caption)).toEqual(['Seal intact', null]);
+  });
+
+  it('is empty for a kit with no photos', () => {
+    expect(kitPhotos(kit(), TODAY)).toEqual([]);
+  });
+
+  it('does not mutate the kit it was given', () => {
+    const photos = [...chronological];
+    const target = kit({ photos });
+
+    kitPhotos(target, TODAY);
+    expect(target.photos.map((p) => p.id)).toEqual([1, 2, 3]);
+    expect(photos.map((p) => p.id)).toEqual([1, 2, 3]);
   });
 });

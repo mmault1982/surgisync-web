@@ -128,8 +128,8 @@ export function validateReceiveSku(
     errors.lotCode = `Lot code must be ${MAX_LOT_CODE_LENGTH} characters or fewer`;
   }
 
-  // Photos are optional here, unlike a kit: mobile requires one for a kit and
-  // none for a SKU, and a loose component often has nothing worth photographing.
+  // Photos are optional here, as on the kit form: a loose component often has
+  // nothing worth photographing.
   if (photos.length > 10) errors.photos = 'You can attach up to 10 photos';
 
   return errors;

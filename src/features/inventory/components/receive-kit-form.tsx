@@ -373,8 +373,7 @@ export function ReceiveKitForm() {
 
       <Field
         label="Photos"
-        required
-        hint={` (${photos.length} of ${MAX_PHOTOS})`}
+        hint={photos.length === 0 ? ' (optional)' : ` (${photos.length} of ${MAX_PHOTOS})`}
         hintTone={photos.length > MAX_PHOTOS ? 'text-destructive' : undefined}
         error={shown.photos}
       >

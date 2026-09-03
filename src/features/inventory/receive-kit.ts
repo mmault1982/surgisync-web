@@ -24,7 +24,6 @@ export const OWNERSHIP_TYPES: { value: OwnershipTypeEnum; label: string }[] = [
 /** `manufacturer_kit_id` is `maxLength: 64` on the contract. */
 export const MAX_KIT_ID_LENGTH = 64;
 
-export const MIN_PHOTOS = 1;
 export const MAX_PHOTOS = 10;
 
 /** One picked file plus the object URL its tile renders from. */
@@ -100,8 +99,9 @@ export function validateReceiveKit(
     errors.kitId = `Kit ID must be ${MAX_KIT_ID_LENGTH} characters or fewer`;
   }
 
-  if (photos.length < MIN_PHOTOS) errors.photos = 'A kit must have at least one photo';
-  else if (photos.length > MAX_PHOTOS) errors.photos = `You can attach up to ${MAX_PHOTOS} photos`;
+  // Optional, as in the SKU form: a photo is worth having but not worth
+  // blocking a delivery over. Mobile's Kit form was relaxed to match.
+  if (photos.length > MAX_PHOTOS) errors.photos = `You can attach up to ${MAX_PHOTOS} photos`;
 
   return errors;
 }

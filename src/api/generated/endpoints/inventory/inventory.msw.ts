@@ -59,7 +59,7 @@ export const getPartialUpdateSurgeonResponseMock = (overrideResponse: Partial<Ex
 
 export const getDeleteSurgeonResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
 
-export const getImportSurgeonsResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+export const getImportSurgeonsResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
 
 export const getSurgeonImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
@@ -81,7 +81,7 @@ export const getPartialUpdateManufacturerResponseMock = (overrideResponse: Parti
 
 export const getDeleteManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
 
-export const getImportManufacturersResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+export const getImportManufacturersResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
 
 export const getManufacturerImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
@@ -101,6 +101,14 @@ export const getCreatePartComponentResponseMock = (overrideResponse: Partial<Ext
 
 export const getPartialUpdatePartComponentResponseMock = (overrideResponse: Partial<Extract<PartComponent, object>> = {}): PartComponent => ({id: faker.number.int(), item: faker.number.int(), item_uuid: faker.string.uuid(), description: faker.string.alpha({length: {min: 10, max: 20}}), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int(), ...overrideResponse})
 
+export const getImportKitBomResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+
+export const getKitBomImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
+
+export const getImportPartsResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+
+export const getPartsImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
+
 export const getListPartManufacturerFacetsResponseMock = (overrideResponse: Partial<Extract<FacetResponse, object>> = {}): FacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
 export const getListProceduresCatalogResponseMock = (overrideResponse: Partial<Extract<PaginatedProcedureCatalogList, object>> = {}): PaginatedProcedureCatalogList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), is_owned: faker.datatype.boolean()})), ...overrideResponse})
@@ -113,7 +121,7 @@ export const getPartialUpdateProcedureResponseMock = (overrideResponse: Partial<
 
 export const getDeleteProcedureResponseMock = (overrideResponse: Partial<Extract<ProcedureCatalog, object>> = {}): ProcedureCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), is_owned: faker.datatype.boolean(), ...overrideResponse})
 
-export const getImportProceduresResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+export const getImportProceduresResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
 
 export const getProcedureImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
@@ -470,6 +478,62 @@ export const getDeletePartComponentMockHandler = (overrideResponse?: void | ((in
   }, options)
 }
 
+export const getImportKitBomMockHandler = (overrideResponse?: ImportReport | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportReport> | ImportReport), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/parts/components/import/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getImportKitBomResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getKitBomImportTemplateMockHandler = (overrideResponse?: ArrayBuffer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ArrayBuffer> | ArrayBuffer), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/parts/components/import/template/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const binaryBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getKitBomImportTemplateResponseMock();
+    return HttpResponse.arrayBuffer(
+      binaryBody instanceof ArrayBuffer
+        ? binaryBody
+        : new ArrayBuffer(0),
+      { status: 200,
+        headers: { 'Content-Type': 'application/octet-stream' }
+      })
+  }, options)
+}
+
+export const getImportPartsMockHandler = (overrideResponse?: ImportReport | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportReport> | ImportReport), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/parts/import/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getImportPartsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPartsImportTemplateMockHandler = (overrideResponse?: ArrayBuffer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ArrayBuffer> | ArrayBuffer), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/parts/import/template/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const binaryBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartsImportTemplateResponseMock();
+    return HttpResponse.arrayBuffer(
+      binaryBody instanceof ArrayBuffer
+        ? binaryBody
+        : new ArrayBuffer(0),
+      { status: 200,
+        headers: { 'Content-Type': 'application/octet-stream' }
+      })
+  }, options)
+}
+
 export const getListPartManufacturerFacetsMockHandler = (overrideResponse?: FacetResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<FacetResponse> | FacetResponse), options?: RequestHandlerOptions) => {
   return http.get('/api/v1/parts/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -739,6 +803,10 @@ export const getInventoryMock = () => [
   getCreatePartComponentMockHandler(),
   getPartialUpdatePartComponentMockHandler(),
   getDeletePartComponentMockHandler(),
+  getImportKitBomMockHandler(),
+  getKitBomImportTemplateMockHandler(),
+  getImportPartsMockHandler(),
+  getPartsImportTemplateMockHandler(),
   getListPartManufacturerFacetsMockHandler(),
   getListProceduresCatalogMockHandler(),
   getCreateProcedureMockHandler(),

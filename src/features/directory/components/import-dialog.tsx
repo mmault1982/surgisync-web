@@ -15,7 +15,15 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-import { hasWork, rowReason, rowsToShow, summarise, uploadErrorMessage } from '../import-report';
+import type { RowReasons } from '../import-report';
+import {
+  hasWork,
+  rowReason,
+  rowsToShow,
+  summarise,
+  uploadErrorMessage,
+  workCount,
+} from '../import-report';
 
 /**
  * Import records from a CSV or Excel file.
@@ -27,7 +35,8 @@ import { hasWork, rowReason, rowsToShow, summarise, uploadErrorMessage } from '.
  * The file is posted twice — once to preview, once to commit — because there
  * is no server-side staging and a JWT session has nowhere to keep one. That is
  * affordable precisely because these imports merge: if another admin adds a
- * row in between, the commit turns a `created` into a `skipped` and says so.
+ * row in between, the commit turns a `created` into a `skipped` or an
+ * `updated` and says so.
  *
  * Entity-neutral. It started out as the manufacturers dialog; procedures is
  * the second caller and differs only in its copy, its two generated calls and
@@ -46,6 +55,15 @@ export interface ImportDialogProps {
   onTemplate: () => Promise<Blob>;
   templateFilename: string;
   /**
+   * Display copy for this entity's row `code`s.
+   *
+   * Omitted by the directory screens, which take the default map — they all
+   * report on one name column. The catalog importers have a much larger and
+   * entirely different vocabulary, so they pass their own rather than growing
+   * a switch every screen would carry.
+   */
+  reasons?: RowReasons;
+  /**
    * Every query root a successful commit invalidates.
    *
    * More than one because these lists are read in two places under different
@@ -61,6 +79,7 @@ export function ImportDialog({
   onImport,
   onTemplate,
   templateFilename,
+  reasons,
   invalidates,
   onClose,
 }: ImportDialogProps) {
@@ -252,7 +271,7 @@ export function ImportDialog({
                                 : 'text-muted-foreground',
                             )}
                           >
-                            {rowReason(row)}
+                            {rowReason(row, reasons)}
                           </td>
                         </tr>
                       ))}
@@ -274,7 +293,9 @@ export function ImportDialog({
               disabled={busy || !file || !report || !hasWork(report)}
               onClick={() => file && send.mutate({ upload: file, dryRun: false })}
             >
-              {report && !hasWork(report) ? 'Nothing to import' : `Import ${report?.created ?? 0}`}
+              {report && !hasWork(report)
+                ? 'Nothing to import'
+                : `Import ${report ? workCount(report) : 0}`}
             </Button>
           ) : null}
         </DialogFooter>

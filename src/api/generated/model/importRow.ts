@@ -15,9 +15,10 @@ export interface ImportRow {
   row: number;
   name: string;
   /**
-     * `created` — a new record. `skipped` — this organization already has that name, which is a normal outcome of re-running a file and **not** an error. `failed` — the row could not be used.
+     * `created` — a new record. `updated` — a record already existed and at least one value in the file differed, so it was amended in place. `skipped` — a record already existed and the file agreed with it in every stated field, so there was nothing to do. `failed` — the row could not be used. Only `failed` is an error: `updated` and `skipped` are the normal outcomes of re-running a file. Importers over records with no amendable fields — manufacturers, procedures, surgeons — never emit `updated`.
      *
      * * `created` - created
+     * * `updated` - updated
      * * `skipped` - skipped
      * * `failed` - failed
      */

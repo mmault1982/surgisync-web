@@ -1,8 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import { deletePart } from '@/api/generated/endpoints/inventory/inventory';
+import {
+  deletePart,
+  importKitBom,
+  importParts,
+  kitBomImportTemplate,
+  partsImportTemplate,
+} from '@/api/generated/endpoints/inventory/inventory';
 import type { PartList } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
 import { canManageOrgRecords } from '@/auth/permissions';
@@ -11,9 +17,11 @@ import { Pagination } from '@/components/pagination';
 import { TableEmpty, TableError, TableLoading } from '@/components/table-states';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ImportDialog } from '@/features/directory/components/import-dialog';
 import { catalogKeys } from '@/features/inventory/inventory.keys';
 
 import { productCatalogKeys } from '../catalog.keys';
+import { BOM_REASONS, PARTS_REASONS } from '../catalog-import';
 import { catalogListQuery } from '../catalog.queries';
 import { catalogLabel, hasActiveFilters, type CatalogSearch } from '../catalog.search';
 
@@ -68,6 +76,10 @@ export function ProductCatalogScreen({
   // Delete stays here rather than in the route: it is a dialog over this list,
   // and the list is what has to refetch afterwards.
   const [deleting, setDeleting] = useState<PartList | null>(null);
+  // One piece of state, not two booleans: the two dialogs are alternatives and
+  // a pair of flags can represent both being open, which is not a state this
+  // screen has.
+  const [importing, setImporting] = useState<'parts' | 'bom' | null>(null);
 
   const rows = query.data?.results ?? [];
 
@@ -92,6 +104,19 @@ export function ProductCatalogScreen({
         />
         {canManage ? (
           <div className="ml-auto flex gap-2">
+            {/*
+              Parts before BOM, matching the order the two files must be
+              imported in: a bill of materials binds parts that already exist
+              and creates none.
+            */}
+            <Button type="button" variant="outline" onClick={() => setImporting('parts')}>
+              <UploadIcon />
+              Import parts
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setImporting('bom')}>
+              <UploadIcon />
+              Import BOM
+            </Button>
             <Button type="button" onClick={onAdd}>
               <PlusIcon />
               Add product
@@ -125,7 +150,7 @@ export function ProductCatalogScreen({
               title="No catalog parts yet"
               description={
                 canManage
-                  ? 'Add one, or load a manufacturer’s catalog separately from this screen.'
+                  ? 'Add one, or import a manufacturer’s catalog from a spreadsheet.'
                   : 'An administrator can add one for your organization.'
               }
               action={canManage ? { label: 'Add product', onClick: onAdd } : undefined}
@@ -164,6 +189,45 @@ export function ProductCatalogScreen({
           onDelete={() => deletePart(deleting.id)}
           invalidates={INVALIDATES}
           onClose={() => setDeleting(null)}
+        />
+      ) : null}
+      {importing === 'parts' ? (
+        <ImportDialog
+          title="Import parts"
+          description={
+            <>
+              A CSV or Excel file of catalog parts — kits and components together. The{' '}
+              <strong>manufacturer</strong> of every row must already exist; this file never creates
+              one. A part you already have is <strong>updated</strong> rather than duplicated, so a
+              corrected file can safely be imported again, and a blank cell leaves the stored value
+              alone.
+            </>
+          }
+          onImport={(file, dryRun) => importParts({ file, dry_run: dryRun })}
+          onTemplate={() => partsImportTemplate()}
+          templateFilename="parts_template.csv"
+          reasons={PARTS_REASONS}
+          invalidates={INVALIDATES}
+          onClose={() => setImporting(null)}
+        />
+      ) : null}
+      {importing === 'bom' ? (
+        <ImportDialog
+          title="Import bills of materials"
+          description={
+            <>
+              A CSV or Excel file binding components to kits — one row per component in a kit.{' '}
+              <strong>Import the parts first:</strong> this file only binds parts that already
+              exist, and a row naming a kit or component it cannot find fails rather than creating
+              one. A component already in the kit at a different quantity is updated.
+            </>
+          }
+          onImport={(file, dryRun) => importKitBom({ file, dry_run: dryRun })}
+          onTemplate={() => kitBomImportTemplate()}
+          templateFilename="kit_bom_template.csv"
+          reasons={BOM_REASONS}
+          invalidates={INVALIDATES}
+          onClose={() => setImporting(null)}
         />
       ) : null}
     </div>

@@ -35,7 +35,9 @@ import type {
   CreateSurgeonCatalog400,
   ErrorDetail,
   FacetResponse,
+  ImportKitBom400,
   ImportManufacturers400,
+  ImportParts400,
   ImportProcedures400,
   ImportReport,
   ImportRequestRequest,
@@ -2668,6 +2670,378 @@ export function useDeletePartComponent<TData = Awaited<ReturnType<typeof deleteP
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDeletePartComponentQueryOptions(id,componentPk,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Bind components to kits in bulk from a CSV or Excel file — one row per component-in-kit. Organization admins only. **Import the parts file first:** this file only binds parts that already exist, and a row naming a kit or component that does not is reported `kit_not_found` or `component_not_found` rather than creating one. A pair already present at the same quantity is `skipped`; at a different quantity it is `updated`. A component previously removed from the kit is restored. Send `dry_run=true` to preview the outcome of every row without writing anything.
+ */
+export const importKitBom = (
+    importRequestRequest: BodyType<ImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ImportReport>(
+      {url: `/api/v1/parts/components/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportKitBomQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/parts/components/import/`, importRequestRequest
+    ] as const;
+    }
+
+
+export const getImportKitBomQueryOptions = <TData = Awaited<ReturnType<typeof importKitBom>>, TError = ErrorType<ImportKitBom400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportKitBomQueryKey(importRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importKitBom>>> = ({ signal }) => importKitBom(importRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportKitBomQueryResult = NonNullable<Awaited<ReturnType<typeof importKitBom>>>
+export type ImportKitBomQueryError = ErrorType<ImportKitBom400 | ErrorDetail>
+
+
+export function useImportKitBom<TData = Awaited<ReturnType<typeof importKitBom>>, TError = ErrorType<ImportKitBom400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importKitBom>>,
+          TError,
+          Awaited<ReturnType<typeof importKitBom>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportKitBom<TData = Awaited<ReturnType<typeof importKitBom>>, TError = ErrorType<ImportKitBom400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importKitBom>>,
+          TError,
+          Awaited<ReturnType<typeof importKitBom>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportKitBom<TData = Awaited<ReturnType<typeof importKitBom>>, TError = ErrorType<ImportKitBom400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportKitBom<TData = Awaited<ReturnType<typeof importKitBom>>, TError = ErrorType<ImportKitBom400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importKitBom>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportKitBomQueryOptions(importRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * The bill-of-materials import template — the header row the importer expects, plus example rows binding the parts the parts template declares.
+ */
+export const kitBomImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/parts/components/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getKitBomImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/parts/components/import/template/`
+    ] as const;
+    }
+
+
+export const getKitBomImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof kitBomImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getKitBomImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof kitBomImportTemplate>>> = ({ signal }) => kitBomImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type KitBomImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof kitBomImportTemplate>>>
+export type KitBomImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function useKitBomImportTemplate<TData = Awaited<ReturnType<typeof kitBomImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof kitBomImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof kitBomImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useKitBomImportTemplate<TData = Awaited<ReturnType<typeof kitBomImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof kitBomImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof kitBomImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useKitBomImportTemplate<TData = Awaited<ReturnType<typeof kitBomImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useKitBomImportTemplate<TData = Awaited<ReturnType<typeof kitBomImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof kitBomImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getKitBomImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Create and amend catalog parts in bulk from a CSV or Excel file. Organization admins only. Download the template for the columns. Manufacturers must already exist — this file never creates one. A row matching a part your organization already has **amends** it and is reported `updated`; a row that agrees in every stated field is `skipped`. A blank cell means "not stated" and never clears a stored value. `kind` is set once at creation, and a kit is identified by its description, so an import can never rename a kit — changing it creates a second one. Send `dry_run=true` to preview the outcome of every row without writing anything.
+ */
+export const importParts = (
+    importRequestRequest: BodyType<ImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ImportReport>(
+      {url: `/api/v1/parts/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportPartsQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/parts/import/`, importRequestRequest
+    ] as const;
+    }
+
+
+export const getImportPartsQueryOptions = <TData = Awaited<ReturnType<typeof importParts>>, TError = ErrorType<ImportParts400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportPartsQueryKey(importRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importParts>>> = ({ signal }) => importParts(importRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportPartsQueryResult = NonNullable<Awaited<ReturnType<typeof importParts>>>
+export type ImportPartsQueryError = ErrorType<ImportParts400 | ErrorDetail>
+
+
+export function useImportParts<TData = Awaited<ReturnType<typeof importParts>>, TError = ErrorType<ImportParts400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importParts>>,
+          TError,
+          Awaited<ReturnType<typeof importParts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportParts<TData = Awaited<ReturnType<typeof importParts>>, TError = ErrorType<ImportParts400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importParts>>,
+          TError,
+          Awaited<ReturnType<typeof importParts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportParts<TData = Awaited<ReturnType<typeof importParts>>, TError = ErrorType<ImportParts400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportParts<TData = Awaited<ReturnType<typeof importParts>>, TError = ErrorType<ImportParts400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importParts>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportPartsQueryOptions(importRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * The parts import template — the header row the importer expects, plus example rows. Pairs with the bill-of-materials template: the two are one worked example and can be imported back to back.
+ */
+export const partsImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/parts/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartsImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/parts/import/template/`
+    ] as const;
+    }
+
+
+export const getPartsImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof partsImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartsImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partsImportTemplate>>> = ({ signal }) => partsImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartsImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof partsImportTemplate>>>
+export type PartsImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function usePartsImportTemplate<TData = Awaited<ReturnType<typeof partsImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partsImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof partsImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartsImportTemplate<TData = Awaited<ReturnType<typeof partsImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partsImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof partsImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartsImportTemplate<TData = Awaited<ReturnType<typeof partsImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartsImportTemplate<TData = Awaited<ReturnType<typeof partsImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partsImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartsImportTemplateQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

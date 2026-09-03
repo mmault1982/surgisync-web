@@ -4880,6 +4880,168 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
           description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/components/import/:
+    post:
+      operationId: import_kit_bom
+      description: Bind components to kits in bulk from a CSV or Excel file — one
+        row per component-in-kit. Organization admins only. **Import the parts file
+        first:** this file only binds parts that already exist, and a row naming a
+        kit or component that does not is reported `kit_not_found` or `component_not_found`
+        rather than creating one. A pair already present at the same quantity is `skipped`;
+        at a different quantity it is `updated`. A component previously removed from
+        the kit is restored. Send `dry_run=true` to preview the outcome of every row
+        without writing anything.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReport'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/components/import/template/:
+    get:
+      operationId: kit_bom_import_template
+      description: The bill-of-materials import template — the header row the importer
+        expects, plus example rows binding the parts the parts template declares.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/import/:
+    post:
+      operationId: import_parts
+      description: Create and amend catalog parts in bulk from a CSV or Excel file.
+        Organization admins only. Download the template for the columns. Manufacturers
+        must already exist — this file never creates one. A row matching a part your
+        organization already has **amends** it and is reported `updated`; a row that
+        agrees in every stated field is `skipped`. A blank cell means "not stated"
+        and never clears a stored value. `kind` is set once at creation, and a kit
+        is identified by its description, so an import can never rename a kit — changing
+        it creates a second one. Send `dry_run=true` to preview the outcome of every
+        row without writing anything.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReport'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/parts/import/template/:
+    get:
+      operationId: parts_import_template
+      description: 'The parts import template — the header row the importer expects,
+        plus example rows. Pairs with the bill-of-materials template: the two are
+        one worked example and can be imported back to back.'
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/parts/manufacturers/:
     get:
       operationId: list_part_manufacturer_facets
@@ -8244,9 +8406,12 @@ components:
         created:
           type: integer
           description: Created, or — on a dry run — what would be created.
+        updated:
+          type: integer
+          description: Amended in place, or — on a dry run — what would be amended.
         skipped:
           type: integer
-          description: Already present. Not failures.
+          description: Already present and already agreeing. Not failures.
         failed:
           type: integer
         rows:
@@ -8260,6 +8425,7 @@ components:
       - rows
       - skipped
       - total_rows
+      - updated
     ImportRequestRequest:
       type: object
       description: |-
@@ -8272,8 +8438,8 @@ components:
         file:
           type: string
           format: binary
-          description: CSV or Excel (.csv, .xlsx) with a `name` column. 10MB and 2000
-            rows maximum.
+          description: CSV or Excel (.csv, .xlsx). Which columns are required depends
+            on the endpoint — download its template. 10MB and 2000 rows maximum.
         dry_run:
           type: boolean
           default: false
@@ -8294,9 +8460,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/OutcomeEnum'
           description: |-
-            `created` — a new record. `skipped` — this organization already has that name, which is a normal outcome of re-running a file and **not** an error. `failed` — the row could not be used.
+            `created` — a new record. `updated` — a record already existed and at least one value in the file differed, so it was amended in place. `skipped` — a record already existed and the file agreed with it in every stated field, so there was nothing to do. `failed` — the row could not be used. Only `failed` is an error: `updated` and `skipped` are the normal outcomes of re-running a file. Importers over records with no amendable fields — manufacturers, procedures, surgeons — never emit `updated`.
 
             * `created` - created
+            * `updated` - updated
             * `skipped` - skipped
             * `failed` - failed
         code:
@@ -9687,11 +9854,13 @@ components:
     OutcomeEnum:
       enum:
       - created
+      - updated
       - skipped
       - failed
       type: string
       description: |-
         * `created` - created
+        * `updated` - updated
         * `skipped` - skipped
         * `failed` - failed
     OwnershipTypeEnum:

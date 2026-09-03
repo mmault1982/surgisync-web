@@ -16,7 +16,9 @@ export interface ImportReport {
   total_rows: number;
   /** Created, or — on a dry run — what would be created. */
   created: number;
-  /** Already present. Not failures. */
+  /** Amended in place, or — on a dry run — what would be amended. */
+  updated: number;
+  /** Already present and already agreeing. Not failures. */
   skipped: number;
   failed: number;
   rows: ImportRow[];

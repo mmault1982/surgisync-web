@@ -7,7 +7,7 @@ both together.
 |                        |                                    |
 | ---------------------- | ---------------------------------- |
 | Source                 | `http://localhost:8000/schema/v1/` |
-| Pulled                 | 2026-09-01 16:59Z                  |
+| Pulled                 | 2026-09-02 15:53Z                  |
 | Backend `data_version` | `645ea7f1e7d7`                     |
 
 The backend enforces this file's accuracy on its own side: `openapi.yaml` is a

@@ -27,6 +27,8 @@ beforeAll(() => {
 
 const PARTS = '/api/v1/parts/';
 const FACETS = '/api/v1/parts/manufacturers/';
+const PARTS_IMPORT = '/api/v1/parts/import/';
+const BOM_IMPORT = '/api/v1/parts/components/import/';
 
 let role: string | null = 'admin';
 vi.mock('@/auth/auth-context', () => ({
@@ -267,6 +269,23 @@ describe('who may write', () => {
     expect(await screen.findByText('Lapidus Fixation Set')).toBeInTheDocument();
   });
 
+  it('offers both import buttons to an admin', async () => {
+    renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    expect(screen.getByRole('button', { name: 'Import parts' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Import BOM' })).toBeInTheDocument();
+  });
+
+  it('offers neither import to a rep', async () => {
+    role = 'non_admin';
+    renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    expect(screen.queryByRole('button', { name: 'Import parts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import BOM' })).not.toBeInTheDocument();
+  });
+
   it('hands Add product to the route', async () => {
     const { onAdd, user } = renderScreen();
     await screen.findByText('Lapidus Fixation Set');
@@ -345,5 +364,90 @@ describe('removing a part', () => {
     await user.click(screen.getByRole('button', { name: 'Edit Lapidus Fixation Set' }));
 
     expect(onEdit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('importing a catalog', () => {
+  it('opens the parts dialog, which says manufacturers must already exist', async () => {
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Import parts' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Import parts')).toBeInTheDocument();
+    expect(within(dialog).getByText(/must already exist/)).toBeInTheDocument();
+  });
+
+  it('opens the BOM dialog, which says to import the parts first', async () => {
+    // The one thing a user gets wrong: a BOM file binds parts that already
+    // exist and creates none, so uploading it first fails every row.
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Import BOM' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/Import the parts first/)).toBeInTheDocument();
+  });
+
+  it('opens one dialog at a time', async () => {
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+
+    await user.click(screen.getByRole('button', { name: 'Import BOM' }));
+    await screen.findByRole('dialog');
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it.each([
+    ['Import parts', PARTS_IMPORT],
+    ['Import BOM', BOM_IMPORT],
+  ])('%s posts to its own endpoint and refreshes the list', async (button, endpoint) => {
+    // The wiring no other test reaches: that each dialog is pointed at the
+    // right endpoint, and that a commit invalidates the list behind it. Without
+    // the invalidation the imported rows are on the server and not on screen
+    // until something else happens to refetch.
+    const posted: string[] = [];
+    let listed = 0;
+    server.use(
+      http.get(PARTS, () => {
+        listed += 1;
+        return HttpResponse.json(page([part()]));
+      }),
+      http.post(endpoint, async ({ request }) => {
+        posted.push(request.url);
+        const body = await request.text();
+        return HttpResponse.json({
+          dry_run: body.includes('true'),
+          total_rows: 1,
+          created: 1,
+          updated: 0,
+          skipped: 0,
+          failed: 0,
+          rows: [{ row: 2, name: 'A-1', outcome: 'created' }],
+        });
+      }),
+    );
+
+    const { user } = renderScreen();
+    await screen.findByText('Lapidus Fixation Set');
+    const before = listed;
+
+    await user.click(screen.getByRole('button', { name: button }));
+    const dialog = await screen.findByRole('dialog');
+    await user.upload(
+      within(dialog).getByLabelText(/Choose a .csv or .xlsx file/),
+      new File(['manufacturer\nAcme\n'], 'catalog.csv', { type: 'text/csv' }),
+    );
+
+    // The preview, then the commit — both to the same endpoint.
+    await screen.findByText('1 rows: 1 to add.');
+    await user.click(within(dialog).getByRole('button', { name: 'Import 1' }));
+
+    await waitFor(() => expect(listed).toBeGreaterThan(before));
+    expect(posted).toHaveLength(2);
+    expect(posted.every((url) => url.includes(endpoint))).toBe(true);
   });
 });

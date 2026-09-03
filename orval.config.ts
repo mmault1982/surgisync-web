@@ -182,6 +182,29 @@ const ALLOWED_OPERATIONS = new Set([
   'partial_update_part',
   'delete_part',
 
+  // Bulk import of the catalog, two files: the parts themselves, then the
+  // bills of materials binding them into kits. Two endpoint pairs rather than
+  // one that sniffs the header row, because the browser cannot read an .xlsx
+  // header without shipping a spreadsheet parser — so the screen asks which
+  // file this is with two buttons, and the client always knows.
+  //
+  // Both imports declare multipart/form-data *first* among their content
+  // types, which is what makes the generated call able to carry a file at all
+  // — the same property `import_manufacturers` above depends on. The two
+  // template downloads return a CSV body rather than JSON, and serve the very
+  // files `docs/import-templates/` ships rather than a header row retyped in
+  // a view.
+  //
+  // These four are the reason `OutcomeEnum` gained `updated` and `ImportReport`
+  // gained an `updated` count. The catalog import amends an existing part
+  // rather than skipping it, which no directory importer does — so the three
+  // above regenerate with a fourth enum value they will never emit. That is
+  // one vocabulary rather than two, and the diff below is the whole cost.
+  'import_parts',
+  'parts_import_template',
+  'import_kit_bom',
+  'kit_bom_import_template',
+
   // The detail screen's Bill of Materials panel: a kit's components, nested
   // *under* the part at `/api/v1/parts/{id}/components/`. Nesting is what puts
   // them inside the response accuracy gate without a new prefix, and it is why

@@ -33,6 +33,7 @@ function report(overrides: Partial<ImportReport> = {}): ImportReport {
     dry_run: true,
     total_rows: 2,
     created: 2,
+    updated: 0,
     skipped: 0,
     failed: 0,
     rows: [
@@ -250,5 +251,89 @@ describe('committing', () => {
     await screen.findByText('2 rows: 2 to add.');
 
     expect(flags()).toEqual(['true']);
+  });
+
+  it('offers to commit a file that only amends existing records', async () => {
+    // The catalog importers amend; a corrected price list creates nothing at
+    // all. Counting only `created` would disable the button and label a file
+    // that is entirely work "Nothing to import".
+    server.use(
+      http.post(IMPORT, () =>
+        HttpResponse.json(
+          report({
+            created: 0,
+            updated: 2,
+            rows: [
+              { row: 2, name: 'A-1', outcome: 'updated', code: 'fields_updated' },
+              { row: 3, name: 'A-2', outcome: 'updated', code: 'fields_updated' },
+            ],
+          }),
+        ),
+      ),
+    );
+    const { user } = renderDialog();
+
+    await user.upload(fileInput(), csv());
+
+    const button = await screen.findByRole('button', { name: 'Import 2' });
+    expect(button).toBeEnabled();
+    expect(await screen.findByText('2 rows: 2 to update.')).toBeInTheDocument();
+  });
+
+  it('counts creates and updates together on the button', async () => {
+    server.use(
+      http.post(IMPORT, () =>
+        HttpResponse.json(
+          report({
+            total_rows: 5,
+            created: 3,
+            updated: 2,
+            rows: [{ row: 2, name: 'A-1', outcome: 'updated', code: 'fields_updated' }],
+          }),
+        ),
+      ),
+    );
+    const { user } = renderDialog();
+
+    await user.upload(fileInput(), csv());
+
+    expect(await screen.findByRole('button', { name: 'Import 5' })).toBeEnabled();
+  });
+
+  it("uses the caller's own copy for a code the default map would misread", async () => {
+    // `already_exists` is reported by all four importers and means something
+    // different in each.
+    server.use(
+      http.post(IMPORT, () =>
+        HttpResponse.json(
+          report({
+            created: 0,
+            skipped: 1,
+            rows: [{ row: 2, name: 'A-1', outcome: 'skipped', code: 'already_exists' }],
+          }),
+        ),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <ImportDialog
+          title="Import parts"
+          description="A CSV or Excel file."
+          onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
+          onTemplate={() => manufacturerImportTemplate()}
+          templateFilename="parts_template.csv"
+          reasons={{ already_exists: 'Already in your catalog, unchanged' }}
+          invalidates={[['product-catalog']]}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.upload(fileInput(), csv());
+
+    expect(await screen.findByText('Already in your catalog, unchanged')).toBeInTheDocument();
+    expect(screen.queryByText('Already in your list')).not.toBeInTheDocument();
   });
 });

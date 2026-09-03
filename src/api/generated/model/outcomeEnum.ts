@@ -8,6 +8,7 @@
 
 /**
  * * `created` - created
+ * * `updated` - updated
  * * `skipped` - skipped
  * * `failed` - failed
  */
@@ -16,6 +17,7 @@ export type OutcomeEnum = typeof OutcomeEnum[keyof typeof OutcomeEnum];
 
 export const OutcomeEnum = {
   created: 'created',
+  updated: 'updated',
   skipped: 'skipped',
   failed: 'failed',
 } as const;

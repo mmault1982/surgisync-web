@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { ImportReport, ImportRow } from '@/api/generated/model';
 
-import { hasWork, rowReason, rowsToShow, summarise, uploadErrorMessage } from '../import-report';
+import {
+  hasWork,
+  rowReason,
+  rowsToShow,
+  summarise,
+  uploadErrorMessage,
+  workCount,
+} from '../import-report';
 
 function row(overrides: Partial<ImportRow> = {}): ImportRow {
   return { row: 2, name: 'Acme Ortho', outcome: 'created', ...overrides };
@@ -14,6 +21,7 @@ function report(overrides: Partial<ImportReport> = {}): ImportReport {
     dry_run: true,
     total_rows: 0,
     created: 0,
+    updated: 0,
     skipped: 0,
     failed: 0,
     rows: [],
@@ -64,6 +72,26 @@ describe('summarise', () => {
   it('says so when there is nothing to do', () => {
     expect(summarise(report({ total_rows: 0 }))).toBe('0 rows, nothing to do.');
   });
+
+  it('names updates between adds and skips', () => {
+    expect(
+      summarise(report({ dry_run: true, total_rows: 12, created: 3, updated: 2, skipped: 7 })),
+    ).toBe('12 rows: 3 to add, 2 to update, 7 already there.');
+  });
+
+  it('reports updates once committed', () => {
+    expect(
+      summarise(report({ dry_run: false, total_rows: 12, created: 3, updated: 2, skipped: 7 })),
+    ).toBe('12 rows: 3 added, 2 updated, 7 already there.');
+  });
+
+  it('does not mention updates when there are none', () => {
+    // The three directory importers can never report one, so their sentence
+    // has to read exactly as it did before the outcome existed.
+    expect(summarise(report({ dry_run: false, total_rows: 3, created: 3 }))).toBe(
+      '3 rows: 3 added.',
+    );
+  });
 });
 
 describe('rowsToShow', () => {
@@ -105,6 +133,23 @@ describe('rowsToShow', () => {
 
     expect(result.map((entry) => entry.row)).toEqual([4, 9]);
   });
+
+  it('ranks updates above skips and below failures', () => {
+    // An update overwrites data that is already there, so a preview should
+    // show which rows it will touch. A skip changes nothing and ranks last.
+    const result = rowsToShow(
+      report({
+        rows: [
+          row({ row: 2, outcome: 'skipped' }),
+          row({ row: 3, outcome: 'updated' }),
+          row({ row: 4, outcome: 'failed' }),
+          row({ row: 5, outcome: 'created' }),
+        ],
+      }),
+    );
+
+    expect(result.map((entry) => entry.row)).toEqual([4, 3, 2]);
+  });
 });
 
 describe('hasWork', () => {
@@ -114,6 +159,19 @@ describe('hasWork', () => {
 
   it('is true as soon as one row would be created', () => {
     expect(hasWork(report({ total_rows: 5, created: 1, skipped: 4 }))).toBe(true);
+  });
+
+  it('counts updates as work', () => {
+    // A price list whose every row amends an existing part creates nothing.
+    // Reading only `created` would disable the button and label a file that is
+    // entirely work "Nothing to import".
+    expect(hasWork(report({ total_rows: 5, updated: 5 }))).toBe(true);
+  });
+});
+
+describe('workCount', () => {
+  it('is what the commit button counts', () => {
+    expect(workCount(report({ total_rows: 12, created: 3, updated: 2, skipped: 7 }))).toBe(5);
   });
 });
 
@@ -135,6 +193,24 @@ describe('rowReason', () => {
 
   it('has a last resort when there is no detail either', () => {
     expect(rowReason(row({ outcome: 'failed' }))).toBe('Could not be imported');
+  });
+
+  it('takes a per-entity map, because one code means different things', () => {
+    // `already_exists` is reported by all four importers. Without a map, a
+    // catalog row would read "Already in your list".
+    const catalog = { already_exists: 'Already in your catalog, unchanged' };
+
+    expect(rowReason(row({ outcome: 'skipped', code: 'already_exists' }), catalog)).toBe(
+      'Already in your catalog, unchanged',
+    );
+  });
+
+  it('still falls back to the server text under a custom map', () => {
+    expect(
+      rowReason(row({ outcome: 'failed', code: 'udi_taken', detail: 'Taken.' }), {
+        already_exists: 'Already in your catalog',
+      }),
+    ).toBe('Taken.');
   });
 });
 

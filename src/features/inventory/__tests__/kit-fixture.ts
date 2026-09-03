@@ -1,6 +1,7 @@
 import type {
   InventoryKitDetail,
   InventoryKitHistory,
+  InventoryKitPhoto,
   InventoryTransferDetail,
   KitTracker,
   TrackingEvent,
@@ -29,6 +30,22 @@ export function trackerFixture(overrides: Partial<KitTracker> = {}): KitTracker 
     sync_state: 'not_synced',
     sync_error: '',
     synced_at: null,
+    ...overrides,
+  };
+}
+
+/**
+ * One attached photo.
+ *
+ * A helper for the same reason `trackerFixture` is one: `InventoryKitPhoto`'s
+ * read fields are all `required`, so an inline literal breaks everywhere at
+ * once the day the serializer grows a field.
+ */
+export function photoFixture(overrides: Partial<InventoryKitPhoto> = {}): InventoryKitPhoto {
+  return {
+    id: 1,
+    url: 'https://example.test/1.png',
+    created_at: '2026-01-28T09:00:00Z',
     ...overrides,
   };
 }

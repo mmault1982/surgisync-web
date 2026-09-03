@@ -1,5 +1,5 @@
 import type { InventoryKitDetail, InventoryKitHistory, TrackingEvent } from '@/api/generated/model';
-import { formatCalendarDate } from '@/lib/dates';
+import { formatCalendarDate, formatLogDateTime } from '@/lib/dates';
 
 import { isExpired, statusLabels } from './stock-status';
 
@@ -50,6 +50,63 @@ export function kitFields(kit: InventoryKitDetail, today = new Date()): KitField
     { label: 'Physical Location', value: kit.physical_location || EMPTY },
     { label: 'Entity', value: kit.parent_company_name || EMPTY, full: true },
   ];
+}
+
+export interface KitPhoto {
+  id: number;
+  /** Presigned, and null for a photo the server has not finished processing. */
+  url: string | null;
+  /** `Jan 28, 2:15 PM`, or null when the API sent no timestamp. */
+  takenAt: string | null;
+  /** The photo's own caption. Optional on the serializer, so `''` becomes null. */
+  caption: string | null;
+}
+
+/**
+ * The kit's photos, newest first.
+ *
+ * Deliberately not an eighth `kitFields` entry: that list is `value: string`
+ * all the way down, and a union widening it to carry an array would earn
+ * nothing but a broken pin on the seven labels above.
+ *
+ * The ordering is two steps because `created_at` is nullable. The API sends
+ * these oldest-first (the oldest is the primary photo), so the reversal alone
+ * already answers "newest first" — including for rows carrying no timestamp,
+ * which a date sort cannot place at all. The sort then refines that, and being
+ * stable by spec it leaves the reversal intact wherever two photos tie or
+ * neither has a date. Undated photos go last rather than being dropped: the
+ * tile count has to agree with `photo_count`.
+ */
+export function kitPhotos(kit: InventoryKitDetail, now = new Date()): KitPhoto[] {
+  return [...kit.photos]
+    .reverse()
+    .sort((a, b) => {
+      const left = instant(a.created_at);
+      const right = instant(b.created_at);
+      if (left === right) return 0;
+      if (left === null) return 1;
+      if (right === null) return -1;
+      return right - left;
+    })
+    .map((photo) => ({
+      id: photo.id,
+      url: photo.url,
+      takenAt: formatLogDateTime(photo.created_at, now),
+      caption: photo.caption?.trim() || null,
+    }));
+}
+
+/**
+ * An instant as a sortable number, or null when there is nothing to sort on.
+ *
+ * `Date.parse` answers NaN for a malformed timestamp, and every comparison
+ * against NaN is `false` — so a bad value has to be folded in with the nulls
+ * rather than left to shuffle the list arbitrarily.
+ */
+function instant(value: string | null): number | null {
+  if (value === null) return null;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 export interface BannerState {

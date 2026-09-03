@@ -62,14 +62,13 @@ describe('validateReceiveKit', () => {
     expect(hasErrors(validateReceiveKit(filled(), [photo('a')]))).toBe(false);
   });
 
-  it('requires every selection, the kit id and a photo', () => {
+  it('requires every selection and the kit id', () => {
     const errors = validateReceiveKit(initialValues(), []);
     expect(errors.manufacturer).toBeTruthy();
     expect(errors.representative).toBeTruthy();
     expect(errors.location).toBeTruthy();
     expect(errors.part).toBeTruthy();
     expect(errors.kitId).toBeTruthy();
-    expect(errors.photos).toBeTruthy();
   });
 
   it('rejects a whitespace-only kit id', () => {
@@ -86,8 +85,9 @@ describe('validateReceiveKit', () => {
     expect(errors.kitId).toBeTruthy();
   });
 
-  it('requires at least one photo and allows at most ten', () => {
+  it('allows no photos and at most ten', () => {
     const ten = Array.from({ length: 10 }, (_, i) => photo(`p${i}`));
+    expect(validateReceiveKit(filled(), []).photos).toBeUndefined();
     expect(validateReceiveKit(filled(), ten).photos).toBeUndefined();
     expect(validateReceiveKit(filled(), [...ten, photo('p10')]).photos).toBeTruthy();
   });

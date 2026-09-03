@@ -68,13 +68,18 @@ async function attachPhoto(user: ReturnType<typeof userEvent.setup>) {
   );
 }
 
-/** Fill every required field. */
-async function fillForm(user: ReturnType<typeof userEvent.setup>) {
+/** Fill every required field. Photos are optional, so none is attached. */
+async function fillFields(user: ReturnType<typeof userEvent.setup>) {
   await choose(user, /Manufacturer/, /Treace/);
   await choose(user, /Rep \/ Assigned To/, /Dana Reid/);
   await choose(user, /Physical Location/, /Warehouse/);
   await choose(user, /Kit Name/, /Lapidus Fixation Set/);
   await user.type(screen.getByLabelText(/Kit ID/), 'TRC-LAP-2100');
+}
+
+/** The same, plus the one photo most tests want staged. */
+async function fillForm(user: ReturnType<typeof userEvent.setup>) {
+  await fillFields(user);
   await attachPhoto(user);
 }
 
@@ -156,13 +161,33 @@ describe('ReceiveKitForm', () => {
     ]);
   });
 
+  it('saves without a photo', async () => {
+    // Optional here, as in the SKU form — and the upload must not be attempted
+    // at all, rather than sent empty.
+    const uploads: string[] = [];
+    server.use(
+      http.post(PHOTOS, () => {
+        uploads.push('photo');
+        return HttpResponse.json({ id: 99, url: null }, { status: 201 });
+      }),
+    );
+
+    const { user } = renderForm();
+
+    await fillFields(user);
+    await user.click(saveButton());
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: '/inventory/on-hand' }));
+    expect(created).toHaveLength(1);
+    expect(uploads).toEqual([]);
+  });
+
   it('shows required errors and sends nothing on an empty submit', async () => {
     const { user } = renderForm();
 
     await user.click(saveButton());
 
     expect(await screen.findByText('Select a manufacturer')).toBeInTheDocument();
-    expect(screen.getByText('A kit must have at least one photo')).toBeInTheDocument();
     expect(created).toEqual([]);
     expect(navigate).not.toHaveBeenCalled();
   });

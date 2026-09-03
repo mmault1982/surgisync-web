@@ -178,8 +178,8 @@ describe('runReceiveSave', () => {
   });
 
   it('reports a create with no photos as complete', async () => {
-    // Not reachable from the form, which requires one — but the module should
-    // not depend on the form's rule to terminate.
+    // What both forms do when the user attaches nothing: the loop is a no-op and
+    // the create alone finishes the save.
     happyPath();
 
     const state = await runReceiveSave(initialReceiveSaveState(BODY, []));

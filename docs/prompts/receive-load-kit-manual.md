@@ -219,7 +219,7 @@ slot look the same as they do in the dialogs.
 | 6   | Hansel Tracker    | `Input`                 |          | `beacon_id`; 409 lands under this field            |
 | 7   | Type              | `Select`                | ✱        | owned / consigned / loaned, defaults **Consigned** |
 | 8   | Status            | `RadioGroup`, two chips | ✱        | Complete / Incomplete, defaults **Complete**       |
-| 9   | Photos            | photo strip             | ✱        | at least one, at most ten                          |
+| 9   | Photos            | photo strip             |          | optional, at most ten                              |
 | 10  | Notes             | `Textarea`              |          | placeholder "Additional details..."                |
 
 Placeholders come from the prototype and mobile, which agree: "Select Manufacturer...", "Select who
@@ -269,12 +269,12 @@ conflict copy rather than writing a second mapping; `create_inventory_kit` docum
 codes on its 409.
 
 **Photos** follow Update Status, not the prototype. The prototype has one capture tile; mobile
-allows up to ten with the first becoming primary, and requires at least one
-(`hasRequired`, `load_inventory_controller.dart:447-452`). Copy the strip from
-`update-status-dialog.tsx` — the `label`-wrapping-an-`sr-only`-input affordance, the object-URL
-lifecycle and its revoke, the positional "primary" marker on the first tile. The kit has no server
-photos here, so the strip holds only staged files and needs none of `PhotoTile`'s uploaded/deleted
-states.
+allows up to ten with the first becoming primary. **They are optional here**, as in the SKU form;
+mobile's Kit form required one (`hasRequired`, `load_inventory_controller.dart`) until it was
+relaxed to match. Copy the strip from `update-status-dialog.tsx` — the
+`label`-wrapping-an-`sr-only`-input affordance, the object-URL lifecycle and its revoke, the
+positional "primary" marker on the first tile. The kit has no server photos here, so the strip holds
+only staged files and needs none of `PhotoTile`'s uploaded/deleted states.
 
 ### 3. Submit
 
@@ -440,7 +440,7 @@ Then the form:
   editing that field clears it.
 - A 400 on `manufacturer_kit_id` renders under Kit ID.
 - Success invalidates `stockItemKeys.all` and navigates to `/inventory/on-hand`.
-- Photos: zero blocks submit, eleven blocks submit.
+- Photos: zero saves, eleven blocks submit.
 
 And the screen:
 

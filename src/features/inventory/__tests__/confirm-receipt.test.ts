@@ -6,6 +6,7 @@ import {
   isReturnToManufacturer,
   originName,
   transferFacts,
+  transferPhotos,
 } from '../confirm-receipt';
 
 import { transferFixture } from './kit-fixture';
@@ -136,5 +137,70 @@ describe('confirmCopy', () => {
 
     expect(copy.detail).not.toContain('null');
     expect(copy.removesKit).toBe(false);
+  });
+});
+
+/**
+ * The dispatch photos.
+ *
+ * The rule worth pinning is that a missing photo is dropped rather than tiled:
+ * a rep hand-carrying a kit is never asked for a shipping label, so an empty
+ * second tile would be reporting an absence that is not one.
+ */
+describe('transferPhotos', () => {
+  const NOW = new Date('2026-04-22T12:00:00Z');
+
+  it('returns both photos, kit first, each labelled', () => {
+    const photos = transferPhotos(
+      transferFixture({
+        kit_photo: 'https://example.test/kit.png',
+        label_photo: 'https://example.test/label.png',
+      }),
+      NOW,
+    );
+
+    expect(photos.map((photo) => photo.label)).toEqual(['Kit Photo', 'Shipping Label']);
+    expect(photos.map((photo) => photo.url)).toEqual([
+      'https://example.test/kit.png',
+      'https://example.test/label.png',
+    ]);
+  });
+
+  it("captions both with the transfer's own timestamp", () => {
+    const photos = transferPhotos(
+      transferFixture({
+        kit_photo: 'https://example.test/kit.png',
+        label_photo: 'https://example.test/label.png',
+      }),
+      NOW,
+    );
+
+    // Local zone, and newer ICU separates the meridiem with U+202F.
+    expect(photos[0]?.takenAt).toMatch(/^Apr 2[12], \d{1,2}:\d{2}\s[AP]M$/);
+    expect(photos[1]?.takenAt).toBe(photos[0]?.takenAt);
+  });
+
+  it('drops the shipping label a rep transfer never had', () => {
+    const photos = transferPhotos(
+      transferFixture({ kit_photo: 'https://example.test/kit.png', label_photo: null }),
+      NOW,
+    );
+
+    expect(photos).toHaveLength(1);
+    expect(photos[0]?.label).toBe('Kit Photo');
+  });
+
+  it('is empty for a transfer carrying no photos at all', () => {
+    expect(transferPhotos(transferFixture(), NOW)).toEqual([]);
+  });
+
+  it('still tiles a photo when the server sent no timestamp', () => {
+    const photos = transferPhotos(
+      transferFixture({ kit_photo: 'https://example.test/kit.png', created_at: null }),
+      NOW,
+    );
+
+    expect(photos).toHaveLength(1);
+    expect(photos[0]?.takenAt).toBeNull();
   });
 });

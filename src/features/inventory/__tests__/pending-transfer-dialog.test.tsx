@@ -37,6 +37,11 @@ beforeAll(() => {
 const TRANSFER = '/api/v1/inventory-transfers/12/';
 const CONFIRM = '/api/v1/inventory-transfers/12/confirm-receipt/';
 
+const WITH_PHOTOS = transferFixture({
+  kit_photo: 'https://example.test/kit.png',
+  label_photo: 'https://example.test/label.png',
+});
+
 const RETURN = transferFixture({
   reason: 'return',
   to_assigned_to_facility: null,
@@ -163,5 +168,74 @@ describe('when confirming fails', () => {
     expect(await screen.findByText(/already completed elsewhere/i)).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The dispatch photos.
+ *
+ * The one behaviour worth real care is the nested dialog: this is the app's
+ * first, and a photo that took the transfer down with it — or left the layer
+ * underneath inert — would leave the user unable to confirm receipt without
+ * reopening the whole thing.
+ */
+describe('the photos', () => {
+  beforeEach(() => {
+    server.use(http.get(TRANSFER, () => HttpResponse.json(WITH_PHOTOS)));
+  });
+
+  it('shows both, named and dated', async () => {
+    renderDialog();
+
+    expect(await screen.findByText('Kit Photo')).toBeTruthy();
+    expect(screen.getByText('Shipping Label')).toBeTruthy();
+    // One caption per tile, both the transfer's own created_at.
+    expect(screen.getAllByText(/^Apr 2[12], \d{1,2}:\d{2}\s[AP]M$/)).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /^View Kit Photo, Apr/ })).toBeTruthy();
+  });
+
+  it('shows only the kit photo when the rep hand-carried it', async () => {
+    server.use(
+      http.get(TRANSFER, () =>
+        HttpResponse.json(transferFixture({ kit_photo: 'https://example.test/kit.png' })),
+      ),
+    );
+    renderDialog();
+
+    expect(await screen.findByText('Kit Photo')).toBeTruthy();
+    expect(screen.queryByText('Shipping Label')).toBeNull();
+  });
+
+  it('shows no tiles for a transfer that carried no photos', async () => {
+    server.use(http.get(TRANSFER, () => HttpResponse.json(transferFixture())));
+    renderDialog();
+
+    await screen.findByText("St Mary's Hospital");
+    expect(screen.queryByRole('button', { name: /^View /i })).toBeNull();
+  });
+
+  it('opens the one that was clicked, full size', async () => {
+    const { user } = renderDialog();
+    await screen.findByText('Shipping Label');
+
+    await user.click(screen.getByRole('button', { name: /^View Shipping Label/ }));
+
+    const dialog = await screen.findByRole('dialog', { name: /^Shipping Label, Apr/ });
+    expect(dialog.querySelector('img')?.getAttribute('src')).toBe('https://example.test/label.png');
+  });
+
+  it('closes the photo on Escape and leaves the transfer open and confirmable', async () => {
+    const { user, onClose } = renderDialog();
+    await screen.findByText('Kit Photo');
+
+    await user.click(screen.getByRole('button', { name: /^View Kit Photo/ }));
+    await screen.findByRole('dialog', { name: /^Kit Photo, Apr/ });
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /^Kit Photo/ })).toBeNull());
+    // The layer underneath is still there, and still working.
+    expect(onClose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /confirm receipt/i }));
+    await waitFor(() => expect(confirms).toBe(1));
   });
 });

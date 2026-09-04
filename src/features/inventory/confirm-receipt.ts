@@ -1,7 +1,8 @@
 import type { InventoryTransferDetail } from '@/api/generated/model';
 import { ReasonEnum } from '@/api/generated/model';
-import { formatCalendarDate } from '@/lib/dates';
+import { formatCalendarDate, formatLogDateTime } from '@/lib/dates';
 
+import type { PhotoTileData } from './components/photo-tile';
 import { EMPTY } from './kit-detail';
 import { transportLabel, REASON_OPTIONS } from './transfer';
 
@@ -73,6 +74,40 @@ export function transferFacts(transfer: InventoryTransferDetail): TransferFact[]
     { label: 'Transport', value: transportLabel(transfer.transport_method) || EMPTY },
     { label: 'Sent', value: formatCalendarDate(transfer.transfer_date) ?? EMPTY },
   ];
+}
+
+/**
+ * The transfer's photos, in the order the create form captures them.
+ *
+ * Absent photos are dropped rather than shown as empty tiles, which is the
+ * opposite of what a kit's gallery does with a null `url` — and deliberately.
+ * There, null means a photo exists and the server has not finished processing
+ * it; here it means no photo was ever taken, which is routine: only FedEx and
+ * UPS want the shipping label photographed (`requiresLabelPhoto`), and a rep
+ * hand-carrying the kit is never asked for one.
+ *
+ * Both captions read the transfer's own `created_at`, because a transfer has no
+ * per-photo timestamp. That instant is when the files were attached — the
+ * create saves the row to get a PK, then re-saves with the photos — so it is
+ * the true answer rather than a stand-in. `transfer_date` is not: it is a bare
+ * calendar date the user picks, and it is already shown as the "Sent" fact.
+ */
+export function transferPhotos(
+  transfer: InventoryTransferDetail,
+  now = new Date(),
+): PhotoTileData[] {
+  const takenAt = formatLogDateTime(transfer.created_at, now);
+  const photos: PhotoTileData[] = [
+    { id: 'kit', label: 'Kit Photo', url: transfer.kit_photo ?? null, takenAt, caption: null },
+    {
+      id: 'label',
+      label: 'Shipping Label',
+      url: transfer.label_photo ?? null,
+      takenAt,
+      caption: null,
+    },
+  ];
+  return photos.filter((photo) => photo.url !== null);
 }
 
 /**

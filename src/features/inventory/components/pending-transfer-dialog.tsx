@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowRightIcon, TruckIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { errorMessage, isNotFound } from '@/api/errors';
 import { confirmInventoryTransferReceipt } from '@/api/generated/endpoints/inventory/inventory';
@@ -15,10 +16,18 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { confirmCopy, destinationName, originName, transferFacts } from '../confirm-receipt';
+import {
+  confirmCopy,
+  destinationName,
+  originName,
+  transferFacts,
+  transferPhotos,
+} from '../confirm-receipt';
 import { stockItemKeys, transferKeys } from '../inventory.keys';
 import { EMPTY } from '../kit-detail';
 import { transferQueries } from '../transfer.queries';
+
+import { PhotoLightbox, PhotoTile, type PhotoTileData } from './photo-tile';
 
 /**
  * The transfer a kit is currently on, and the button that ends it.
@@ -32,6 +41,10 @@ import { transferQueries } from '../transfer.queries';
  * Cancelling a transfer is deliberately not here. The prototype's banner offers
  * both; this build offers the half that exists, and the banner's copy promises
  * only that.
+ *
+ * The photos are the part that makes "review" mean anything: confirming receipt
+ * is agreeing that something arrived, and the two shots taken at dispatch are
+ * the only evidence of what that something was.
  */
 export function PendingTransferDialog({
   transferId,
@@ -42,6 +55,7 @@ export function PendingTransferDialog({
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoTileData | null>(null);
 
   const transfer = useQuery(transferQueries.detail(transferId));
 
@@ -66,6 +80,7 @@ export function PendingTransferDialog({
   });
 
   const copy = transfer.data ? confirmCopy(transfer.data) : null;
+  const photos = transfer.data ? transferPhotos(transfer.data) : [];
 
   return (
     <Dialog
@@ -110,6 +125,18 @@ export function PendingTransferDialog({
                 </div>
               ))}
             </dl>
+
+            {photos.length > 0 ? (
+              // No section heading: each tile is already headed "Kit Photo" or
+              // "Shipping Label", which reads as one more row of the facts above.
+              <ul className="flex gap-2.5">
+                {photos.map((photo) => (
+                  <li key={photo.id}>
+                    <PhotoTile photo={photo} onOpen={() => setSelectedPhoto(photo)} />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
             {transfer.data.notes?.trim() ? (
               <div>
@@ -161,6 +188,16 @@ export function PendingTransferDialog({
             )}
           </Button>
         </DialogFooter>
+
+        {/*
+          Nested inside this dialog rather than replacing it: the user is here
+          to review a transfer, and looking at a photo should not lose the route,
+          the facts and the confirm button behind it. Radix stacks dismissable
+          layers, so Escape and an outside click reach the photo only.
+        */}
+        {selectedPhoto ? (
+          <PhotoLightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

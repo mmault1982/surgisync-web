@@ -10,6 +10,20 @@ import { ReceiveScreen } from '../components/receive-screen';
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
+// The SKU form reads the role to decide whether to offer Add product.
+vi.mock('@/auth/auth-context', () => ({
+  useAuth: () => ({
+    user: {
+      id: 1,
+      email: 'a@b.c',
+      name: 'A',
+      role: 'admin',
+      organization_name: null,
+      organizations: [],
+    },
+  }),
+}));
+
 beforeAll(() => {
   globalThis.ResizeObserver ??= class {
     observe() {}

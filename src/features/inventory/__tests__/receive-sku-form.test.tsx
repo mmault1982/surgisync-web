@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,19 @@ import { server } from '@/test/msw/server';
 import { ReceiveSkuForm } from '../components/receive-sku-form';
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
+
+/**
+ * The signed-in role, mutable per test.
+ *
+ * The form reads it to decide whether to offer Add product — `POST
+ * /api/v1/parts/` is admin-only, and Receive is a screen reps use.
+ */
+let role: string | null = 'admin';
+vi.mock('@/auth/auth-context', () => ({
+  useAuth: () => ({
+    user: { id: 1, email: 'a@b.c', name: 'A', role, organization_name: null, organizations: [] },
+  }),
+}));
 
 beforeAll(() => {
   globalThis.ResizeObserver ??= class {
@@ -91,10 +104,14 @@ const saveButton = () => screen.getByRole('button', { name: /Save SKU|Retry Phot
 
 let created: unknown[];
 let lookups: string[];
+/** Bodies sent to `POST /api/v1/parts/` by the Add product dialog. */
+let posted: unknown[];
 
 beforeEach(() => {
   created = [];
   lookups = [];
+  posted = [];
+  role = 'admin';
   server.use(
     http.get(MANUFACTURERS, () =>
       HttpResponse.json({
@@ -212,6 +229,157 @@ describe('ReceiveSkuForm', () => {
 
     expect(await screen.findByText('No catalog item has that number')).toBeInTheDocument();
     expect(created).toEqual([]);
+  });
+
+  describe('adding the missing product', () => {
+    /** No catalog part carries the number, and the POST creates one that does. */
+    function nothingFound(created: Partial<Record<string, unknown>> = {}) {
+      server.use(
+        http.get(PARTS, () => HttpResponse.json(page([]))),
+        http.post(PARTS, async ({ request }) => {
+          posted.push(await request.json());
+          return HttpResponse.json(
+            {
+              ...part({ id: 501, reference_number: 'NOPE-1', manufacturer: 5 }),
+              description: 'REAMER CANNULATED ACORN 5.5MM',
+              udi: null,
+              list_price: null,
+              ...created,
+            },
+            { status: 201 },
+          );
+        }),
+      );
+    }
+
+    it('offers to create the product when nothing carries the number', async () => {
+      nothingFound();
+      const { user } = renderForm();
+      await fillForm(user, 'NOPE-1');
+
+      expect(await screen.findByText('No catalog item has that number')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add product' })).toBeInTheDocument();
+    });
+
+    it('does not offer it when the number belongs to another manufacturer', async () => {
+      // The part exists. A second one under a different manufacturer would be
+      // a duplicate, not a fix — which is why the form branches on the miss
+      // code rather than on the message.
+      server.use(
+        http.get(PARTS, () =>
+          HttpResponse.json(page([part({ manufacturer: 9, manufacturer_name: 'Beta Devices' })])),
+        ),
+      );
+      const { user } = renderForm();
+      await fillForm(user);
+
+      expect(await screen.findByText('This item belongs to Beta Devices')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+    });
+
+    it('does not offer it to a rep', async () => {
+      // `POST /api/v1/parts/` is admin-only. Offering it here would have a rep
+      // fill seven fields to be told 403.
+      role = 'representative';
+      nothingFound();
+      const { user } = renderForm();
+      await fillForm(user, 'NOPE-1');
+
+      expect(await screen.findByText('No catalog item has that number')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add product' })).not.toBeInTheDocument();
+    });
+
+    it('clears the warning and fills the description once the product is created', async () => {
+      nothingFound();
+      const { user } = renderForm();
+      await fillForm(user, 'NOPE-1');
+      await user.click(await screen.findByRole('button', { name: 'Add product' }));
+
+      // Seeded from the receive flow, so only the description is left to type.
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() =>
+        expect(within(dialog).getByLabelText(/Manufacturer/)).toHaveTextContent('Acme Ortho'),
+      );
+      expect(within(dialog).getByLabelText(/Reference #/)).toHaveValue('NOPE-1');
+      expect(within(dialog).getByLabelText(/Kind/)).toHaveTextContent('Component');
+
+      await user.type(
+        within(dialog).getByLabelText(/Description/),
+        'REAMER CANNULATED ACORN 5.5MM',
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'Add product' }));
+
+      await waitFor(() => expect(posted).toHaveLength(1));
+      expect(posted[0]).toMatchObject({
+        manufacturer: 5,
+        kind: 'component',
+        reference_number: 'NOPE-1',
+        description: 'REAMER CANNULATED ACORN 5.5MM',
+      });
+
+      // Back where they were: warning gone, description populated from the
+      // part the create answered with rather than a second lookup.
+      await waitFor(() =>
+        expect(screen.queryByText('No catalog item has that number')).not.toBeInTheDocument(),
+      );
+      expect(await screen.findByText('REAMER CANNULATED ACORN 5.5MM')).toBeInTheDocument();
+
+      // Creating the product must not also save the receive.
+      expect(created).toEqual([]);
+    });
+
+    it('does not submit the receive when the product is added', async () => {
+      // A React portal bubbles submit through the *React* tree even though
+      // `DialogContent` moves the dialog out of the DOM — so a nested dialog
+      // form used to submit this one too, flipping every untouched required
+      // field red for a user who had only asked to add a product.
+      nothingFound();
+      const { user } = renderForm();
+
+      // Deliberately only the manufacturer and the number: rep and location
+      // are exactly the fields that would light up.
+      await choose(user, /Manufacturer/, /Acme Ortho/);
+      await user.type(screen.getByLabelText(/Catalog #/), 'NOPE-1');
+      await user.tab();
+      await user.click(await screen.findByRole('button', { name: 'Add product' }));
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() =>
+        expect(within(dialog).getByLabelText(/Manufacturer/)).toHaveTextContent('Acme Ortho'),
+      );
+      await user.type(
+        within(dialog).getByLabelText(/Description/),
+        'REAMER CANNULATED ACORN 5.5MM',
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'Add product' }));
+
+      await waitFor(() => expect(posted).toHaveLength(1));
+      expect(screen.queryByText('Select who is accountable')).not.toBeInTheDocument();
+      expect(screen.queryByText('Select where it is stored')).not.toBeInTheDocument();
+    });
+
+    it('files the receive against the part it just created', async () => {
+      nothingFound();
+      const { user } = renderForm();
+      await fillForm(user, 'NOPE-1');
+      await user.click(await screen.findByRole('button', { name: 'Add product' }));
+
+      const dialog = await screen.findByRole('dialog');
+      await waitFor(() =>
+        expect(within(dialog).getByLabelText(/Manufacturer/)).toHaveTextContent('Acme Ortho'),
+      );
+      await user.type(
+        within(dialog).getByLabelText(/Description/),
+        'REAMER CANNULATED ACORN 5.5MM',
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'Add product' }));
+      await screen.findByText('REAMER CANNULATED ACORN 5.5MM');
+
+      await user.click(saveButton());
+
+      await waitFor(() => expect(created).toHaveLength(1));
+      expect(created[0]).toMatchObject({ part: 501 });
+    });
   });
 
   it('drops the resolved item as soon as the number is edited', async () => {

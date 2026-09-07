@@ -1,4 +1,4 @@
-import { asFieldErrors } from '@/api/errors';
+import { asFieldErrors, errorMessage } from '@/api/errors';
 import { KindEnum } from '@/api/generated/model';
 import type { PartDetail, PartWriteRequest, PatchedPartWriteRequest } from '@/api/generated/model';
 
@@ -223,6 +223,22 @@ export function productFieldErrors(error: unknown): ProductErrors {
 
 /** The field names above, for the form-level fallback to skip. */
 export const PRODUCT_FIELD_KEYS = Object.keys(FIELD_SLOTS);
+
+/**
+ * What the server said that no field could show.
+ *
+ * The complement of `productFieldErrors`: anything keyed on a field this form
+ * renders has a slot already, so the form-level alert reports only what does
+ * not — `non_field_errors` being the one that actually arrives, for a caller
+ * with no organization to file the part under.
+ */
+export function productSaveErrorMessage(error: unknown): string {
+  for (const [field, messages] of Object.entries(asFieldErrors(error) ?? {})) {
+    const first = messages[0];
+    if (!PRODUCT_FIELD_KEYS.includes(field) && first) return first;
+  }
+  return errorMessage(error);
+}
 
 /**
  * The price as money, or an em dash where there is none.

@@ -34,42 +34,54 @@ function part(overrides: Partial<PartList> = {}): PartList {
 
 describe('resolveCatalogNumber', () => {
   it('reports a number no catalog item carries', () => {
-    const { part: resolved, error } = resolveCatalogNumber([], 5);
+    const { part: resolved, error, miss } = resolveCatalogNumber([], 5);
     expect(resolved).toBeNull();
     expect(error).toBe('No catalog item has that number');
+    expect(miss).toBe('not-found');
   });
 
   it('picks the part belonging to the chosen manufacturer', () => {
     // The number is unique per manufacturer, not across the catalog, so more
     // than one row is a legitimate answer rather than a server bug.
     const results = [part({ id: 1, manufacturer: 9 }), part({ id: 2, manufacturer: 5 })];
-    const { part: resolved, error } = resolveCatalogNumber(results, 5);
+    const { part: resolved, error, miss } = resolveCatalogNumber(results, 5);
     expect(resolved?.id).toBe(2);
     expect(error).toBeNull();
+    expect(miss).toBeNull();
   });
 
   it('blocks when the number belongs to a different manufacturer, and names it', () => {
     // Blocking rather than a warning: the server derives the stock item's
     // manufacturer from its part, so a mismatch would file the stock under one
     // nobody picked and nothing would reject it.
-    const { part: resolved, error } = resolveCatalogNumber(
-      [part({ manufacturer: 9, manufacturer_name: 'Beta Devices' })],
-      5,
-    );
+    const {
+      part: resolved,
+      error,
+      miss,
+    } = resolveCatalogNumber([part({ manufacturer: 9, manufacturer_name: 'Beta Devices' })], 5);
     expect(resolved).toBeNull();
     expect(error).toBe('This item belongs to Beta Devices');
+    // Distinct from `not-found`, and the distinction is load-bearing: the
+    // Receive form offers to create the missing product on one and not the
+    // other. This part exists — a second one would be a duplicate.
+    expect(miss).toBe('wrong-manufacturer');
   });
 
   it('falls back to a generic mismatch when the manufacturer has no name', () => {
-    const { error } = resolveCatalogNumber([part({ manufacturer: 9, manufacturer_name: '' })], 5);
+    const { error, miss } = resolveCatalogNumber(
+      [part({ manufacturer: 9, manufacturer_name: '' })],
+      5,
+    );
     expect(error).toBe('This item belongs to a different manufacturer');
+    expect(miss).toBe('wrong-manufacturer');
   });
 
   it('holds the item when no manufacturer has been chosen yet', () => {
     // Accusing the user of a mismatch they have not had the chance to make
     // would be wrong; submit re-checks once a manufacturer exists.
-    const { part: resolved, error } = resolveCatalogNumber([part()], null);
+    const { part: resolved, error, miss } = resolveCatalogNumber([part()], null);
     expect(resolved?.id).toBe(314);
     expect(error).toBeNull();
+    expect(miss).toBeNull();
   });
 });

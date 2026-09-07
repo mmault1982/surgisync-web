@@ -37,14 +37,28 @@ export function lookupByReference(referenceNumber: string, signal?: AbortSignal)
 }
 
 /**
+ * Why a catalog number produced no part.
+ *
+ * A code rather than the message, because callers act on these differently and
+ * `error` is display text that may change. The Receive form offers to create
+ * the missing product on `not-found` and must not on `wrong-manufacturer` —
+ * there the part exists, and creating a second one under another manufacturer
+ * would be a duplicate rather than a fix.
+ */
+export type CatalogMiss = 'not-found' | 'wrong-manufacturer';
+
+/**
  * What a resolved catalog number produced.
  *
  * `part` and `error` are mutually exclusive, and both may be absent — that is
- * the state before anything has been looked up.
+ * the state before anything has been looked up. `miss` is set exactly when
+ * `error` is.
  */
 export interface CatalogResolution {
   part: PartList | null;
   error: string | null;
+  /** Which miss this was, for callers that act on one of them. */
+  miss: CatalogMiss | null;
 }
 
 /**
@@ -63,19 +77,22 @@ export function resolveCatalogNumber(
   results: readonly PartList[],
   manufacturerId: number | null,
 ): CatalogResolution {
-  if (results.length === 0) return { part: null, error: 'No catalog item has that number' };
+  if (results.length === 0) {
+    return { part: null, error: 'No catalog item has that number', miss: 'not-found' };
+  }
 
   const match = results.find((part) => part.manufacturer === manufacturerId);
-  if (match) return { part: match, error: null };
+  if (match) return { part: match, error: null, miss: null };
 
   // No manufacturer chosen yet: hold the item rather than accusing the user of
   // a mismatch they have not had the chance to make. Submit re-checks.
-  if (manufacturerId === null) return { part: results[0] ?? null, error: null };
+  if (manufacturerId === null) return { part: results[0] ?? null, error: null, miss: null };
 
   const name = results[0]?.manufacturer_name;
   return {
     part: null,
     error: name ? `This item belongs to ${name}` : 'This item belongs to a different manufacturer',
+    miss: 'wrong-manufacturer',
   };
 }
 

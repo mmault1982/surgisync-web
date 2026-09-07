@@ -16,6 +16,16 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # `create-pull-request` pushes a branch and opens a PR as
+    # `github-actions[bot]`. Without these the push is a bare 403 — which is
+    # what every run from 2026-08-10 on actually failed with, long before
+    # anything was wrong with the contract. The repository must also have
+    # Settings → Actions → General → "Allow GitHub Actions to create and
+    # approve pull requests" enabled; `pull-requests: write` alone is not
+    # enough.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,11 +36,37 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Pull the published contract
+        id: pull
         env:
           SCHEMA_URL: ${{ inputs.schema_url || 'https://www.surgisoftsolutions.com/schema/v1/' }}
-        run: pnpm api:pull && pnpm api:gen
+        run: |
+          pnpm api:pull && pnpm api:gen
+
+          # `SOURCE.md` cannot be the drift signal. `pull-schema.sh` rewrites it
+          # on every pull, and all three of its fields differ here by
+          # construction: `Pulled` is the current time, `Source` is this URL
+          # rather than the localhost one a developer pulls from, and
+          # `data_version` is the backend's *data* hash — not a contract hash,
+          # so it differs between two deployments serving an identical schema.
+          #
+          # Left in, it makes this job report drift every Monday for ever. The
+          # contract and the client generated from it are the real signal.
+          #
+          # `git status --porcelain` rather than `git diff`, because
+          # `orval.config.ts` sets `clean: true`: a removed operation deletes a
+          # file and a new one is untracked, and `git diff` sees neither.
+          if [ -z "$(git status --porcelain -- schema/openapi.yaml src/api/generated)" ]; then
+            echo 'Contract unchanged — discarding the SOURCE.md stamp.'
+            git checkout -- schema/SOURCE.md
+            echo 'drifted=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Contract has drifted:'
+            git status --porcelain -- schema/openapi.yaml src/api/generated
+            echo 'drifted=true' >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: peter-evans/create-pull-request@v7
+        if: steps.pull.outputs.drifted == 'true'
         with:
           branch: chore/schema-drift
           title: 'Backend contract has changed'

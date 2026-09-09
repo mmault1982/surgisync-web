@@ -6,4 +6,4 @@
  * OpenAPI spec version: v1
  */
 
-export type ImportManufacturers400 = {[key: string]: string[]};
+export type PartialUpdateCompany400 = {[key: string]: string[]};

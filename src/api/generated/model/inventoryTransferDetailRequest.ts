@@ -37,6 +37,11 @@ export interface InventoryTransferDetailRequest {
   to_assigned_to_representative?: number | null;
   /** @nullable */
   to_assigned_to_facility?: number | null;
+  /**
+     * For a return: which manufacturer the kits go back to. Defaulted from the kits' parts when unambiguous.
+     * @nullable
+     */
+  to_assigned_to_manufacturer?: number | null;
   /** @nullable */
   kit_photo?: Blob | null;
   /** @nullable */

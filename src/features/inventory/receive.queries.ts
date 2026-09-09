@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { listManufacturers, listParts } from '@/api/generated/endpoints/inventory/inventory';
+import { listManufacturersCatalog, listParts } from '@/api/generated/endpoints/inventory/inventory';
 import { ListPartsKind } from '@/api/generated/model';
 
 import { catalogKeys } from './inventory.keys';
@@ -27,10 +27,12 @@ export const catalogQueries = {
    * already hold" — the wrong set for a screen whose entire purpose is taking
    * delivery of stock you do not have yet.
    *
-   * `has_items` narrows it to manufacturers with an active catalog, which is
-   * the best this endpoint can do. It is still the **global** catalog rather
-   * than the organization's, so a manufacturer whose kits this org cannot
-   * receive remains selectable — see `partsQuery`'s note.
+   * `has_items` narrows it to manufacturers with an active catalog. It is now
+   * also scoped to the organization: the move onto
+   * `/api/v1/directory/manufacturers/` retired the caveat this comment used to
+   * carry, that the global list left a manufacturer whose kits the org cannot
+   * receive selectable anyway. `has_items` still asks about a catalog
+   * *somewhere*, so the two questions have not collapsed into one.
    *
    * **A manufacturer added on the Manufacturers screen does not appear here**,
    * and that is the filter working rather than a caching bug: it has no
@@ -45,12 +47,11 @@ export const catalogQueries = {
   manufacturers: () =>
     queryOptions({
       queryKey: catalogKeys.manufacturers(),
-      queryFn: ({ signal }) => listManufacturers({ has_items: true }, { signal }),
+      queryFn: ({ signal }) => listManufacturersCatalog({ has_items: true }, { signal }),
       staleTime: CATALOG_STALE_TIME,
-      // The response also carries a deprecated `data` duplicating `results`,
-      // alive only until the shipped Flutter build that reads it is replaced.
-      // Selecting here means exactly one line in this app knows that, and it
-      // is the line that gets deleted when the key goes.
+      // Unwrapped here so the picker gets a list rather than a pagination
+      // envelope. The deprecated `data` key duplicating `results` stayed behind
+      // on the legacy `/api/v1/manufacturers/` spelling; nothing here reads it.
       select: (page) => page.results,
     }),
 
@@ -61,10 +62,12 @@ export const catalogQueries = {
    * manufacturer is chosen, and asking for every kit in the catalog to fill a
    * disabled control would be a large request for a list nobody can see.
    *
-   * **An empty result is a real answer, not an error.** `/parts/` is scoped to
-   * the organization's catalog while `/manufacturers/` is global, so a
-   * perfectly valid manufacturer can have no kits this org may receive. The
-   * form says so rather than showing an enabled, empty select.
+   * **An empty result is a real answer, not an error.** Both this and the
+   * manufacturer list are scoped to the organization now, but they answer
+   * different questions — `has_items` asks whether a manufacturer has an active
+   * catalog at all, not whether it has *kits* — so a perfectly valid
+   * manufacturer can still have none to receive. The form says so rather than
+   * showing an enabled, empty select.
    */
   parts: (manufacturerId: number | null) =>
     queryOptions({

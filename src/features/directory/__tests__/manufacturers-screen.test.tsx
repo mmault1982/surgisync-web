@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Manufacturer } from '@/api/generated/model';
 import { server } from '@/test/msw/server';
+import { renderWithRouter } from '@/test/router';
 
 import { ManufacturersScreen } from '../components/manufacturers-screen';
 import { MANUFACTURER_DEFAULTS, type ManufacturerSearch } from '../manufacturers.search';
@@ -24,7 +25,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
-const MANUFACTURERS = '/api/v1/manufacturers/';
+const MANUFACTURERS = '/api/v1/directory/manufacturers/';
 
 function manufacturer(overrides: Partial<Manufacturer> = {}): Manufacturer {
   // Owned by default, so the write-control tests use rows the server would
@@ -58,37 +59,33 @@ function renderScreen(search: Partial<ManufacturerSearch> = {}) {
   });
   const onSearchChange = vi.fn();
   const onPageChange = vi.fn();
-  render(
+  const onAdd = vi.fn();
+  const onOpen = vi.fn();
+  const onEdit = vi.fn();
+  // `renderWithRouter`, not a bare render: the Name cell is a real `<Link>`
+  // now, and `<Link>` reads the router from context and throws without one.
+  renderWithRouter(
     <QueryClientProvider client={client}>
       <ManufacturersScreen
         search={{ ...MANUFACTURER_DEFAULTS, ...search }}
         onSearchChange={onSearchChange}
         onPageChange={onPageChange}
+        onAdd={onAdd}
+        onOpen={onOpen}
+        onEdit={onEdit}
       />
     </QueryClientProvider>,
   );
-  return { user: userEvent.setup(), onSearchChange, onPageChange };
+  return { user: userEvent.setup(), onSearchChange, onPageChange, onAdd, onOpen, onEdit };
 }
 
-let created: unknown[];
-let patched: { id: string; body: unknown }[];
 let deleted: string[];
 
 beforeEach(() => {
   role = 'admin';
-  created = [];
-  patched = [];
   deleted = [];
   server.use(
     http.get(MANUFACTURERS, () => HttpResponse.json(page([manufacturer()]))),
-    http.post(MANUFACTURERS, async ({ request }) => {
-      created.push(await request.json());
-      return HttpResponse.json(manufacturer({ id: 99, name: 'Beta Devices' }), { status: 201 });
-    }),
-    http.patch(`${MANUFACTURERS}:id/`, async ({ request, params }) => {
-      patched.push({ id: String(params.id), body: await request.json() });
-      return HttpResponse.json(manufacturer({ name: 'Renamed' }));
-    }),
     http.delete(`${MANUFACTURERS}:id/`, ({ params }) => {
       deleted.push(String(params.id));
       return HttpResponse.json(manufacturer());
@@ -165,80 +162,73 @@ describe('what the screen promises', () => {
   });
 });
 
-describe('adding one', () => {
-  it('posts just the trimmed name', async () => {
-    const { user } = renderScreen();
+/** The one cell in the row that carries nothing interactive of its own. */
+function barcodeCell(): HTMLElement {
+  return within(screen.getByRole('row', { name: /Acme Ortho/ })).getAllByRole('cell')[1]!;
+}
+
+describe('opening one', () => {
+  // Add and Edit are pages now, so this screen's job is to say *which* — the
+  // navigation itself lives in the route file, as it does for search and paging.
+  it('hands Add to the route', async () => {
+    const { user, onAdd } = renderScreen();
     await screen.findByText('Acme Ortho');
 
     await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
-    await user.type(await screen.findByLabelText(/Name/), '  Beta Devices  ');
-    await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
 
-    await waitFor(() => expect(created).toEqual([{ name: 'Beta Devices' }]));
+    expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
-  it('sends nothing when the name is blank', async () => {
-    const { user } = renderScreen();
+  it('hands the pencil to the route with the row id', async () => {
+    const { user, onEdit } = renderScreen();
     await screen.findByText('Acme Ortho');
 
-    await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
-    await screen.findByLabelText(/Name/);
-    await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
+    await user.click(screen.getByRole('button', { name: 'Edit Acme Ortho' }));
 
-    expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
-    expect(created).toEqual([]);
+    expect(onEdit).toHaveBeenCalledWith(7);
   });
 
-  it('shows a name clash under the field, not as a form-level alert', async () => {
-    server.use(
-      http.post(MANUFACTURERS, () =>
-        HttpResponse.json(
-          { name: ['Your organization already has a manufacturer with this name.'] },
-          { status: 400 },
-        ),
-      ),
+  it('opens the record from a row click', async () => {
+    const { user, onOpen } = renderScreen();
+    await screen.findByText('Acme Ortho');
+
+    // The Barcode cell, not the Name one: the anchor there owns its own click,
+    // which is exactly what the row handler has to keep out of the way of.
+    await user.click(barcodeCell());
+
+    expect(onOpen).toHaveBeenCalledWith(7);
+  });
+
+  it('leaves the row click to the anchor when a modifier is held', async () => {
+    const { user, onOpen } = renderScreen();
+    await screen.findByText('Acme Ortho');
+
+    await user.keyboard('{Meta>}');
+    await user.click(barcodeCell());
+    await user.keyboard('{/Meta}');
+
+    // Navigating programmatically would swallow the modifier and open the
+    // record in this tab, which is the one thing the user did not ask for.
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('does not open the record behind the Remove dialog', async () => {
+    const { user, onOpen } = renderScreen();
+    await screen.findByText('Acme Ortho');
+
+    await user.click(screen.getByRole('button', { name: 'Remove Acme Ortho' }));
+
+    await screen.findByRole('alertdialog');
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('links the name to the record', async () => {
+    renderScreen();
+
+    expect(await screen.findByRole('link', { name: 'Acme Ortho' })).toHaveAttribute(
+      'href',
+      '/directory/manufacturers/7',
     );
-    const { user } = renderScreen();
-    await screen.findByText('Acme Ortho');
-
-    await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
-    await user.type(await screen.findByLabelText(/Name/), 'Acme Ortho');
-    await user.click(screen.getByRole('button', { name: 'Add manufacturer' }));
-
-    expect(
-      await screen.findByText('Your organization already has a manufacturer with this name.'),
-    ).toBeInTheDocument();
-    // Still open, so the user can fix the value that failed.
-    expect(screen.getByLabelText(/Name/)).toBeInTheDocument();
-  });
-});
-
-describe('renaming one', () => {
-  it('patches the row', async () => {
-    const { user } = renderScreen();
-    await screen.findByText('Acme Ortho');
-
-    await user.click(screen.getByRole('button', { name: 'Rename Acme Ortho' }));
-    const field = await screen.findByLabelText(/Name/);
-    await user.clear(field);
-    await user.type(field, 'Acme Orthopaedics');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() =>
-      expect(patched).toEqual([{ id: '7', body: { name: 'Acme Orthopaedics' } }]),
-    );
-  });
-
-  it('sends nothing when the name has not changed', async () => {
-    const { user } = renderScreen();
-    await screen.findByText('Acme Ortho');
-
-    await user.click(screen.getByRole('button', { name: 'Rename Acme Ortho' }));
-    await screen.findByLabelText(/Name/);
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() => expect(screen.queryByLabelText(/Name/)).not.toBeInTheDocument());
-    expect(patched).toEqual([]);
   });
 });
 
@@ -304,7 +294,7 @@ describe('who may write', () => {
     await screen.findByText('Acme Ortho');
 
     expect(screen.queryByRole('button', { name: 'Add manufacturer' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Rename Acme Ortho' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit Acme Ortho' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Remove Acme Ortho' })).not.toBeInTheDocument();
     // The whole column goes, rather than a header over empty cells.
     expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument();
@@ -339,7 +329,7 @@ describe('shared catalog rows', () => {
     renderScreen();
     await screen.findByText('Shared Vendor');
 
-    expect(screen.queryByRole('button', { name: 'Rename Shared Vendor' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit Shared Vendor' })).not.toBeInTheDocument();
     expect(screen.getByText('Shared')).toBeInTheDocument();
   });
 });

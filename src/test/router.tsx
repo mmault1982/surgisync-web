@@ -31,6 +31,10 @@ import type { ReactNode } from 'react';
  * carries the right href.
  */
 const LINKED_PATHS = [
+  '/directory/manufacturers',
+  '/directory/manufacturers/new',
+  '/directory/manufacturers/$manufacturerId',
+  '/directory/manufacturers/$manufacturerId/edit',
   '/inventory/product-catalog',
   '/inventory/product-catalog/new',
   '/inventory/product-catalog/$partId',

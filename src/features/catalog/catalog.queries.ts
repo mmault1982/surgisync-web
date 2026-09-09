@@ -1,7 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 
 import {
-  listManufacturers,
+  listManufacturersCatalog,
   listPartComponents,
   listPartManufacturerFacets,
   listParts,
@@ -117,18 +117,19 @@ export const catalogFacetQueries = {
  * - this one omits the filter, so every manufacturer the organization owns is
  *   selectable.
  *
- * `/api/v1/manufacturers/` is org-scoped server-side, so no extra narrowing is
- * needed here. One page holds the lot — the endpoint's page is 500 — so
- * nothing pages.
+ * `/api/v1/directory/manufacturers/` is org-scoped server-side, so no extra
+ * narrowing is needed here. One page holds the lot — the endpoint's page is
+ * 500 — so nothing pages.
  */
 export function partFormManufacturersQuery() {
   return queryOptions({
     queryKey: partFormKeys.manufacturers(),
-    queryFn: ({ signal }) => listManufacturers(undefined, { signal }),
+    queryFn: ({ signal }) => listManufacturersCatalog(undefined, { signal }),
     staleTime: FACET_STALE_TIME,
-    // The response also carries a deprecated `data` duplicating `results`,
-    // alive only until the shipped Flutter build that reads it is replaced.
-    // Selecting here keeps that fact in the two lines that get deleted with it.
+    // Unwrapped here so callers get a list rather than a pagination envelope.
+    // The legacy `/api/v1/manufacturers/` spelling also carried a deprecated
+    // `data` key duplicating `results`; that stayed behind with it, under its
+    // own schema component, and this app no longer reads either.
     select: (page) => page.results,
   });
 }

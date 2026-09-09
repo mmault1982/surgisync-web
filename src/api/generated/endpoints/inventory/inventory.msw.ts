@@ -18,8 +18,10 @@ import type {
 } from 'msw';
 
 import {
+  AddressKindEnum,
   HistoryTypeEnum,
   KindEnum,
+  LabelSourceEnum,
   OutcomeEnum,
   OwnershipTypeEnum,
   ReasonEnum,
@@ -27,12 +29,14 @@ import {
   TransportMethodEnum
 } from '../../model';
 import type {
+  Address,
+  Company,
   FacetResponse,
   ImportReport,
   InventoryKitDetail,
   InventoryKitPhoto,
   InventoryTransferDetail,
-  Manufacturer,
+  ManufacturerDetail,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
@@ -49,6 +53,26 @@ import type {
 } from '../../model';
 
 
+export const getPartialUpdateCompanyResponseMock = (overrideResponse: Partial<Extract<Company, object>> = {}): Company => ({id: faker.number.int(), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), fax: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), billing_contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), billing_contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), billing_contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), addresses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+
+export const getCreateCompanyAddressResponseMock = (overrideResponse: Partial<Extract<Address, object>> = {}): Address => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), ...overrideResponse})
+
+export const getPartialUpdateCompanyAddressResponseMock = (overrideResponse: Partial<Extract<Address, object>> = {}): Address => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), ...overrideResponse})
+
+export const getListManufacturersCatalogResponseMock = (overrideResponse: Partial<Extract<PaginatedManufacturerList, object>> = {}): PaginatedManufacturerList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean()})), ...overrideResponse})
+
+export const getCreateManufacturerCatalogResponseMock = (overrideResponse: Partial<Extract<ManufacturerDetail, object>> = {}): ManufacturerDetail => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), company: {...{id: faker.number.int(), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), fax: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), billing_contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), billing_contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), billing_contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), addresses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}))},}, ...overrideResponse})
+
+export const getRetrieveManufacturerDetailResponseMock = (overrideResponse: Partial<Extract<ManufacturerDetail, object>> = {}): ManufacturerDetail => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), company: {...{id: faker.number.int(), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), fax: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), billing_contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), billing_contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), billing_contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), addresses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}))},}, ...overrideResponse})
+
+export const getPartialUpdateManufacturerCatalogResponseMock = (overrideResponse: Partial<Extract<ManufacturerDetail, object>> = {}): ManufacturerDetail => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), company: {...{id: faker.number.int(), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), fax: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), billing_contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), billing_contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), billing_contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), addresses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}))},}, ...overrideResponse})
+
+export const getDeleteManufacturerCatalogResponseMock = (overrideResponse: Partial<Extract<ManufacturerDetail, object>> = {}): ManufacturerDetail => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), company: {...{id: faker.number.int(), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), fax: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_title: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), billing_contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), billing_contact_email: faker.helpers.arrayElement([faker.internet.email(), undefined]), billing_contact_phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), addresses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), kind: faker.helpers.arrayElement([faker.helpers.arrayElement(Object.values(AddressKindEnum)), undefined]), is_primary: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), label: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), address_line_1: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), address_line_2: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 200}}), undefined]), city: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), state: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 50}}), undefined]), zip_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), country: faker.helpers.arrayElement([faker.string.alpha({length: {min: 2, max: 2}}), undefined]), contact_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 100}}), undefined]), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), instructions: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])}))},}, ...overrideResponse})
+
+export const getImportManufacturersCatalogResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
+
+export const getManufacturerCatalogImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
+
 export const getListSurgeonsCatalogResponseMock = (overrideResponse: Partial<Extract<PaginatedSurgeonCatalogList, object>> = {}): PaginatedSurgeonCatalogList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean()})), ...overrideResponse})
 
 export const getCreateSurgeonCatalogResponseMock = (overrideResponse: Partial<Extract<SurgeonCatalog, object>> = {}): SurgeonCatalog => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), npi_number: faker.helpers.arrayElement([faker.helpers.fromRegExp("^(\\d{10})?$"), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
@@ -63,27 +87,13 @@ export const getImportSurgeonsResponseMock = (overrideResponse: Partial<Extract<
 
 export const getSurgeonImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
-export const getCreateInventoryTransferResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+export const getCreateInventoryTransferResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_manufacturer: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_manufacturer_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_source: faker.helpers.arrayElement(Object.values(LabelSourceEnum)), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
-export const getApiV1InventoryTransfersRetrieveResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+export const getApiV1InventoryTransfersRetrieveResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_manufacturer: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_manufacturer_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_source: faker.helpers.arrayElement(Object.values(LabelSourceEnum)), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
-export const getConfirmInventoryTransferReceiptResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+export const getConfirmInventoryTransferReceiptResponseMock = (overrideResponse: Partial<Extract<InventoryTransferDetail, object>> = {}): InventoryTransferDetail => ({id: faker.number.int(), stock_items: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), inventory_kits: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.number.int())), undefined]), transport_method: faker.helpers.arrayElement(Object.values(TransportMethodEnum)), reason: faker.helpers.arrayElement(Object.values(ReasonEnum)), transfer_date: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 10), null]), undefined]), notes: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), undefined]), from_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), from_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), from_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_parent_company: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_parent_company_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_representative: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_representative_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_facility: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_facility_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_assigned_to_manufacturer: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.number.int(), null]), undefined]), to_manufacturer_name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), kit_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_photo: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), label_source: faker.helpers.arrayElement(Object.values(LabelSourceEnum)), is_draft: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]), created_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
 export const getListInventoryTransferTargetsResponseMock = (overrideResponse: Partial<Extract<TransferTargetResponse, object>> = {}): TransferTargetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({type: faker.helpers.arrayElement(Object.values(TransferTargetTypeEnum)), id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
-
-export const getListManufacturersResponseMock = (overrideResponse: Partial<Extract<PaginatedManufacturerList, object>> = {}): PaginatedManufacturerList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean()})), data: faker.helpers.arrayElement([Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean()})), undefined]), ...overrideResponse})
-
-export const getCreateManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
-
-export const getRetrieveManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
-
-export const getPartialUpdateManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
-
-export const getDeleteManufacturerResponseMock = (overrideResponse: Partial<Extract<Manufacturer, object>> = {}): Manufacturer => ({id: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 100}}), barcode: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), is_owned: faker.datatype.boolean(), ...overrideResponse})
-
-export const getImportManufacturersResponseMock = (overrideResponse: Partial<Extract<ImportReport, object>> = {}): ImportReport => ({dry_run: faker.datatype.boolean(), total_rows: faker.number.int(), created: faker.number.int(), updated: faker.number.int(), skipped: faker.number.int(), failed: faker.number.int(), rows: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row: faker.number.int(), name: faker.string.alpha({length: {min: 10, max: 20}}), outcome: faker.helpers.arrayElement(Object.values(OutcomeEnum)), code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined]), detail: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), undefined])})), ...overrideResponse})
-
-export const getManufacturerImportTemplateResponseMock = (): ArrayBuffer => (new ArrayBuffer(faker.number.int({ min: 1, max: 64 })))
 
 export const getListPartsResponseMock = (overrideResponse: Partial<Extract<PaginatedPartListList, object>> = {}): PaginatedPartListList => ({total_data: faker.number.int(), next: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), previous: faker.helpers.arrayElement([faker.helpers.arrayElement([faker.internet.url(), null]), undefined]), current_page: faker.number.int(), total_pages: faker.number.int(), results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.number.int(), uuid: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.string.alpha({length: {min: 10, max: 20}}), kind: faker.helpers.arrayElement(Object.values(KindEnum)), reference_number: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), is_serialized: faker.datatype.boolean(), manufacturer: faker.number.int(), manufacturer_name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
@@ -147,6 +157,140 @@ export const getListStockItemManufacturerFacetsResponseMock = (overrideResponse:
 
 export const getListStockItemPhysicalLocationFacetsResponseMock = (overrideResponse: Partial<Extract<StringFacetResponse, object>> = {}): StringFacetResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
 
+
+export const getPartialUpdateCompanyMockHandler = (overrideResponse?: Company | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Company> | Company), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/directory/companies/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdateCompanyResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateCompanyAddressMockHandler = (overrideResponse?: Address | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Address> | Address), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/directory/companies/:id/addresses/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateCompanyAddressResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getPartialUpdateCompanyAddressMockHandler = (overrideResponse?: Address | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Address> | Address), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/directory/companies/:id/addresses/:addressPk/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdateCompanyAddressResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeleteCompanyAddressMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/directory/companies/:id/addresses/:addressPk/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getListManufacturersCatalogMockHandler = (overrideResponse?: PaginatedManufacturerList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedManufacturerList> | PaginatedManufacturerList), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListManufacturersCatalogResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateManufacturerCatalogMockHandler = (overrideResponse?: ManufacturerDetail | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ManufacturerDetail> | ManufacturerDetail), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/directory/manufacturers/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateManufacturerCatalogResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getRetrieveManufacturerDetailMockHandler = (overrideResponse?: ManufacturerDetail | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ManufacturerDetail> | ManufacturerDetail), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRetrieveManufacturerDetailResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getPartialUpdateManufacturerCatalogMockHandler = (overrideResponse?: ManufacturerDetail | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<ManufacturerDetail> | ManufacturerDetail), options?: RequestHandlerOptions) => {
+  return http.patch('/api/v1/directory/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPartialUpdateManufacturerCatalogResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getDeleteManufacturerCatalogMockHandler = (overrideResponse?: ManufacturerDetail | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<ManufacturerDetail> | ManufacturerDetail), options?: RequestHandlerOptions) => {
+  return http.delete('/api/v1/directory/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getDeleteManufacturerCatalogResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getImportManufacturersCatalogMockHandler = (overrideResponse?: ImportReport | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportReport> | ImportReport), options?: RequestHandlerOptions) => {
+  return http.post('/api/v1/directory/manufacturers/import/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getImportManufacturersCatalogResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getManufacturerCatalogImportTemplateMockHandler = (overrideResponse?: ArrayBuffer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ArrayBuffer> | ArrayBuffer), options?: RequestHandlerOptions) => {
+  return http.get('/api/v1/directory/manufacturers/import/template/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const binaryBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getManufacturerCatalogImportTemplateResponseMock();
+    return HttpResponse.arrayBuffer(
+      binaryBody instanceof ArrayBuffer
+        ? binaryBody
+        : new ArrayBuffer(0),
+      { status: 200,
+        headers: { 'Content-Type': 'application/octet-stream' }
+      })
+  }, options)
+}
 
 export const getListSurgeonsCatalogMockHandler = (overrideResponse?: PaginatedSurgeonCatalogList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedSurgeonCatalogList> | PaginatedSurgeonCatalogList), options?: RequestHandlerOptions) => {
   return http.get('/api/v1/directory/surgeons/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
@@ -280,94 +424,6 @@ export const getListInventoryTransferTargetsMockHandler = (overrideResponse?: Tr
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getListInventoryTransferTargetsResponseMock(),
       { status: 200
-      })
-  }, options)
-}
-
-export const getListManufacturersMockHandler = (overrideResponse?: PaginatedManufacturerList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PaginatedManufacturerList> | PaginatedManufacturerList), options?: RequestHandlerOptions) => {
-  return http.get('/api/v1/manufacturers/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getListManufacturersResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-
-export const getCreateManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
-  return http.post('/api/v1/manufacturers/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getCreateManufacturerResponseMock(),
-      { status: 201
-      })
-  }, options)
-}
-
-export const getRetrieveManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
-  return http.get('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getRetrieveManufacturerResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-
-export const getPartialUpdateManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
-  return http.patch('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPartialUpdateManufacturerResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-
-export const getDeleteManufacturerMockHandler = (overrideResponse?: Manufacturer | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<Manufacturer> | Manufacturer), options?: RequestHandlerOptions) => {
-  return http.delete('/api/v1/manufacturers/:id/', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getDeleteManufacturerResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-
-export const getImportManufacturersMockHandler = (overrideResponse?: ImportReport | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportReport> | ImportReport), options?: RequestHandlerOptions) => {
-  return http.post('/api/v1/manufacturers/import/', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
-
-
-    return HttpResponse.json(overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getImportManufacturersResponseMock(),
-      { status: 200
-      })
-  }, options)
-}
-
-export const getManufacturerImportTemplateMockHandler = (overrideResponse?: ArrayBuffer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ArrayBuffer> | ArrayBuffer), options?: RequestHandlerOptions) => {
-  return http.get('/api/v1/manufacturers/import/template/', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
-
-  const binaryBody = overrideResponse !== undefined
-    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getManufacturerImportTemplateResponseMock();
-    return HttpResponse.arrayBuffer(
-      binaryBody instanceof ArrayBuffer
-        ? binaryBody
-        : new ArrayBuffer(0),
-      { status: 200,
-        headers: { 'Content-Type': 'application/octet-stream' }
       })
   }, options)
 }
@@ -776,6 +832,17 @@ export const getListStockItemPhysicalLocationFacetsMockHandler = (overrideRespon
   }, options)
 }
 export const getInventoryMock = () => [
+  getPartialUpdateCompanyMockHandler(),
+  getCreateCompanyAddressMockHandler(),
+  getPartialUpdateCompanyAddressMockHandler(),
+  getDeleteCompanyAddressMockHandler(),
+  getListManufacturersCatalogMockHandler(),
+  getCreateManufacturerCatalogMockHandler(),
+  getRetrieveManufacturerDetailMockHandler(),
+  getPartialUpdateManufacturerCatalogMockHandler(),
+  getDeleteManufacturerCatalogMockHandler(),
+  getImportManufacturersCatalogMockHandler(),
+  getManufacturerCatalogImportTemplateMockHandler(),
   getListSurgeonsCatalogMockHandler(),
   getCreateSurgeonCatalogMockHandler(),
   getRetrieveSurgeonMockHandler(),
@@ -787,13 +854,6 @@ export const getInventoryMock = () => [
   getApiV1InventoryTransfersRetrieveMockHandler(),
   getConfirmInventoryTransferReceiptMockHandler(),
   getListInventoryTransferTargetsMockHandler(),
-  getListManufacturersMockHandler(),
-  getCreateManufacturerMockHandler(),
-  getRetrieveManufacturerMockHandler(),
-  getPartialUpdateManufacturerMockHandler(),
-  getDeleteManufacturerMockHandler(),
-  getImportManufacturersMockHandler(),
-  getManufacturerImportTemplateMockHandler(),
   getListPartsMockHandler(),
   getCreatePartMockHandler(),
   getRetrievePartMockHandler(),

@@ -33,7 +33,7 @@ beforeAll(() => {
 });
 
 const PARTS = '/api/v1/parts/';
-const MANUFACTURERS = '/api/v1/manufacturers/';
+const MANUFACTURERS = '/api/v1/directory/manufacturers/';
 
 function part(overrides: Partial<PartDetail> = {}): PartDetail {
   return {

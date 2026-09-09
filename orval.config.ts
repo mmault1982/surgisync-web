@@ -86,41 +86,67 @@ const ALLOWED_OPERATIONS = new Set([
   // create_inventory_kit_photo above, which is multipart-first.
   'create_inventory_kit',
 
-  // The Receive form's catalog pickers.
+  // Directory Profiles → Manufacturers, and the Receive form's manufacturer
+  // picker, both on /api/v1/directory/ — inside the backend's response
+  // accuracy gate, like surgeons and procedures below.
   //
-  // `list_parts` is /api/v1/parts/, a prefix added to VALIDATED_PATH_PREFIXES
-  // in the same commit that created it, so it is gated from the start.
+  // These used to be the seven `/api/v1/manufacturers/` operations, and they
+  // were the documented exception on this list: that prefix is outside the
+  // gate, because three legacy case/quote operations squat it
+  // (`manufacturers/kits/`, `manufacturers/kits/items/`) declaring no response
+  // at all, so it cannot be gated until those are documented. The catalog
+  // moved rather than the squatters being fixed — the old spellings survive as
+  // `deprecated: true` aliases for shipped Flutter builds, and nothing here
+  // reads them any more. The deprecated `data` key duplicating `results` went
+  // with them: it stays on the legacy list alone, under its own
+  // `PaginatedLegacyManufacturerList` component.
   //
-  // The five /api/v1/manufacturers/ operations are the exception on this list
-  // and the caveat matters: that prefix is *outside* the gate, the same
-  // position tracker_tracking_events is in. The three legacy case/quote
-  // operations sharing it (get_manufacturer_kits, get_manufacturer_kits_by_ids,
-  // get_category_items) still declare no response at all, so the prefix cannot
-  // be gated until those are documented — backend #43 left that as its own
-  // change rather than folding it in. The five below each document every
-  // status they emit, so what is missing is enforcement, not description.
+  // Two shapes differ from the rest of this list and will surprise a reader:
+  // `create_manufacturer_catalog` answers 201 `ManufacturerDetail`, not the
+  // lean `Manufacturer` — the composite document, so a client that has just
+  // created a row holds `company.id` without a second request — and
+  // `delete_manufacturer_catalog` answers 200 with that same document plus a
+  // 409 `manufacturer_in_use`, not a 204.
   //
-  // `list_manufacturers` also still carries a deprecated `data` key
-  // duplicating `results`, for shipped Flutter builds only. Read `results`.
+  // `has_items` only narrows the list to manufacturers with a catalog
+  // *somewhere*, so on the dev seed most of its values return nothing for a
+  // given org. It stays for the Receive form, which asks a different question:
+  // who might I take delivery from. The Product Catalog screen's Manufacturer
+  // filter is `list_part_manufacturer_facets` below, not this.
+  'list_manufacturers_catalog',
+  'create_manufacturer_catalog',
+  'retrieve_manufacturer_detail',
+  'partial_update_manufacturer_catalog',
+  'delete_manufacturer_catalog',
+  // Bulk import. `import_manufacturers_catalog` declares multipart/form-data
+  // *first* among its content types, which is what makes the generated call
+  // able to carry a file at all — the opposite of create_inventory_kit above,
+  // whose JSON-first declaration is why photos go through a separate
+  // operation. The template download returns a CSV body rather than JSON.
+  'import_manufacturers_catalog',
+  'manufacturer_catalog_import_template',
+
+  // Manufacturer Detail's writable halves. The composite read above already
+  // carries the `Company` document and its `addresses`, which is why
+  // `retrieve_company` and `list_company_addresses` are deliberately absent:
+  // generating either would put an operation in this client that no screen
+  // calls.
   //
-  // Note this is NOT the Product Catalog screen's Manufacturer filter source —
-  // that is `list_part_manufacturer_facets` below. This one is the global list
-  // and `has_items` only narrows it to manufacturers with a catalog
-  // *somewhere*, so on the dev seed 7 of its 12 values return nothing for a
-  // given org. It stays here for the Receive form, which asks a different
-  // question: who might I take delivery from.
-  'list_manufacturers',
-  'create_manufacturer',
-  'retrieve_manufacturer',
-  'partial_update_manufacturer',
-  'delete_manufacturer',
-  // Bulk import. `import_manufacturers` declares multipart/form-data *first*
-  // among its content types, which is what makes the generated call able to
-  // carry a file at all — the opposite of create_inventory_kit below, whose
-  // JSON-first declaration is why photos go through a separate operation.
-  // The template download returns a CSV body rather than JSON.
-  'import_manufacturers',
-  'manufacturer_import_template',
+  // The address book hangs off the *company*, not the manufacturer, and the
+  // URL is the point. `Address.company` FKs to `inventory.Company`, which one
+  // organization's manufacturer, facility and tenant rows may all share — so
+  // nesting these under the manufacturer would let "edit the manufacturer's
+  // shipping address" silently rewrite the facility's. `company.id` is
+  // published so a client can notice that before someone edits.
+  //
+  // Note `delete_company_address` is a real 204 with no body, unlike
+  // `delete_manufacturer_catalog` next to it — a sub-resource has no updated
+  // record to hand back. And `partial_update_company` refuses an `addresses`
+  // key with a 400 rather than ignoring it, deliberately.
+  'partial_update_company',
+  'create_company_address',
+  'partial_update_company_address',
+  'delete_company_address',
 
   // Directory Profiles → Procedures. Same shape as manufacturers above, on a
   // prefix that is *inside* the response-accuracy gate from its first commit —

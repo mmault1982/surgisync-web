@@ -156,8 +156,13 @@ export function transferFixture(
     to_representative_name: null,
     to_assigned_to_facility: 7,
     to_facility_name: "St Mary's Hospital",
+    to_assigned_to_manufacturer: null,
+    to_manufacturer_name: null,
     kit_photo: null,
     label_photo: null,
+    // 'none' is the pending case this fixture describes: no carrier label has
+    // been bought and no rep has photographed one.
+    label_source: 'none',
     created_at: '2026-04-22T09:00:00Z',
     ...overrides,
   };

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { PencilIcon, Trash2Icon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -29,7 +30,21 @@ const COLUMNS: Column[] = [
   {
     key: 'name',
     label: 'Name',
-    cell: (row) => <span className="font-medium text-gray-900">{row.name}</span>,
+    /*
+      A real anchor, not just the row's click handler. It is the keyboard path,
+      it gives cmd-click and "open in new tab", and it is what
+      `defaultPreload: 'intent'` prefetches from. Lifted from
+      `product-catalog-table.tsx`, which carries the same note.
+    */
+    cell: (row) => (
+      <Link
+        to="/directory/manufacturers/$manufacturerId"
+        params={{ manufacturerId: String(row.id) }}
+        className="font-medium text-gray-900 hover:text-primary hover:underline"
+      >
+        {row.name}
+      </Link>
+    ),
   },
   {
     key: 'barcode',
@@ -50,12 +65,14 @@ const COLUMNS: Column[] = [
 export function ManufacturersTable({
   rows,
   canManage,
+  onOpenRow,
   onEdit,
   onDelete,
 }: {
   rows: Manufacturer[];
   /** Whole column, not disabled buttons: a control nobody can use is noise. */
   canManage: boolean;
+  onOpenRow: (manufacturer: Manufacturer) => void;
   onEdit: (manufacturer: Manufacturer) => void;
   onDelete: (manufacturer: Manufacturer) => void;
 }) {
@@ -84,45 +101,100 @@ export function ManufacturersTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-gray-100 last:border-0">
-              {COLUMNS.map((column) => (
-                <td key={column.key} className={`px-4 py-3 ${column.cellClassName ?? ''}`}>
-                  {column.cell(row)}
-                </td>
-              ))}
-              {canManage ? (
-                <td className="px-4 py-3 text-right">
-                  {/* Owned rows only — see procedures-table.tsx. */}
-                  {row.is_owned ? (
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`Rename ${row.name}`}
-                        onClick={() => onEdit(row)}
-                      >
-                        <PencilIcon />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`Remove ${row.name}`}
-                        onClick={() => onDelete(row)}
-                      >
-                        <Trash2Icon />
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Shared</span>
-                  )}
-                </td>
-              ) : null}
-            </tr>
+            <Row
+              key={row.id}
+              row={row}
+              canManage={canManage}
+              onOpen={() => onOpenRow(row)}
+              onEdit={() => onEdit(row)}
+              onDelete={() => onDelete(row)}
+            />
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * The whole row opens the manufacturer, but the Name cell's `<Link>` is what
+ * carries the semantics — see the note on that column.
+ *
+ * Deliberately no `tabIndex` or `role="button"` here: that would make every row
+ * a tab stop and replace the `row`/`gridcell` roles a screen reader navigates
+ * the table with. Deliberately not a stretched-link overlay either — one sits
+ * above every cell and makes text selection impossible. Lifted from
+ * `product-catalog-table.tsx`, which carries the same three guards for the same
+ * three reasons.
+ */
+function Row({
+  row,
+  canManage,
+  onOpen,
+  onEdit,
+  onDelete,
+}: {
+  row: Manufacturer;
+  canManage: boolean;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <tr
+      className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
+      onClick={(event) => {
+        // A modified click belongs to the Name link — new tab, new window,
+        // add-to-selection. Navigating programmatically would swallow the
+        // modifier and do the one thing the user did not ask for.
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        // Anything interactive in the row owns its own click — which is what
+        // keeps Edit and Remove from also opening the record behind their
+        // dialog.
+        if (event.target instanceof Element && event.target.closest('a,button,input,label')) return;
+        // Dragging across a name to copy it should not navigate away from it.
+        // `=== false` rather than `!`, because getSelection() can be null and
+        // `!undefined` would swallow every click.
+        if (window.getSelection()?.isCollapsed === false) return;
+        onOpen();
+      }}
+    >
+      {COLUMNS.map((column) => (
+        <td key={column.key} className={`px-4 py-3 ${column.cellClassName ?? ''}`}>
+          {column.cell(row)}
+        </td>
+      ))}
+      {canManage ? (
+        <td className="px-4 py-3 text-right">
+          {/* Owned rows only — see procedures-table.tsx. */}
+          {row.is_owned ? (
+            <div className="flex justify-end gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                // "Edit", not "Rename": it opens a form with eleven fields now,
+                // of which the name is one.
+                aria-label={`Edit ${row.name}`}
+                onClick={onEdit}
+              >
+                <PencilIcon />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Remove ${row.name}`}
+                onClick={onDelete}
+              >
+                <Trash2Icon />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground">Shared</span>
+          )}
+        </td>
+      ) : null}
+    </tr>
   );
 }

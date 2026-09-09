@@ -34,7 +34,7 @@ beforeAll(() => {
   URL.revokeObjectURL = () => {};
 });
 
-const MANUFACTURERS = '/api/v1/manufacturers/';
+const MANUFACTURERS = '/api/v1/directory/manufacturers/';
 const PARTS = '/api/v1/parts/';
 const TARGETS = '/api/v1/inventory-transfers/targets/';
 const LOCATIONS = '/api/v1/stock-items/physical-locations/';

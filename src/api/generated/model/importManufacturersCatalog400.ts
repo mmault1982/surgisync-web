@@ -6,4 +6,4 @@
  * OpenAPI spec version: v1
  */
 
-export type CreateManufacturer400 = {[key: string]: string[]};
+export type ImportManufacturersCatalog400 = {[key: string]: string[]};

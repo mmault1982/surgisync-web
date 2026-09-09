@@ -5,6 +5,7 @@
  * API documentation with JWT Authentication
  * OpenAPI spec version: v1
  */
+import type { LabelSourceEnum } from './labelSourceEnum';
 import type { ReasonEnum } from './reasonEnum';
 import type { TransportMethodEnum } from './transportMethodEnum';
 
@@ -50,10 +51,19 @@ export interface InventoryTransferDetail {
   to_assigned_to_facility?: number | null;
   /** @nullable */
   readonly to_facility_name: string | null;
+  /**
+     * For a return: which manufacturer the kits go back to. Defaulted from the kits' parts when unambiguous.
+     * @nullable
+     */
+  to_assigned_to_manufacturer?: number | null;
+  /** @nullable */
+  readonly to_manufacturer_name: string | null;
   /** @nullable */
   kit_photo?: string | null;
   /** @nullable */
   label_photo?: string | null;
+  /** 'generated' when a carrier label has been bought for this transfer, 'photo' when a rep uploaded a photo of one, otherwise 'none'. A transfer with 'generated' needs no label photo. */
+  readonly label_source: LabelSourceEnum;
   /** Draft documents are not finalized and can still be edited. They are hidden from admin views by default. */
   is_draft?: boolean;
   /** @nullable */

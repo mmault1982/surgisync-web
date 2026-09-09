@@ -413,6 +413,677 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardStats'
           description: ''
+  /api/v1/directory/companies/{id}/:
+    get:
+      operationId: retrieve_company
+      description: |-
+        The organization identity behind a role, with its address book. The same `company` object the manufacturer detail document nests, addressable on its own so a client can refresh it after an edit without refetching the role.
+
+        Visible when your organization owns a role row pointing at it — its manufacturer, its facility or its own tenant row.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    patch:
+      operationId: partial_update_company
+      description: |-
+        Amend an organization's contact and billing-contact details. Organization admins only.
+
+        **There is no name field here**, and that is the design rather than an omission: the role's own name is the only name in the API, so renaming is `PATCH /api/v1/directory/manufacturers/{id}/`, which already writes through to this Company.
+
+        **Addresses are not accepted here either.** An `addresses` key is refused rather than ignored — write them through `.../companies/{id}/addresses/`, which names the organization that owns them, because this identity may be shared with the organization's other roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompanyWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/companies/{id}/addresses/:
+    get:
+      operationId: list_company_addresses
+      description: |-
+        This organization's address book. A flat array, not paginated: an address book is a handful of rows and the manufacturer detail document already carries the whole of it.
+
+        Ordered primary-first, then by kind — the order the model declares, so this and the nested copy agree.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_company_address
+      description: |-
+        Add an address to this organization's address book. Organization admins only.
+
+        The organization comes from the path. Sending `is_primary: true` **stands down the current primary of that kind** in the same transaction — at most one address per organization per kind is primary, so promotion is a transition rather than a flag.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/companies/{id}/addresses/{address_pk}/:
+    patch:
+      operationId: partial_update_company_address
+      description: |-
+        Amend one address. Organization admins only.
+
+        Setting `is_primary: true` **stands down the current primary of that kind**. `kind` and `is_primary` may move in the same request, in which case it is the primary of the *new* kind that stands down.
+      parameters:
+      - in: path
+        name: address_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: delete_company_address
+      description: |-
+        Remove one address. Organization admins only. A soft delete — the row stops being listed but stays for the shipments that reference it.
+
+        Removing the primary of a kind leaves that kind without one; nothing is promoted in its place, because which address should take over is a decision rather than an ordering.
+      parameters:
+      - in: path
+        name: address_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/manufacturers/:
+    get:
+      operationId: list_manufacturers_catalog
+      description: 'Manufacturers this organization owns, sorted by name. There is
+        no shared catalog: every manufacturer belongs to exactly one organization,
+        and a caller with no resolvable one sees nothing. **Always paginated** — the
+        response shape does not vary with the query parameters. `page` and `page_size`
+        are optional; the default page is wide enough to hold the whole catalog in
+        one response.'
+      parameters:
+      - in: query
+        name: has_items
+        schema:
+          type: boolean
+        description: Filter to only manufacturers with active items (true/false)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by name
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedManufacturerList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_manufacturer_catalog
+      description: |-
+        Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
+
+        Answers with the full document, `company` included, so a client that has just created a manufacturer can edit its contact details without a second request.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ManufacturerWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/manufacturers/{id}/:
+    get:
+      operationId: retrieve_manufacturer_detail
+      description: |-
+        One manufacturer, if this organization may see it — with the organization identity behind it and that identity's addresses, in one request.
+
+        `company` is the shared `Company` a role points at. It may be referenced by this organization's other roles too, which is why `company.id` is published: it is what lets a client notice that two roles share one address book before someone edits it. Addresses are read-only here — write them through `/api/v1/directory/companies/{id}/addresses/`.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    patch:
+      operationId: partial_update_manufacturer_catalog
+      description: 'Rename a manufacturer this organization owns. Organization admins
+        only. `name` is the only writable field: the barcode is generated from it,
+        ownership comes from the session, and deactivation is what DELETE does.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: delete_manufacturer_catalog
+      description: Remove a manufacturer this organization owns. Organization admins
+        only. A soft delete — the row stops being listed and frees its name, but stays
+        for the history that references it. Refused while catalog parts still point
+        at it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManufacturerDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'The manufacturer still has catalog parts (`manufacturer_in_use`).
+            The database cannot refuse this on its own: `Part.manufacturer` is `PROTECT`ed,
+            but removing a manufacturer is a soft delete, which never trips a foreign
+            key.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/manufacturers/import/:
+    post:
+      operationId: import_manufacturers_catalog
+      description: Create manufacturers in bulk from a CSV or Excel file with a `name`
+        column. Organization admins only. Names this organization already has are
+        **skipped**, not re-created and not errors, so re-running the same file is
+        safe. Send `dry_run=true` to preview the outcome of every row without writing
+        anything.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportReport'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/manufacturers/import/template/:
+    get:
+      operationId: manufacturer_catalog_import_template
+      description: An empty CSV with the header row the importer expects.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/directory/surgeons/:
     get:
       operationId: list_surgeons_catalog
@@ -3749,12 +4420,13 @@ paths:
       - Inventory
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedManufacturerList'
+                $ref: '#/components/schemas/PaginatedLegacyManufacturerList'
           description: ''
         '401':
           content:
@@ -3770,9 +4442,10 @@ paths:
           description: Authenticated, but not permitted to perform this action.
     post:
       operationId: create_manufacturer
-      description: Add a manufacturer to this organization. Organization admins only.
-        The new row belongs to the caller's organization and is invisible to every
-        other one.
+      description: |-
+        Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
+
+        Answers with the full document, `company` included, so a client that has just created a manufacturer can edit its contact details without a second request.
       tags:
       - Inventory
       requestBody:
@@ -3789,12 +4462,13 @@ paths:
         required: true
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Manufacturer'
+                $ref: '#/components/schemas/ManufacturerDetail'
           description: ''
         '400':
           content:
@@ -3822,7 +4496,10 @@ paths:
   /api/v1/manufacturers/{id}/:
     get:
       operationId: retrieve_manufacturer
-      description: One manufacturer, if this organization may see it.
+      description: |-
+        One manufacturer, if this organization may see it — with the organization identity behind it and that identity's addresses, in one request.
+
+        `company` is the shared `Company` a role points at. It may be referenced by this organization's other roles too, which is why `company.id` is published: it is what lets a client notice that two roles share one address book before someone edits it. Addresses are read-only here — write them through `/api/v1/directory/companies/{id}/addresses/`.
       parameters:
       - in: path
         name: id
@@ -3833,12 +4510,13 @@ paths:
       - Inventory
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Manufacturer'
+                $ref: '#/components/schemas/ManufacturerDetail'
           description: ''
         '404':
           content:
@@ -3885,12 +4563,13 @@ paths:
               $ref: '#/components/schemas/PatchedManufacturerWriteRequest'
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Manufacturer'
+                $ref: '#/components/schemas/ManufacturerDetail'
           description: ''
         '400':
           content:
@@ -3938,12 +4617,13 @@ paths:
       - Inventory
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Manufacturer'
+                $ref: '#/components/schemas/ManufacturerDetail'
           description: ''
         '409':
           content:
@@ -3991,6 +4671,7 @@ paths:
         required: true
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
@@ -4029,6 +4710,7 @@ paths:
       - Inventory
       security:
       - jwtAuth: []
+      deprecated: true
       responses:
         '200':
           content:
@@ -6250,6 +6932,885 @@ paths:
       responses:
         '200':
           description: Password set successfully
+  /api/v1/shipments/:
+    get:
+      operationId: list_shipments
+      description: Shipping labels bought by the requesting user's organization.
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number.
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: Results per page.
+      - in: query
+        name: transfer
+        schema:
+          type: integer
+        description: Only labels for this inventory transfer.
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShipmentList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_shipment
+      description: |-
+        Buy a shipping label for a transfer. Every field except `transfer` is optional: anything omitted is resolved the same way `prefill` resolves it. A supplied address is verified with the carrier before purchase, and a verification failure is a 400 naming the field.
+
+        This does not replace photographing an externally-produced label; `InventoryTransfer.label_photo` remains a first-class alternative and neither path forbids the other.
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShipmentCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShipmentCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+  /api/v1/shipments/{uuid}/:
+    get:
+      operationId: retrieve_shipment
+      description: Buy, read and refund carrier shipping labels.
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+  /api/v1/shipments/{uuid}/refund/:
+    post:
+      operationId: refund_shipment
+      description: 'Ask the carrier to void a purchased label. Asynchronous and not
+        guaranteed: the status becomes `refund_requested` and only becomes `refunded`
+        if the carrier approves it. Some never do.'
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+  /api/v1/shipments/prefill/:
+    get:
+      operationId: prefill_shipment
+      description: 'Everything needed to buy a label for a transfer, resolved from
+        existing data. `missing` lists the dotted field names the rep must still supply
+        — when it is empty the client can buy the label with no further input. `blockers`
+        is different in kind: configuration or data problems typing cannot fix, such
+        as an organization with no carrier account. Each `*_source` says where a prefilled
+        value came from, so a client can show it as confirmed rather than typed.'
+      parameters:
+      - in: query
+        name: transfer
+        schema:
+          type: integer
+        description: The inventory transfer to ship.
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentPrefill'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+  /api/v1/shipping/billing-accounts/:
+    get:
+      operationId: list_shipping_billing_accounts
+      description: Whose carrier account gets billed. The number is write-only.
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShippingBillingAccount'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_shipping_billing_account
+      description: Whose carrier account gets billed. The number is write-only.
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingBillingAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+  /api/v1/shipping/billing-accounts/{id}/:
+    get:
+      operationId: retrieve_shipping_billing_account
+      description: Whose carrier account gets billed. The number is write-only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Shipping Billing Account.
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingBillingAccount'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+    put:
+      operationId: update_shipping_billing_account
+      description: Whose carrier account gets billed. The number is write-only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Shipping Billing Account.
+        required: true
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ShippingBillingAccountRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingBillingAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+    patch:
+      operationId: partial_update_shipping_billing_account
+      description: Whose carrier account gets billed. The number is write-only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Shipping Billing Account.
+        required: true
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedShippingBillingAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedShippingBillingAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedShippingBillingAccountRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingBillingAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+    delete:
+      operationId: delete_shipping_billing_account
+      description: Whose carrier account gets billed. The number is write-only.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Shipping Billing Account.
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+  /api/v1/shipping/carrier-accounts/:
+    get:
+      operationId: list_carrier_accounts
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CarrierAccount'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_carrier_account
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarrierAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+          description: 'Server-side configuration is missing, so the request cannot
+            be served. Currently only `encryption_unavailable`: the deployment holds
+            no credential-encryption key, so secrets cannot be stored. Retrying will
+            not help; the server must be configured.'
+  /api/v1/shipping/carrier-accounts/{id}/:
+    get:
+      operationId: retrieve_carrier_account
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Carrier Account.
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarrierAccount'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+    put:
+      operationId: update_carrier_account
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Carrier Account.
+        required: true
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CarrierAccountRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarrierAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+    patch:
+      operationId: partial_update_carrier_account
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Carrier Account.
+        required: true
+      tags:
+      - Shipping
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCarrierAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCarrierAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCarrierAccountRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarrierAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+    delete:
+      operationId: delete_carrier_account
+      description: Which EasyPost carrier accounts this organization buys labels through.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Carrier Account.
+        required: true
+      tags:
+      - Shipping
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
   /api/v1/stock-items/:
     get:
       operationId: api_v1_stock_items_list
@@ -7549,9 +9110,300 @@ paths:
           description: Rate limited.
 components:
   schemas:
+    Address:
+      type: object
+      description: |-
+        One address in an organization's address book. Read and write.
+
+        `company` is deliberately not a field: it comes from the URL, which is what
+        makes "forgot to scope this to the company" unrepresentable rather than
+        merely untested — the same rule `PartComponentWriteSerializer` states for
+        the kit it belongs to.
+
+        `is_primary` is writable, and setting it is a *transition* rather than a
+        field assignment: `unique_primary_address_per_company_kind` is a partial
+        unique index and `Address` has no `save()` hook, so a second primary of a
+        kind would raise `IntegrityError` rather than replace the incumbent. The
+        view demotes the sibling in the same transaction; see
+        `inventory/views/companies.py`.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AddressKindEnum'
+          description: |-
+            What this address is used for.
+
+            * `physical` - Physical
+            * `shipping` - Shipping / Receiving
+            * `billing` - Billing
+            * `mailing` - Mailing
+        is_primary:
+          type: boolean
+          description: The default address of this kind. At most one per organization
+            per kind.
+        label:
+          type: string
+          description: Optional name for this location (e.g. 'Main Campus', 'Loading
+            Dock B').
+          maxLength: 100
+        address_line_1:
+          type: string
+          maxLength: 200
+        address_line_2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 50
+        zip_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          maxLength: 2
+        contact_name:
+          type: string
+          title: Contact
+          description: Contact person at this address (e.g. the receiving dock).
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        instructions:
+          type: string
+          description: Special delivery instructions (loading dock hours, check-in
+            procedures, etc.).
+      required:
+      - id
+    AddressKindEnum:
+      enum:
+      - physical
+      - shipping
+      - billing
+      - mailing
+      type: string
+      description: |-
+        * `physical` - Physical
+        * `shipping` - Shipping / Receiving
+        * `billing` - Billing
+        * `mailing` - Mailing
+    AddressPayloadRequest:
+      type: object
+      description: |-
+        An address as the carrier wants it. Used for both request and response.
+
+        Not a ModelSerializer: this shape is EasyPost's, and it is deliberately
+        decoupled from `inventory.Address` so that changing one does not silently
+        change the other.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        company:
+          type: string
+          maxLength: 100
+        street1:
+          type: string
+          minLength: 1
+          maxLength: 200
+        street2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        state:
+          type: string
+          minLength: 1
+          maxLength: 50
+        zip:
+          type: string
+          minLength: 1
+          maxLength: 20
+        country:
+          type: string
+          default: US
+          maxLength: 2
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - city
+      - state
+      - street1
+      - zip
+    AddressRequest:
+      type: object
+      description: |-
+        One address in an organization's address book. Read and write.
+
+        `company` is deliberately not a field: it comes from the URL, which is what
+        makes "forgot to scope this to the company" unrepresentable rather than
+        merely untested — the same rule `PartComponentWriteSerializer` states for
+        the kit it belongs to.
+
+        `is_primary` is writable, and setting it is a *transition* rather than a
+        field assignment: `unique_primary_address_per_company_kind` is a partial
+        unique index and `Address` has no `save()` hook, so a second primary of a
+        kind would raise `IntegrityError` rather than replace the incumbent. The
+        view demotes the sibling in the same transaction; see
+        `inventory/views/companies.py`.
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AddressKindEnum'
+          description: |-
+            What this address is used for.
+
+            * `physical` - Physical
+            * `shipping` - Shipping / Receiving
+            * `billing` - Billing
+            * `mailing` - Mailing
+        is_primary:
+          type: boolean
+          description: The default address of this kind. At most one per organization
+            per kind.
+        label:
+          type: string
+          description: Optional name for this location (e.g. 'Main Campus', 'Loading
+            Dock B').
+          maxLength: 100
+        address_line_1:
+          type: string
+          maxLength: 200
+        address_line_2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 50
+        zip_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 1
+          description: ISO 3166-1 alpha-2 country code.
+          maxLength: 2
+        contact_name:
+          type: string
+          title: Contact
+          description: Contact person at this address (e.g. the receiving dock).
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        instructions:
+          type: string
+          description: Special delivery instructions (loading dock hours, check-in
+            procedures, etc.).
     BlankEnum:
       enum:
       - ''
+    CarrierAccount:
+      type: object
+      description: An EasyPost carrier account. Holds no secret -- the `ca_` id is
+        a handle.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        carrier_display:
+          type: string
+          readOnly: true
+        easypost_carrier_account_id:
+          type: string
+          description: EasyPost CarrierAccount id (`ca_...`). The credentials it refers
+            to are held by EasyPost, not by us.
+          maxLength: 64
+        description:
+          type: string
+          description: Which account this is, for humans (e.g. 'Hoosier FedEx — main').
+          maxLength: 100
+        default_service:
+          type: string
+          description: Service level used when the client names none (e.g. 'FEDEX_GROUND',
+            'Ground'). Blank means the client must choose.
+          maxLength: 50
+        is_default:
+          type: boolean
+          description: Use this account for this carrier when the client names none.
+            At most one per organization per carrier.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - carrier
+      - carrier_display
+      - created_at
+      - easypost_carrier_account_id
+      - id
+      - updated_at
+    CarrierAccountRequest:
+      type: object
+      description: An EasyPost carrier account. Holds no secret -- the `ca_` id is
+        a handle.
+      properties:
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        easypost_carrier_account_id:
+          type: string
+          minLength: 1
+          description: EasyPost CarrierAccount id (`ca_...`). The credentials it refers
+            to are held by EasyPost, not by us.
+          maxLength: 64
+        description:
+          type: string
+          description: Which account this is, for humans (e.g. 'Hoosier FedEx — main').
+          maxLength: 100
+        default_service:
+          type: string
+          description: Service level used when the client names none (e.g. 'FEDEX_GROUND',
+            'Ground'). Blank means the client must choose.
+          maxLength: 50
+        is_default:
+          type: boolean
+          description: Use this account for this carrier when the client names none.
+            At most one per organization per carrier.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
+      required:
+      - carrier
+      - easypost_carrier_account_id
+    CarrierEnum:
+      enum:
+      - fedex
+      - ups
+      - usps
+      - other
+      type: string
+      description: |-
+        * `fedex` - FedEx
+        * `ups` - UPS
+        * `usps` - USPS
+        * `other` - Other
     Case:
       type: object
       properties:
@@ -7782,6 +9634,74 @@ components:
       - confirm_password
       - new_password
       - old_password
+    Company:
+      type: object
+      description: |-
+        The organization behind a role, with its address book.
+
+        What is omitted is as decided as what is here:
+
+        - **`name`.** The role's own `name` is the only name in the payload.
+          `Company._rename_role_rows` pushes a rename only onto role rows still
+          carrying the previous name, so a deliberately renamed role row is left
+          alone rather than reverted — returning both names would publish that
+          divergence and make each client choose.
+        - **The flat `address_line_1` / `address_line_2` / `city` / `state` /
+          `zip_code` columns.** `Address` is the source of truth; those are legacy
+          and are dropped in phase 5's second stage. Publishing them would put a
+          deprecation into the contract on day one.
+        - **`parent_company`.** It is the tenant, and the role's `is_owned` already
+          answers the only question a client has about it.
+        - **`is_active` / `deleted_at`.** A soft-deleted Company under a live role
+          is an integrity problem, not a client concern.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone:
+          type: string
+          maxLength: 20
+        fax:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        contact_name:
+          type: string
+          maxLength: 100
+        contact_title:
+          type: string
+          maxLength: 100
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          type: string
+          maxLength: 20
+        billing_contact_name:
+          type: string
+          maxLength: 100
+        billing_contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        billing_contact_phone:
+          type: string
+          maxLength: 20
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+          readOnly: true
+          description: Read-only here. Add, amend and remove addresses through /api/v1/directory/companies/{id}/addresses/,
+            which puts the owning organization in the URL — it may be shared with
+            this organization's other roles.
+      required:
+      - addresses
+      - id
     Conflict:
       type: object
       description: |-
@@ -9139,6 +11059,16 @@ components:
           type: string
           readOnly: true
           nullable: true
+        to_assigned_to_manufacturer:
+          type: integer
+          nullable: true
+          title: To manufacturer
+          description: 'For a return: which manufacturer the kits go back to. Defaulted
+            from the kits'' parts when unambiguous.'
+        to_manufacturer_name:
+          type: string
+          readOnly: true
+          nullable: true
         kit_photo:
           type: string
           format: uri
@@ -9147,6 +11077,13 @@ components:
           type: string
           format: uri
           nullable: true
+        label_source:
+          allOf:
+          - $ref: '#/components/schemas/LabelSourceEnum'
+          description: '''generated'' when a carrier label has been bought for this
+            transfer, ''photo'' when a rep uploaded a photo of one, otherwise ''none''.
+            A transfer with ''generated'' needs no label photo.'
+          readOnly: true
         is_draft:
           type: boolean
           title: Draft
@@ -9163,8 +11100,10 @@ components:
       - from_parent_company_name
       - from_representative_name
       - id
+      - label_source
       - reason
       - to_facility_name
+      - to_manufacturer_name
       - to_parent_company_name
       - to_representative_name
       - transport_method
@@ -9221,6 +11160,12 @@ components:
           type: integer
           nullable: true
           title: To facility
+        to_assigned_to_manufacturer:
+          type: integer
+          nullable: true
+          title: To manufacturer
+          description: 'For a return: which manufacturer the kits go back to. Defaulted
+            from the kits'' parts when unambiguous.'
         kit_photo:
           type: string
           format: binary
@@ -9308,6 +11253,16 @@ components:
           type: string
           readOnly: true
           nullable: true
+        to_assigned_to_manufacturer:
+          type: integer
+          nullable: true
+          title: To manufacturer
+          description: 'For a return: which manufacturer the kits go back to. Defaulted
+            from the kits'' parts when unambiguous.'
+        to_manufacturer_name:
+          type: string
+          readOnly: true
+          nullable: true
         kit_photo:
           type: string
           format: uri
@@ -9316,6 +11271,13 @@ components:
           type: string
           format: uri
           nullable: true
+        label_source:
+          allOf:
+          - $ref: '#/components/schemas/LabelSourceEnum'
+          description: '''generated'' when a carrier label has been bought for this
+            transfer, ''photo'' when a rep uploaded a photo of one, otherwise ''none''.
+            A transfer with ''generated'' needs no label photo.'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -9328,9 +11290,11 @@ components:
       - from_representative_name
       - id
       - kit_count
+      - label_source
       - reason
       - stock_item_count
       - to_facility_name
+      - to_manufacturer_name
       - to_parent_company_name
       - to_representative_name
       - transport_method
@@ -9659,6 +11623,12 @@ components:
       - sync_error
       - sync_state
       - synced_at
+    LabelSourceEnum:
+      enum:
+      - generated
+      - photo
+      - none
+      type: string
     ListItem:
       type: object
       properties:
@@ -9743,6 +11713,32 @@ components:
           type: string
           format: uri
           nullable: true
+        shipping_weight_oz:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+          title: Shipping weight (oz)
+          description: Packed weight in ounces, including the case. Required to buy
+            a label.
+        shipping_length_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+          title: Shipping length (in)
+        shipping_width_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+          title: Shipping width (in)
+        shipping_height_in:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+          title: Shipping height (in)
         deleted_at:
           type: string
           format: date-time
@@ -9806,6 +11802,47 @@ components:
           description: True when this row belongs to your organization and may be
             renamed or removed.
       required:
+      - id
+      - is_owned
+      - name
+    ManufacturerDetail:
+      type: object
+      description: |-
+        One manufacturer and everything attached to it.
+
+        The composite read: one request returns the role, the identity behind it,
+        and that identity's addresses. Three round trips would reassemble a join on
+        mobile, where latency is the cost that matters, and would make both clients
+        learn the role -> company -> addresses chain — which is exactly the
+        internal structure still in motion.
+
+        `company.id` is not decoration. It is what lets a client notice that two
+        roles share one address book *before* someone edits it.
+
+        The list keeps the lean `ManufacturerSerializer`: a catalog page is 500 rows
+        and none of them needs an address book.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        barcode:
+          type: string
+          format: uri
+          nullable: true
+        is_owned:
+          type: boolean
+          readOnly: true
+          description: True when this row belongs to your organization and may be
+            renamed or removed.
+        company:
+          allOf:
+          - $ref: '#/components/schemas/Company'
+          readOnly: true
+      required:
+      - company
       - id
       - is_owned
       - name
@@ -9997,7 +12034,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InventoryTransferList'
-    PaginatedManufacturerList:
+    PaginatedLegacyManufacturerList:
       type: object
       required:
       - total_data
@@ -10035,6 +12072,37 @@ components:
           deprecated: true
           description: DEPRECATED — an exact duplicate of `results`, kept for clients
             written against the pre-pagination shape. Read `results`.
+    PaginatedManufacturerList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Manufacturer'
     PaginatedPartComponentList:
       type: object
       required:
@@ -10128,6 +12196,37 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcedureCatalog'
+    PaginatedShipmentList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
     PaginatedSurgeonCatalogList:
       type: object
       required:
@@ -10190,6 +12289,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrackingEvent'
+    ParcelRequest:
+      type: object
+      description: Weight is what a carrier cannot rate without; dimensions sharpen
+        it.
+      properties:
+        weight:
+          type: number
+          format: double
+          description: Total weight in ounces.
+        length:
+          type: number
+          format: double
+          description: Inches.
+        width:
+          type: number
+          format: double
+          description: Inches.
+        height:
+          type: number
+          format: double
+          description: Inches.
+      required:
+      - weight
     ParentCompanyDetail:
       type: object
       description: |-
@@ -10558,6 +12680,147 @@ components:
       - is_serialized
       - kind
       - manufacturer
+    PatchedAddressRequest:
+      type: object
+      description: |-
+        One address in an organization's address book. Read and write.
+
+        `company` is deliberately not a field: it comes from the URL, which is what
+        makes "forgot to scope this to the company" unrepresentable rather than
+        merely untested — the same rule `PartComponentWriteSerializer` states for
+        the kit it belongs to.
+
+        `is_primary` is writable, and setting it is a *transition* rather than a
+        field assignment: `unique_primary_address_per_company_kind` is a partial
+        unique index and `Address` has no `save()` hook, so a second primary of a
+        kind would raise `IntegrityError` rather than replace the incumbent. The
+        view demotes the sibling in the same transaction; see
+        `inventory/views/companies.py`.
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AddressKindEnum'
+          description: |-
+            What this address is used for.
+
+            * `physical` - Physical
+            * `shipping` - Shipping / Receiving
+            * `billing` - Billing
+            * `mailing` - Mailing
+        is_primary:
+          type: boolean
+          description: The default address of this kind. At most one per organization
+            per kind.
+        label:
+          type: string
+          description: Optional name for this location (e.g. 'Main Campus', 'Loading
+            Dock B').
+          maxLength: 100
+        address_line_1:
+          type: string
+          maxLength: 200
+        address_line_2:
+          type: string
+          maxLength: 200
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 50
+        zip_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          minLength: 1
+          description: ISO 3166-1 alpha-2 country code.
+          maxLength: 2
+        contact_name:
+          type: string
+          title: Contact
+          description: Contact person at this address (e.g. the receiving dock).
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        instructions:
+          type: string
+          description: Special delivery instructions (loading dock hours, check-in
+            procedures, etc.).
+    PatchedCarrierAccountRequest:
+      type: object
+      description: An EasyPost carrier account. Holds no secret -- the `ca_` id is
+        a handle.
+      properties:
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        easypost_carrier_account_id:
+          type: string
+          minLength: 1
+          description: EasyPost CarrierAccount id (`ca_...`). The credentials it refers
+            to are held by EasyPost, not by us.
+          maxLength: 64
+        description:
+          type: string
+          description: Which account this is, for humans (e.g. 'Hoosier FedEx — main').
+          maxLength: 100
+        default_service:
+          type: string
+          description: Service level used when the client names none (e.g. 'FEDEX_GROUND',
+            'Ground'). Blank means the client must choose.
+          maxLength: 50
+        is_default:
+          type: boolean
+          description: Use this account for this carrier when the client names none.
+            At most one per organization per carrier.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
+    PatchedCompanyWriteRequest:
+      type: object
+      description: |-
+        Amend an organization's contact details.
+
+        The contact and billing-contact blocks only. There is no `name` field, and
+        that is the decision rather than an omission: renaming is
+        `PATCH /api/v1/directory/manufacturers/{id}/`, which already writes through
+        to the Company. Read responses use `CompanySerializer`; this one never
+        renders.
+      properties:
+        phone:
+          type: string
+          maxLength: 20
+        fax:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        contact_name:
+          type: string
+          maxLength: 100
+        contact_title:
+          type: string
+          maxLength: 100
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          type: string
+          maxLength: 20
+        billing_contact_name:
+          type: string
+          maxLength: 100
+        billing_contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        billing_contact_phone:
+          type: string
+          maxLength: 20
     PatchedFacilityAssignmentDetailRequest:
       type: object
       description: Full serializer for detail/create/update views.
@@ -10785,6 +13048,12 @@ components:
           type: integer
           nullable: true
           title: To facility
+        to_assigned_to_manufacturer:
+          type: integer
+          nullable: true
+          title: To manufacturer
+          description: 'For a return: which manufacturer the kits go back to. Defaulted
+            from the kits'' parts when unambiguous.'
         kit_photo:
           type: string
           format: binary
@@ -10988,6 +13257,43 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    PatchedShippingBillingAccountRequest:
+      type: object
+      description: |-
+        A billing account. The number is write-only and never comes back.
+
+        `account_number` is declared `write_only`; the read side gets only
+        `account_number_last4` and `account_number_set`, which are hints, not
+        secrets.
+      properties:
+        manufacturer:
+          type: integer
+          nullable: true
+          description: The manufacturer whose account is billed. Leave blank for the
+            organization's own account (payer 'sender').
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        account_number:
+          type: string
+          writeOnly: true
+          description: Carrier account number. Stored encrypted; never returned.
+          maxLength: 64
+        billing_postal_code:
+          type: string
+          description: Postal code registered against the account. Required by FedEx
+            and UPS for third-party billing.
+          maxLength: 20
+        billing_country:
+          type: string
+          minLength: 1
+          description: ISO 3166-1 alpha-2 country of the billing account.
+          maxLength: 2
+        is_default:
+          type: boolean
+          description: Offer this account first when shipping to this manufacturer.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
     PatchedSurgeonWriteRequest:
       type: object
       description: |-
@@ -11073,6 +13379,40 @@ components:
           type: integer
           nullable: true
           description: Facility this user works at (if facility staff).
+    PayerEnum:
+      enum:
+      - sender
+      - third_party
+      type: string
+      description: |-
+        * `sender` - Sender (our account)
+        * `third_party` - Third party (manufacturer's account)
+    PayerOption:
+      type: object
+      description: One account this shipment could be billed to.
+      properties:
+        billing_account:
+          type: integer
+        label:
+          type: string
+        payer:
+          $ref: '#/components/schemas/PayerEnum'
+        manufacturer_id:
+          type: integer
+          nullable: true
+        account_number_last4:
+          type: string
+        usable:
+          type: boolean
+          description: False when the stored account number cannot be decrypted in
+            this environment -- it was written in another one.
+      required:
+      - account_number_last4
+      - billing_account
+      - label
+      - manufacturer_id
+      - payer
+      - usable
     PriceFileDetail:
       type: object
       description: Full serializer for detail/create/update views.
@@ -11512,6 +13852,364 @@ components:
       required:
       - password
       - token
+    Shipment:
+      type: object
+      description: Read shape for a bought label.
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        transfer:
+          type: integer
+          readOnly: true
+          description: The transfer this label ships.
+        carrier:
+          allOf:
+          - $ref: '#/components/schemas/CarrierEnum'
+          readOnly: true
+        carrier_display:
+          type: string
+          readOnly: true
+        service:
+          type: string
+          readOnly: true
+          description: Carrier service level as EasyPost names it (e.g. FEDEX_GROUND).
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        payer:
+          allOf:
+          - $ref: '#/components/schemas/PayerEnum'
+          readOnly: true
+          description: |-
+            Recorded at purchase; the billing_account FK may later be soft-deleted, but who paid must stay answerable.
+
+            * `sender` - Sender (our account)
+            * `third_party` - Third party (manufacturer's account)
+        billing_account:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The account billed. Null means the buying account paid.
+        billing_account_label:
+          type: string
+          readOnly: true
+        from_address_snapshot:
+          readOnly: true
+        to_address_snapshot:
+          readOnly: true
+        parcel_snapshot:
+          readOnly: true
+        tracking_code:
+          type: string
+          readOnly: true
+        tracking_url:
+          type: string
+          format: uri
+          readOnly: true
+        tracking_status:
+          type: string
+          readOnly: true
+        rate_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: What EasyPost quoted. For a third-party-billed shipment this
+            is OUR negotiated rate, not what the payer is charged.
+        rate_currency:
+          type: string
+          readOnly: true
+        label_pdf_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        label_zpl_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        failure_code:
+          type: string
+          readOnly: true
+          description: Stable code from the EasyPost error taxonomy, for the last
+            attempt.
+        failure_detail:
+          type: string
+          readOnly: true
+        purchased_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - billing_account
+      - billing_account_label
+      - carrier
+      - carrier_display
+      - created_at
+      - failure_code
+      - failure_detail
+      - from_address_snapshot
+      - label_pdf_url
+      - label_zpl_url
+      - parcel_snapshot
+      - payer
+      - purchased_at
+      - rate_amount
+      - rate_currency
+      - service
+      - status
+      - to_address_snapshot
+      - tracking_code
+      - tracking_status
+      - tracking_url
+      - transfer
+      - uuid
+    ShipmentCreateRequest:
+      type: object
+      description: Buy a label. Everything is optional except what `prefill` reported
+        missing.
+      properties:
+        transfer:
+          type: integer
+          description: The InventoryTransfer to ship.
+        to_address:
+          allOf:
+          - $ref: '#/components/schemas/AddressPayloadRequest'
+          description: Only needed when prefill could not resolve one, or to override
+            it. A supplied address is verified with the carrier.
+        from_address:
+          $ref: '#/components/schemas/AddressPayloadRequest'
+        parcel:
+          $ref: '#/components/schemas/ParcelRequest'
+        service:
+          type: string
+          description: Carrier service level. Defaults to the carrier account's.
+        billing_account:
+          type: integer
+          nullable: true
+          description: Which account to bill. Defaults to the first payer option.
+        insurance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Declared value to insure, in USD. Costs extra.
+        save_to_address:
+          type: boolean
+          default: false
+          description: Save the supplied destination address against the destination
+            party, so later shipments need no typing.
+        save_from_address:
+          type: boolean
+          default: false
+          description: 'Ignored: an origin address is always remembered as the rep''s
+            most recent one. Accepted so clients can send it.'
+      required:
+      - transfer
+    ShipmentPrefill:
+      type: object
+      description: |-
+        Everything the label screen needs, plus what the rep must still supply.
+
+        `missing` is the contract: it holds dotted field names, and an empty list
+        means the screen is a single button. `blockers` is different in kind --
+        those are configuration or data problems the rep cannot fix by typing.
+      properties:
+        transfer:
+          type: integer
+        carrier:
+          type: string
+        carrier_account:
+          type: integer
+          nullable: true
+        service:
+          type: string
+        destination_kind:
+          type: string
+        destination_name:
+          type: string
+        to_address:
+          type: object
+          additionalProperties: {}
+        to_address_source:
+          type: string
+        from_address:
+          type: object
+          additionalProperties: {}
+        from_address_source:
+          type: string
+        parcel:
+          type: object
+          additionalProperties: {}
+        parcel_source:
+          type: string
+        payer_options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayerOption'
+        missing:
+          type: array
+          items:
+            type: string
+        blockers:
+          type: array
+          items:
+            type: string
+        existing_shipments:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - blockers
+      - carrier
+      - carrier_account
+      - destination_kind
+      - destination_name
+      - existing_shipments
+      - from_address
+      - from_address_source
+      - missing
+      - parcel
+      - parcel_source
+      - payer_options
+      - service
+      - to_address
+      - to_address_source
+      - transfer
+    ShippingBillingAccount:
+      type: object
+      description: |-
+        A billing account. The number is write-only and never comes back.
+
+        `account_number` is declared `write_only`; the read side gets only
+        `account_number_last4` and `account_number_set`, which are hints, not
+        secrets.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        manufacturer:
+          type: integer
+          nullable: true
+          description: The manufacturer whose account is billed. Leave blank for the
+            organization's own account (payer 'sender').
+        manufacturer_name:
+          type: string
+          readOnly: true
+          nullable: true
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        carrier_display:
+          type: string
+          readOnly: true
+        account_number_last4:
+          type: string
+          readOnly: true
+        account_number_set:
+          type: boolean
+          readOnly: true
+        secret_readable:
+          type: boolean
+          readOnly: true
+        billing_postal_code:
+          type: string
+          description: Postal code registered against the account. Required by FedEx
+            and UPS for third-party billing.
+          maxLength: 20
+        billing_country:
+          type: string
+          description: ISO 3166-1 alpha-2 country of the billing account.
+          maxLength: 2
+        is_default:
+          type: boolean
+          description: Offer this account first when shipping to this manufacturer.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - account_number_last4
+      - account_number_set
+      - carrier
+      - carrier_display
+      - created_at
+      - id
+      - manufacturer_name
+      - secret_readable
+      - updated_at
+    ShippingBillingAccountRequest:
+      type: object
+      description: |-
+        A billing account. The number is write-only and never comes back.
+
+        `account_number` is declared `write_only`; the read side gets only
+        `account_number_last4` and `account_number_set`, which are hints, not
+        secrets.
+      properties:
+        manufacturer:
+          type: integer
+          nullable: true
+          description: The manufacturer whose account is billed. Leave blank for the
+            organization's own account (payer 'sender').
+        carrier:
+          $ref: '#/components/schemas/CarrierEnum'
+        account_number:
+          type: string
+          writeOnly: true
+          description: Carrier account number. Stored encrypted; never returned.
+          maxLength: 64
+        billing_postal_code:
+          type: string
+          description: Postal code registered against the account. Required by FedEx
+            and UPS for third-party billing.
+          maxLength: 20
+        billing_country:
+          type: string
+          minLength: 1
+          description: ISO 3166-1 alpha-2 country of the billing account.
+          maxLength: 2
+        is_default:
+          type: boolean
+          description: Offer this account first when shipping to this manufacturer.
+        is_active:
+          type: boolean
+          description: Operational state of the account (distinct from soft-delete).
+      required:
+      - carrier
+    StatusEnum:
+      enum:
+      - draft
+      - purchasing
+      - purchased
+      - failed
+      - refund_requested
+      - refunded
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `purchasing` - Purchasing
+        * `purchased` - Purchased
+        * `failed` - Failed
+        * `refund_requested` - Refund requested
+        * `refunded` - Refunded
     StringFacetResponse:
       type: object
       description: Distinct free-text values, sorted.

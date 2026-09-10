@@ -34,7 +34,15 @@ describe('findNavTrail', () => {
     expect(trail?.item.title).toBe('Manufacturers');
   });
 
-  it('locates Surgeons, the second item in its section', () => {
+  it('locates Facilities, the first item in its section', () => {
+    // First because that is the prototype's order for Directory Profiles.
+    const trail = findNavTrail('/directory/facilities');
+
+    expect(trail?.section.title).toBe('Directory Profiles');
+    expect(trail?.item.title).toBe('Facilities');
+  });
+
+  it('locates Surgeons, the last item in its section', () => {
     const trail = findNavTrail('/directory/surgeons');
 
     expect(trail?.section.title).toBe('Directory Profiles');
@@ -90,6 +98,15 @@ describe('findNavSubtree', () => {
     expect(findNavSubtree('/directory/manufacturers/123')?.item.title).toBe('Manufacturers');
     expect(findNavSubtree('/directory/manufacturers/new')?.item.title).toBe('Manufacturers');
     expect(findNavSubtree('/directory/manufacturers/123/edit')?.item.title).toBe('Manufacturers');
+  });
+
+  it('covers the facility detail, form and edit screens', () => {
+    // Same three as manufacturers above: none is a nav target, and all three
+    // should leave Facilities highlighted with the breadcrumb reading through
+    // it.
+    expect(findNavSubtree('/directory/facilities/41')?.item.title).toBe('Facilities');
+    expect(findNavSubtree('/directory/facilities/new')?.item.title).toBe('Facilities');
+    expect(findNavSubtree('/directory/facilities/41/edit')?.item.title).toBe('Facilities');
   });
 
   it('does not match a sibling that merely shares a prefix', () => {

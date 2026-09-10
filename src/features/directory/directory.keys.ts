@@ -1,3 +1,4 @@
+import type { FacilitySearch } from './facilities.search';
 import type { ManufacturerSearch } from './manufacturers.search';
 import type { ProcedureSearch } from './procedures.search';
 import type { SurgeonSearch } from './surgeons.search';
@@ -40,6 +41,43 @@ export const manufacturerKeys = {
    * `productCatalogKeys.detail` makes.
    */
   detail: (id: number) => [...manufacturerKeys.details(), id] as const,
+};
+
+/**
+ * Facilities, their own root.
+ *
+ * Like `manufacturerKeys` and unlike the other two, a write here has to
+ * invalidate a **second** root — `transferKeys.targets()`, the Transfer
+ * dialog's destination picker. That endpoint builds its facility half from
+ * `Facility.objects.filter(is_active=True)`, so deactivating a facility takes
+ * it out of the picker, reactivating puts it back, and renaming one relabels
+ * it. None of that is visible from this feature, which is exactly why it is
+ * written down here rather than left to be rediscovered — see
+ * `facilities-screen.tsx`, which declares the pair.
+ *
+ * `list_stock_item_facility_facets` is deliberately *not* a third root. It is
+ * derived from stock assignments rather than from `is_active`, so a
+ * deactivation cannot stale it; a rename can stale its labels, but
+ * manufacturers has the identical exposure through
+ * `list_stock_item_manufacturer_facets` and deliberately leaves it alone.
+ */
+export const facilityKeys = {
+  all: ['directory-facilities'] as const,
+  list: (search: FacilitySearch) => [...facilityKeys.all, 'list', search] as const,
+  /**
+   * Every facility's composite document — the prefix an address write
+   * invalidates.
+   *
+   * The prefix rather than one id, for the reason `manufacturerKeys.details()`
+   * gives: the address book belongs to the shared `Company`, so two roles this
+   * organization owns may point at one book and editing through either has to
+   * leave both stale.
+   *
+   * Not `all`: the *listing* shows a name, a type and two statuses, none of
+   * which an address can change.
+   */
+  details: () => [...facilityKeys.all, 'detail'] as const,
+  detail: (id: number) => [...facilityKeys.details(), id] as const,
 };
 
 /**

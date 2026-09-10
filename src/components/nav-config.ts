@@ -2,6 +2,7 @@ import type { LinkProps } from '@tanstack/react-router';
 import {
   FactoryIcon,
   FolderIcon,
+  HospitalIcon,
   StethoscopeIcon,
   UserRoundIcon,
   LayoutDashboardIcon,
@@ -40,9 +41,10 @@ export interface NavSection {
 /**
  * The prototype's section order, as far as it is built. Five more are still to
  * come (Cases / Restocks, Ordering, Quotes, Pricing, Reports), and each arrives
- * with the screens behind it rather than as a row of dead links — which is also
- * why Directory Profiles lists just Manufacturers and Surgeons, not the
- * Facilities and Users the prototype shows beside them.
+ * with the screens behind it rather than as a row of dead links — which is why
+ * Directory Profiles lists three of the prototype's four and not the Users it
+ * shows beside them. Facilities was the fourth until the backend published a
+ * catalog for it; it sits first here because that is the prototype's order.
  *
  * **Configuration is not the prototype's name for it — that is "Setup"** — and
  * the difference is deliberate rather than an oversight, so do not "fix" it
@@ -54,6 +56,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Directory Profiles',
     icon: FolderIcon,
     items: [
+      { title: 'Facilities', to: '/directory/facilities', icon: HospitalIcon },
       { title: 'Manufacturers', to: '/directory/manufacturers', icon: FactoryIcon },
       { title: 'Surgeons', to: '/directory/surgeons', icon: UserRoundIcon },
     ],
@@ -82,6 +85,7 @@ export const NAV_SECTIONS: NavSection[] = [
       // nothing about procedures. A deliberate addition, and it sits here
       // rather than beside those four because a procedure is something the
       // organization configures for its own use, not a party it deals with.
+      // Facilities is the one of those four this app now ships, above.
       { title: 'Procedures', to: '/configuration/procedures', icon: StethoscopeIcon },
     ],
   },

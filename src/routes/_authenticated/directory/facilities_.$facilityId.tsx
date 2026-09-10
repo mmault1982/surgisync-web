@@ -7,106 +7,107 @@ import { useAuth } from '@/auth/auth-context';
 import { canManageOrgRecords } from '@/auth/permissions';
 import { Button } from '@/components/ui/button';
 import { CompanyAddressesCard } from '@/features/directory/components/company-addresses-card';
-import { ManufacturerDetailScreen } from '@/features/directory/components/manufacturer-detail-screen';
-import { manufacturerKeys } from '@/features/directory/directory.keys';
-import { manufacturerDetailQuery } from '@/features/directory/manufacturers.queries';
+import { FacilityDetailScreen } from '@/features/directory/components/facility-detail-screen';
+import { facilityKeys } from '@/features/directory/directory.keys';
+import { facilityDetailQuery } from '@/features/directory/facilities.queries';
 
 /**
- * Manufacturer Detail.
+ * Facility Detail.
  *
- * A sibling of the list rather than a child of it: `manufacturers.tsx` has no
+ * A sibling of the list rather than a child of it: `facilities.tsx` has no
  * `<Outlet/>`, and the trailing `_` in this filename is what opts the route out
- * of nesting under it while still resolving to `/directory/manufacturers/{id}`.
+ * of nesting under it while still resolving to `/directory/facilities/{id}`.
  * It stays inside `_authenticated/`, so the guard and `AppShell` still apply.
- * The same shape as Product Detail.
+ * The same shape as Manufacturer Detail.
  */
-export const Route = createFileRoute('/_authenticated/directory/manufacturers_/$manufacturerId')({
+export const Route = createFileRoute('/_authenticated/directory/facilities_/$facilityId')({
   // The crumb the nav tree cannot supply — this screen is not a nav target.
   // See `findNavSubtree` in nav-config.ts for the other half.
-  staticData: { breadcrumb: 'Manufacturer Detail' },
+  staticData: { breadcrumb: 'Facility Detail' },
   loader: async ({ context, params }) => {
-    const id = Number(params.manufacturerId);
+    const id = Number(params.facilityId);
     // A junk id is a 404, not a request. Guarding here rather than in a `parse`
     // keeps `Route.useParams()` a plain string and the link call sites simple.
     if (!Number.isInteger(id) || id <= 0) throw notFound();
 
     try {
       // One request answers the record, the `Company` identity behind it and
-      // that company's address book — so there is nothing to prefetch beside
-      // it the way Product Detail warms its bill of materials.
-      return await context.queryClient.ensureQueryData(manufacturerDetailQuery(id));
+      // that company's address book.
+      return await context.queryClient.ensureQueryData(facilityDetailQuery(id));
     } catch (error) {
-      // A manufacturer that does not exist and one belonging to another
+      // A facility that does not exist and one belonging to another
       // organization are deliberately indistinguishable. Both want the
       // not-found screen.
+      //
+      // A *deactivated* facility is neither: the backend's detail queryset
+      // carries no `is_active` filter, precisely so a stood-down row stays
+      // reachable and can be brought back. So this never fires for one.
       if (isNotFound(error)) throw notFound();
       throw error;
     }
   },
-  errorComponent: ({ error }) => <ManufacturerDetailError message={errorMessage(error)} />,
+  errorComponent: ({ error }) => <FacilityDetailError message={errorMessage(error)} />,
   notFoundComponent: () => (
-    <ManufacturerDetailError message="That manufacturer no longer exists, or you do not have access to it." />
+    <FacilityDetailError message="That facility no longer exists, or you do not have access to it." />
   ),
-  component: ManufacturerDetailPage,
+  component: FacilityDetailPage,
 });
 
-function ManufacturerDetailPage() {
-  const { manufacturerId } = Route.useParams();
+function FacilityDetailPage() {
+  const { facilityId } = Route.useParams();
   const navigate = Route.useNavigate();
-  const id = Number(manufacturerId);
+  const id = Number(facilityId);
 
   // The loader has already resolved this, so `data` is present on first paint.
-  const manufacturer = useQuery(manufacturerDetailQuery(id)).data!;
+  const facility = useQuery(facilityDetailQuery(id)).data!;
 
   // One derived boolean, computed once and threaded down. Two props is how the
   // record card and the address book end up disagreeing about who may write.
   // Writes against a row this organization does not own are 404s, so offering
   // the controls would only teach that on submit.
-  const canWrite = canManageOrgRecords(useAuth().user?.role) && manufacturer.is_owned;
+  const canWrite = canManageOrgRecords(useAuth().user?.role) && facility.is_owned;
 
   return (
     <div className="p-6">
       <PageTitle />
-      <ManufacturerDetailScreen
-        manufacturer={manufacturer}
+      <FacilityDetailScreen
+        facility={facility}
         canManage={canWrite}
         onEdit={() => {
           void navigate({
-            to: '/directory/manufacturers/$manufacturerId/edit',
-            params: { manufacturerId },
+            to: '/directory/facilities/$facilityId/edit',
+            params: { facilityId },
           });
         }}
       />
 
       {/*
-        The company's id, not the manufacturer's. They are unrelated integers,
-        and the address endpoints put the owning organization in the URL on
-        purpose — that identity may be shared with this organization's facility
-        and tenant rows.
+        The company's id, not the facility's. They are unrelated integers, and
+        the address endpoints put the owning organization in the URL on purpose
+        — that identity may be shared with this organization's manufacturer and
+        tenant rows.
       */}
       <CompanyAddressesCard
-        companyId={manufacturer.company.id}
-        addresses={manufacturer.company.addresses}
+        companyId={facility.company.id}
+        addresses={facility.company.addresses}
         canManage={canWrite}
-        roleNoun="manufacturer"
+        roleNoun="facility"
         // The detail documents, not the listing: an address cannot change a
-        // table showing a name and whether a barcode exists, and evicting
-        // `catalogKeys` would throw away a warm Receive-picker cache for a
-        // change that cannot reach it.
-        invalidates={[manufacturerKeys.details()]}
+        // table showing a name, a type and a status.
+        invalidates={[facilityKeys.details()]}
       />
     </div>
   );
 }
 
 /**
- * `‹ Manufacturer Detail`.
+ * `‹ Facility Detail`.
  *
  * History rather than a link when there is history to go back to: the list
- * holds a search term and a page in its URL, and `retainSearchParams` keeps
- * only `page_size` across a navigation. A plain `<Link>` back would silently
- * discard the search of anyone who had narrowed the table — which is exactly
- * the person who came here from it.
+ * holds a search term, three filters and a page in its URL, and
+ * `retainSearchParams` keeps only `page_size` across a navigation. A plain
+ * `<Link>` back would silently discard the filters of anyone who had narrowed
+ * the table — which is exactly the person who came here from it.
  */
 function PageTitle() {
   const router = useRouter();
@@ -125,23 +126,23 @@ function PageTitle() {
         </Button>
       ) : (
         <Button variant="ghost" size="icon-sm" aria-label="Back" asChild>
-          <Link to="/directory/manufacturers">
+          <Link to="/directory/facilities">
             <ChevronLeftIcon />
           </Link>
         </Button>
       )}
-      <h1 className="text-2xl font-semibold text-primary">Manufacturer Detail</h1>
+      <h1 className="text-2xl font-semibold text-primary">Facility Detail</h1>
     </div>
   );
 }
 
-function ManufacturerDetailError({ message }: { message: string }) {
+function FacilityDetailError({ message }: { message: string }) {
   return (
     <div className="p-12 text-center">
-      <p className="font-medium text-foreground">Could not open this manufacturer</p>
+      <p className="font-medium text-foreground">Could not open this facility</p>
       <p className="mt-1 text-sm text-muted-foreground">{message}</p>
       <Button variant="outline" className="mt-4" asChild>
-        <Link to="/directory/manufacturers">Back to Manufacturers</Link>
+        <Link to="/directory/facilities">Back to Facilities</Link>
       </Button>
     </div>
   );

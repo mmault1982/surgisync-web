@@ -14,15 +14,19 @@ import { ADDRESS_KIND_LABELS, addressLabel } from '../address-form';
  * Presentational: props only, no hooks and no navigation, the same split
  * `manufacturers-table.tsx` makes.
  *
+ * Named for the `Company`, not for any role that points at one, because that
+ * is what the rows actually belong to — the manufacturer screens were merely
+ * the first caller. Nothing in this file was ever manufacturer-specific.
+ *
  * Hand-rolled `<table>` markup, and each column owns **both** its header and
  * its cell — on the on-hand screen those were once two parallel arrays, and
  * swapping two `<td>`s rendered the wrong field under the right header while
  * passing `tsc`, lint and every test.
  *
  * Rows render in the order the server sent them: `-is_primary, kind, id`,
- * declared on `Address.Meta` so the copy nested in the manufacturer document
- * and the standalone list cannot disagree. Re-sorting here would introduce a
- * third order.
+ * declared on `Address.Meta` so the copy nested in a role's document and the
+ * standalone list cannot disagree. Re-sorting here would introduce a third
+ * order.
  */
 interface Column {
   key: string;
@@ -98,7 +102,7 @@ const COLUMNS: Column[] = [
   },
 ];
 
-export function ManufacturerAddressesTable({
+export function CompanyAddressesTable({
   rows,
   canManage,
   onEdit,

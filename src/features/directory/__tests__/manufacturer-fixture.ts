@@ -1,4 +1,6 @@
-import type { Address, Company, ManufacturerDetail } from '@/api/generated/model';
+import type { ManufacturerDetail } from '@/api/generated/model';
+
+import { companyFixture } from './company-fixture';
 
 /**
  * A manufacturer and the company behind it.
@@ -7,25 +9,10 @@ import type { Address, Company, ManufacturerDetail } from '@/api/generated/model
  * address and contact writes are addressed by the *company's* id, and the two
  * are unrelated integers — a client that reused the manufacturer's would work
  * against any fixture that made them equal.
+ *
+ * `companyFixture` and `addressFixture` live in `company-fixture.ts` now,
+ * because the facility suite needs the same two.
  */
-export function companyFixture(overrides: Partial<Company> = {}): Company {
-  return {
-    id: 17,
-    phone: '',
-    fax: '',
-    email: '',
-    contact_name: '',
-    contact_title: '',
-    contact_email: '',
-    contact_phone: '',
-    billing_contact_name: '',
-    billing_contact_email: '',
-    billing_contact_phone: '',
-    addresses: [],
-    ...overrides,
-  };
-}
-
 export function manufacturerDetailFixture(
   overrides: Partial<ManufacturerDetail> = {},
 ): ManufacturerDetail {
@@ -39,21 +26,4 @@ export function manufacturerDetailFixture(
   };
 }
 
-export function addressFixture(overrides: Partial<Address> = {}): Address {
-  return {
-    id: 88,
-    kind: 'physical',
-    is_primary: false,
-    label: '',
-    address_line_1: '1 Mill Road',
-    address_line_2: '',
-    city: 'Bloomington',
-    state: 'IN',
-    zip_code: '47401',
-    country: 'US',
-    contact_name: '',
-    phone: '',
-    instructions: '',
-    ...overrides,
-  };
-}
+export { addressFixture, companyFixture } from './company-fixture';

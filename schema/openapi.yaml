@@ -744,6 +744,295 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorDetail'
           description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/facilities/:
+    get:
+      operationId: list_facilities_catalog
+      description: |-
+        Facilities this organization owns, sorted by name. There is no shared directory: every facility belongs to exactly one organization, and a caller with no resolvable one sees nothing.
+
+        **Deactivated facilities are included by default.** This is the management catalog, and deactivation is a state it exists to show and undo — not a removal. Pass `is_active=true` for the working list (which is what a picker wants) or `is_active=false` for the deactivated ones. Every row carries `is_active` so the distinction is always renderable.
+
+        **Always paginated** — the response shape does not vary with the query parameters. The default page is wide enough to hold the whole catalog in one response.
+
+        For the assignment-narrowed picker the mobile app uses, see `GET /api/v1/facilities/`; it is a different resource.
+      parameters:
+      - in: query
+        name: facility_type
+        schema:
+          type: string
+        description: Filter by facility type. Repeatable.
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active state. Omit to get both.
+      - in: query
+        name: onboarding_status
+        schema:
+          type: string
+        description: Filter by onboarding status. Repeatable.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Case-insensitive match on facility name.
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFacilityCatalogList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    post:
+      operationId: create_facility
+      description: |-
+        Add a facility to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
+
+        A fresh `Company` identity is created to back it, so the response is the full document with `company` included — a client that has just created a facility can add its addresses through `/api/v1/directory/companies/{id}/addresses/` without a second request.
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityWriteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+  /api/v1/directory/facilities/{id}/:
+    get:
+      operationId: retrieve_facility_detail
+      description: |-
+        One facility, if this organization may see it — with the organization identity behind it and that identity's addresses, in one request.
+
+        `company` is the shared `Company` a role points at. It may be referenced by this organization's other roles too, which is why `company.id` is published: it is what lets a client notice that two roles share one address book before someone edits it. Addresses are read-only here — write them through `/api/v1/directory/companies/{id}/addresses/`.
+
+        Deactivated facilities are readable here, which is what makes reactivation possible.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    patch:
+      operationId: partial_update_facility
+      description: |-
+        Amend a facility this organization owns. Organization admins only.
+
+        `is_active` is writable, and `true` is how a deactivated facility comes back.
+
+        **Renaming writes through to the `Company`.** `Facility.name` is a one-way mirror of `company.name`, so a rename lands on the identity — and if that identity is shared with another of this organization's roles (a hospital that is also a manufacturer, say), that role is renamed too. Check `company.id` against your other rows if that matters.
+
+        Ownership and the `Company` link are not accepted from the body: the first comes from the session, and repointing a facility at a different identity is a merge rather than a field edit.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+          description: Validation failed. Keys are field names, plus `non_field_errors`
+            for payload-level errors.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
+    delete:
+      operationId: deactivate_facility
+      description: |-
+        Deactivate a facility this organization owns. Organization admins only.
+
+        **This is not a delete, and it differs from the manufacturer and procedure catalogs.** `Facility` has no soft-delete column, so the row is marked `is_active=false` and nothing else changes: it stays in this catalog, stays readable at this URL, and **keeps its name**, so the name is not freed for reuse. Every case, quote, stock assignment, price file and user assignment pointing at it keeps resolving. `PATCH {"is_active": true}` undoes it.
+
+        What does change: the facility stops appearing in `GET /api/v1/facilities/`, so it leaves the case and quote pickers, and a user whose only facility assignment is this one sees an empty picker until it is reactivated.
+
+        Answers 200 with the updated document rather than 204, so the client can show what it just stood down.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Inventory
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: No such object, or it belongs to another organization. The
+            two are deliberately indistinguishable.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authentication credentials were not supplied or are invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetail'
+          description: Authenticated, but not permitted to perform this action.
   /api/v1/directory/manufacturers/:
     get:
       operationId: list_manufacturers_catalog
@@ -1415,7 +1704,8 @@ paths:
   /api/v1/facilities/:
     get:
       operationId: list_facilities
-      description: Get list of active facilities with optional search.
+      description: Get list of active facilities in your organization, with optional
+        search.
       parameters:
       - in: query
         name: search
@@ -1638,7 +1928,7 @@ paths:
   /api/v1/facility-assignments/bulk_assign/:
     post:
       operationId: api_v1_facility_assignments_bulk_assign_create
-      description: Assign a user to multiple facilities at once.
+      description: Assign a user to multiple facilities in your organization at once.
       tags:
       - api
       requestBody:
@@ -9110,6 +9400,20 @@ paths:
           description: Rate limited.
 components:
   schemas:
+    AccreditationStatusEnum:
+      enum:
+      - accredited
+      - provisional
+      - pending
+      - expired
+      - not_applicable
+      type: string
+      description: |-
+        * `accredited` - Accredited
+        * `provisional` - Provisional
+        * `pending` - Pending
+        * `expired` - Expired
+        * `not_applicable` - Not Applicable
     Address:
       type: object
       description: |-
@@ -10013,6 +10317,175 @@ components:
       - id
       - user
       - user_email
+    FacilityCatalog:
+      type: object
+      description: |-
+        One facility, as a management list renders it.
+
+        Deliberately lean: a catalog page is 500 rows and none of them needs an
+        address book. The detail read adds the identity and the compliance blocks.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Facility Name
+          maxLength: 200
+        facility_type:
+          allOf:
+          - $ref: '#/components/schemas/FacilityTypeEnum'
+          description: |-
+            Type of healthcare facility for categorization.
+
+            * `hospital` - Hospital
+            * `surgery_center` - Ambulatory Surgery Center
+            * `clinic` - Clinic
+            * `physician_office` - Physician Office
+            * `other` - Other
+        onboarding_status:
+          allOf:
+          - $ref: '#/components/schemas/OnboardingStatusEnum'
+          description: |-
+            Tracks facility setup progress.
+
+            * `not_started` - Not Started
+            * `in_progress` - In Progress
+            * `pending_review` - Pending Review
+            * `completed` - Completed
+        is_active:
+          type: boolean
+        is_owned:
+          type: boolean
+          readOnly: true
+          description: True when this facility belongs to your organization and may
+            be amended or deactivated.
+      required:
+      - id
+      - is_owned
+      - name
+    FacilityDetail:
+      type: object
+      description: |-
+        One facility and everything attached to it.
+
+        The composite read: the role, the identity behind it, and that identity's
+        addresses in one request. Three round trips would reassemble a join on
+        mobile, where latency is the cost that matters, and would make both clients
+        learn the role -> company -> addresses chain — which is exactly the internal
+        structure still in motion.
+
+        `company.id` is not decoration. It is what lets a client notice that two
+        roles share one address book *before* someone edits it, and it is the id the
+        address endpoints are keyed on.
+
+        `parent_company` stays unexposed, as it is everywhere else in this app: it is
+        the tenant, and `is_owned` answers the only question a client has about it.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Facility Name
+          maxLength: 200
+        facility_type:
+          allOf:
+          - $ref: '#/components/schemas/FacilityTypeEnum'
+          description: |-
+            Type of healthcare facility for categorization.
+
+            * `hospital` - Hospital
+            * `surgery_center` - Ambulatory Surgery Center
+            * `clinic` - Clinic
+            * `physician_office` - Physician Office
+            * `other` - Other
+        onboarding_status:
+          allOf:
+          - $ref: '#/components/schemas/OnboardingStatusEnum'
+          description: |-
+            Tracks facility setup progress.
+
+            * `not_started` - Not Started
+            * `in_progress` - In Progress
+            * `pending_review` - Pending Review
+            * `completed` - Completed
+        is_active:
+          type: boolean
+        is_owned:
+          type: boolean
+          readOnly: true
+          description: True when this facility belongs to your organization and may
+            be amended or deactivated.
+        gpo_affiliation:
+          type: string
+          description: Group Purchasing Organization (e.g., Vizient, Premier, HealthTrust).
+          maxLength: 200
+        gpo_member_id:
+          type: string
+          description: Facility's member ID within their GPO.
+          maxLength: 50
+        idn_affiliation:
+          type: string
+          description: Integrated Delivery Network (e.g., HCA, CommonSpirit).
+          maxLength: 200
+        npi_number:
+          type: string
+          description: 10-digit National Provider Identifier (Type 2 - Organization)
+            for billing compliance, or blank if not recorded.
+          maxLength: 10
+          pattern: ^(\d{10})?$
+        tax_id:
+          type: string
+          title: Tax ID / EIN
+          description: Federal Tax ID or Employer Identification Number (XX-XXXXXXX
+            format).
+          maxLength: 20
+        dea_number:
+          type: string
+          description: DEA registration number for controlled substance handling,
+            or blank if not recorded.
+          maxLength: 9
+          pattern: ^([A-Z]{2}\d{7})?$
+        state_license_number:
+          type: string
+          title: 'State License #'
+          description: State-issued facility license number.
+          maxLength: 50
+        state_license_expiration:
+          type: string
+          format: date
+          nullable: true
+        accreditation_status:
+          description: |-
+            Current accreditation status (TJC, AAAHC, etc.).
+
+            * `accredited` - Accredited
+            * `provisional` - Provisional
+            * `pending` - Pending
+            * `expired` - Expired
+            * `not_applicable` - Not Applicable
+          oneOf:
+          - $ref: '#/components/schemas/AccreditationStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        accreditation_expiration:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          description: Internal administrative notes (not visible to facility).
+        company:
+          allOf:
+          - $ref: '#/components/schemas/Company'
+          readOnly: true
+          description: The shared organization identity behind this facility. Addresses
+            are read-only here — write them through /api/v1/directory/companies/{id}/addresses/.
+      required:
+      - company
+      - id
+      - is_owned
+      - name
     FacilitySurgeonDetail:
       type: object
       description: Full serializer for detail/create/update views.
@@ -10085,6 +10558,125 @@ components:
       - id
       - surgeon
       - surgeon_name
+    FacilityTypeEnum:
+      enum:
+      - hospital
+      - surgery_center
+      - clinic
+      - physician_office
+      - other
+      type: string
+      description: |-
+        * `hospital` - Hospital
+        * `surgery_center` - Ambulatory Surgery Center
+        * `clinic` - Clinic
+        * `physician_office` - Physician Office
+        * `other` - Other
+    FacilityWriteRequest:
+      type: object
+      description: |-
+        Create or amend a facility an organization owns.
+
+        `parent_company` and `company` are deliberately absent. Ownership comes from
+        the caller's session — accepting it from the body would let a client file a
+        row in another tenant's list — and the `Company` is minted here on create.
+
+        `is_active` *is* writable, and that is the point: DELETE on this resource is
+        a deactivation rather than the soft delete manufacturers get, so `PATCH
+        {"is_active": true}` is how a facility comes back. The detail view's queryset
+        carries no active filter so that such a row is still reachable.
+
+        Read responses use `FacilityCatalogSerializer` / `FacilityDetailSerializer`;
+        this one never renders.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Facility Name
+          maxLength: 200
+        facility_type:
+          allOf:
+          - $ref: '#/components/schemas/FacilityTypeEnum'
+          description: |-
+            Type of healthcare facility for categorization.
+
+            * `hospital` - Hospital
+            * `surgery_center` - Ambulatory Surgery Center
+            * `clinic` - Clinic
+            * `physician_office` - Physician Office
+            * `other` - Other
+        onboarding_status:
+          allOf:
+          - $ref: '#/components/schemas/OnboardingStatusEnum'
+          description: |-
+            Tracks facility setup progress.
+
+            * `not_started` - Not Started
+            * `in_progress` - In Progress
+            * `pending_review` - Pending Review
+            * `completed` - Completed
+        is_active:
+          type: boolean
+        gpo_affiliation:
+          type: string
+          description: Group Purchasing Organization (e.g., Vizient, Premier, HealthTrust).
+          maxLength: 200
+        gpo_member_id:
+          type: string
+          description: Facility's member ID within their GPO.
+          maxLength: 50
+        idn_affiliation:
+          type: string
+          description: Integrated Delivery Network (e.g., HCA, CommonSpirit).
+          maxLength: 200
+        npi_number:
+          type: string
+          description: 10-digit National Provider Identifier (Type 2 - Organization)
+            for billing compliance, or blank if not recorded.
+          maxLength: 10
+          pattern: ^(\d{10})?$
+        tax_id:
+          type: string
+          title: Tax ID / EIN
+          description: Federal Tax ID or Employer Identification Number (XX-XXXXXXX
+            format).
+          maxLength: 20
+        dea_number:
+          type: string
+          description: DEA registration number for controlled substance handling,
+            or blank if not recorded.
+          maxLength: 9
+          pattern: ^([A-Z]{2}\d{7})?$
+        state_license_number:
+          type: string
+          title: 'State License #'
+          description: State-issued facility license number.
+          maxLength: 50
+        state_license_expiration:
+          type: string
+          format: date
+          nullable: true
+        accreditation_status:
+          description: |-
+            Current accreditation status (TJC, AAAHC, etc.).
+
+            * `accredited` - Accredited
+            * `provisional` - Provisional
+            * `pending` - Pending
+            * `expired` - Expired
+            * `not_applicable` - Not Applicable
+          oneOf:
+          - $ref: '#/components/schemas/AccreditationStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        accreditation_expiration:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          description: Internal administrative notes (not visible to facility).
+      required:
+      - name
     GenerateOtpEmailRequestRequest:
       type: object
       properties:
@@ -11878,6 +12470,18 @@ components:
     NullEnum:
       enum:
       - null
+    OnboardingStatusEnum:
+      enum:
+      - not_started
+      - in_progress
+      - pending_review
+      - completed
+      type: string
+      description: |-
+        * `not_started` - Not Started
+        * `in_progress` - In Progress
+        * `pending_review` - Pending Review
+        * `completed` - Completed
     OrganizationTypeEnum:
       enum:
       - distributor
@@ -11910,6 +12514,37 @@ components:
         * `owned` - Owned
         * `consigned` - Consigned
         * `loaned` - Loaned
+    PaginatedFacilityCatalogList:
+      type: object
+      required:
+      - total_data
+      - current_page
+      - total_pages
+      - results
+      properties:
+        total_data:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        current_page:
+          type: integer
+          example: 3
+        total_pages:
+          type: integer
+          example: 13
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacilityCatalog'
     PaginatedHanselCredentialList:
       type: object
       required:
@@ -12844,6 +13479,109 @@ components:
         parent_company:
           type: integer
           nullable: true
+    PatchedFacilityWriteRequest:
+      type: object
+      description: |-
+        Create or amend a facility an organization owns.
+
+        `parent_company` and `company` are deliberately absent. Ownership comes from
+        the caller's session — accepting it from the body would let a client file a
+        row in another tenant's list — and the `Company` is minted here on create.
+
+        `is_active` *is* writable, and that is the point: DELETE on this resource is
+        a deactivation rather than the soft delete manufacturers get, so `PATCH
+        {"is_active": true}` is how a facility comes back. The detail view's queryset
+        carries no active filter so that such a row is still reachable.
+
+        Read responses use `FacilityCatalogSerializer` / `FacilityDetailSerializer`;
+        this one never renders.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          title: Facility Name
+          maxLength: 200
+        facility_type:
+          allOf:
+          - $ref: '#/components/schemas/FacilityTypeEnum'
+          description: |-
+            Type of healthcare facility for categorization.
+
+            * `hospital` - Hospital
+            * `surgery_center` - Ambulatory Surgery Center
+            * `clinic` - Clinic
+            * `physician_office` - Physician Office
+            * `other` - Other
+        onboarding_status:
+          allOf:
+          - $ref: '#/components/schemas/OnboardingStatusEnum'
+          description: |-
+            Tracks facility setup progress.
+
+            * `not_started` - Not Started
+            * `in_progress` - In Progress
+            * `pending_review` - Pending Review
+            * `completed` - Completed
+        is_active:
+          type: boolean
+        gpo_affiliation:
+          type: string
+          description: Group Purchasing Organization (e.g., Vizient, Premier, HealthTrust).
+          maxLength: 200
+        gpo_member_id:
+          type: string
+          description: Facility's member ID within their GPO.
+          maxLength: 50
+        idn_affiliation:
+          type: string
+          description: Integrated Delivery Network (e.g., HCA, CommonSpirit).
+          maxLength: 200
+        npi_number:
+          type: string
+          description: 10-digit National Provider Identifier (Type 2 - Organization)
+            for billing compliance, or blank if not recorded.
+          maxLength: 10
+          pattern: ^(\d{10})?$
+        tax_id:
+          type: string
+          title: Tax ID / EIN
+          description: Federal Tax ID or Employer Identification Number (XX-XXXXXXX
+            format).
+          maxLength: 20
+        dea_number:
+          type: string
+          description: DEA registration number for controlled substance handling,
+            or blank if not recorded.
+          maxLength: 9
+          pattern: ^([A-Z]{2}\d{7})?$
+        state_license_number:
+          type: string
+          title: 'State License #'
+          description: State-issued facility license number.
+          maxLength: 50
+        state_license_expiration:
+          type: string
+          format: date
+          nullable: true
+        accreditation_status:
+          description: |-
+            Current accreditation status (TJC, AAAHC, etc.).
+
+            * `accredited` - Accredited
+            * `provisional` - Provisional
+            * `pending` - Pending
+            * `expired` - Expired
+            * `not_applicable` - Not Applicable
+          oneOf:
+          - $ref: '#/components/schemas/AccreditationStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        accreditation_expiration:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          description: Internal administrative notes (not visible to facility).
     PatchedHanselCredentialRequest:
       type: object
       description: |-

@@ -19,52 +19,69 @@ import {
   buildAddressBody,
   buildAddressPatch,
 } from '../address-form';
-import { manufacturerKeys } from '../directory.keys';
 
 import { AddressDialog } from './address-dialog';
-import { ManufacturerAddressesTable } from './manufacturer-addresses-table';
+import { CompanyAddressesTable } from './company-addresses-table';
 
 /**
- * An organization's address book, below its manufacturer's record.
+ * An organization's address book, below the record of a role it plays.
  *
- * A sibling of `ManufacturerDetailScreen` mounted by the route, not a child of
- * it — that screen is props-only with no hooks, no query client and no router,
- * which is what lets its test render it bare, and this panel needs two of the
- * three. Product Detail composes its Bill of Materials the same way.
+ * A sibling of the detail screen mounted by the route, not a child of it —
+ * those screens are props-only with no hooks, no query client and no router,
+ * which is what lets their tests render them bare, and this panel needs two of
+ * the three. Product Detail composes its Bill of Materials the same way.
  *
  * The container half of the usual split: this owns the three dialogs and the
- * mutations, `ManufacturerAddressesTable` owns the markup.
+ * mutations, `CompanyAddressesTable` owns the markup.
  *
  * **It owns no query.** The rows arrive as a prop, off the composite read the
- * route already made — one request answers the manufacturer, its `Company` and
- * that company's addresses. So unlike `KitComponentsCard` there is no loading
- * or error state here (both belong to the route's loader) and no pager (the
+ * route already made — one request answers the role, its `Company` and that
+ * company's addresses. So unlike `KitComponentsCard` there is no loading or
+ * error state here (both belong to the route's loader) and no pager (the
  * collection is unpaginated by design: an address book is a handful of rows).
+ *
+ * ## Why this is company-shaped rather than manufacturer-shaped
+ *
+ * The book hangs off the shared `Company`, and so does every write it makes.
+ * Manufacturers was simply the first caller; Facilities is the second, and the
+ * only things that were ever role-specific are the query root to invalidate
+ * and the noun in the copy. Both are props now — which is also the shape that
+ * keeps this from evicting a cache it knows nothing about.
  */
-export function ManufacturerAddressesCard({
+export function CompanyAddressesCard({
   companyId,
   addresses,
   canManage,
+  roleNoun,
+  invalidates,
 }: {
   /**
-   * The **company's** id, never the manufacturer's. They are unrelated
-   * integers, and the backend publishes this one precisely so a client can
-   * notice when two roles share one address book.
+   * The **company's** id, never the role's. They are unrelated integers, and
+   * the backend publishes this one precisely so a client can notice when two
+   * roles share one address book.
    */
   companyId: number;
   addresses: readonly Address[];
   canManage: boolean;
+  /**
+   * What to call the record this book sits under — `'manufacturer'`,
+   * `'facility'`. Lower case and singular; it is dropped mid-sentence.
+   */
+  roleNoun: string;
+  /**
+   * The query roots an address write invalidates.
+   *
+   * A prop rather than a constant, and deliberately narrower than the caller's
+   * full set: an address cannot change a *listing* that shows a name and a
+   * status, so callers pass their `details()` prefix. The prefix rather than
+   * one id, because two roles this organization owns may point at one
+   * `Company` — see `directory.keys.ts`.
+   */
+  invalidates: readonly (readonly unknown[])[];
 }) {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Address | null>(null);
   const [deleting, setDeleting] = useState<Address | null>(null);
-
-  // The detail documents, not the listing: an address cannot change a table
-  // showing a name and whether a barcode exists, and evicting `catalogKeys`
-  // would throw away a warm Receive-picker cache for a change that cannot
-  // reach it. The prefix rather than one id, because two manufacturer roles
-  // may share this company — see `directory.keys.ts`.
-  const invalidates = [manufacturerKeys.details()] as const;
 
   return (
     <Card className="mt-5 max-w-5xl gap-0 overflow-hidden py-0">
@@ -88,13 +105,13 @@ export function ManufacturerAddressesCard({
         {/*
           Said where it is true rather than left to be discovered. The book
           hangs off the shared `Company` identity, which one organization's
-          facility and tenant rows may point at too — so an address edited here
-          is edited for those as well. `company.id` exists in the payload for
-          exactly this reason.
+          manufacturer, facility and tenant rows may all point at — so an
+          address edited here is edited for those as well. `company.id` exists
+          in the payload for exactly this reason.
         */}
         <p className="border-b bg-gray-50 px-4 py-2 text-xs text-muted-foreground">
-          These addresses belong to the organization behind this manufacturer, and are shared with
-          any other role it plays.
+          These addresses belong to the organization behind this {roleNoun}, and are shared with any
+          other role it plays.
         </p>
 
         {addresses.length === 0 ? (
@@ -110,7 +127,7 @@ export function ManufacturerAddressesCard({
             }
           />
         ) : (
-          <ManufacturerAddressesTable
+          <CompanyAddressesTable
             rows={addresses}
             canManage={canManage}
             onEdit={setEditing}

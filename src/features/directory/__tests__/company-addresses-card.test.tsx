@@ -7,7 +7,8 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Address } from '@/api/generated/model';
 import { server } from '@/test/msw/server';
 
-import { ManufacturerAddressesCard } from '../components/manufacturer-addresses-card';
+import { CompanyAddressesCard } from '../components/company-addresses-card';
+import { manufacturerKeys } from '../directory.keys';
 
 import { addressFixture } from './manufacturer-fixture';
 
@@ -61,7 +62,11 @@ beforeEach(() => {
  * already made. `onUnhandledRequest: 'error'` in the MSW setup is what asserts
  * that: a card that went looking for them would fail loudly.
  */
-function renderCard(addresses: Address[] = [addressFixture()], canManage = true) {
+function renderCard(
+  addresses: Address[] = [addressFixture()],
+  canManage = true,
+  roleNoun = 'manufacturer',
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -69,7 +74,13 @@ function renderCard(addresses: Address[] = [addressFixture()], canManage = true)
     <QueryClientProvider client={client}>
       {/* 17, not the manufacturer's 7: these writes are addressed by the
           company's id, and the two are unrelated integers. */}
-      <ManufacturerAddressesCard companyId={17} addresses={addresses} canManage={canManage} />
+      <CompanyAddressesCard
+        companyId={17}
+        addresses={addresses}
+        canManage={canManage}
+        roleNoun={roleNoun}
+        invalidates={[manufacturerKeys.details()]}
+      />
     </QueryClientProvider>,
   );
   return { user: userEvent.setup() };
@@ -96,6 +107,13 @@ describe('the book', () => {
     expect(
       screen.getByText(/belong to the organization behind this manufacturer/),
     ).toBeInTheDocument();
+  });
+
+  it('names whichever role it was mounted under', () => {
+    // The card is company-shaped, not manufacturer-shaped — Facilities is the
+    // second caller, and the noun is the only copy that differs between them.
+    renderCard([addressFixture()], true, 'facility');
+    expect(screen.getByText(/belong to the organization behind this facility/)).toBeInTheDocument();
   });
 
   it('has an empty state', () => {

@@ -29,6 +29,7 @@ import type {
   Company,
   Conflict,
   CreateCompanyAddress400,
+  CreateFacility400,
   CreateInventoryKit400,
   CreateInventoryKitPhoto400,
   CreateInventoryTransfer400,
@@ -39,6 +40,8 @@ import type {
   CreateSurgeonCatalog400,
   ErrorDetail,
   FacetResponse,
+  FacilityDetail,
+  FacilityWriteRequest,
   ImportKitBom400,
   ImportManufacturersCatalog400,
   ImportParts400,
@@ -52,6 +55,8 @@ import type {
   InventoryKitPhotoRequest,
   InventoryTransferDetail,
   InventoryTransferDetailRequest,
+  ListFacilitiesCatalog400,
+  ListFacilitiesCatalogParams,
   ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
@@ -63,6 +68,7 @@ import type {
   ListSurgeonsCatalogParams,
   ManufacturerDetail,
   ManufacturerWriteRequest,
+  PaginatedFacilityCatalogList,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
   PaginatedManufacturerList,
@@ -76,6 +82,7 @@ import type {
   PartWriteRequest,
   PartialUpdateCompany400,
   PartialUpdateCompanyAddress400,
+  PartialUpdateFacility400,
   PartialUpdateManufacturerCatalog400,
   PartialUpdatePart400,
   PartialUpdatePartComponent400,
@@ -83,6 +90,7 @@ import type {
   PartialUpdateSurgeon400,
   PatchedAddressRequest,
   PatchedCompanyWriteRequest,
+  PatchedFacilityWriteRequest,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
   PatchedPartComponentQuantityRequest,
@@ -516,6 +524,487 @@ export function useDeleteCompanyAddress<TData = Awaited<ReturnType<typeof delete
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDeleteCompanyAddressQueryOptions(id,addressPk,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Facilities this organization owns, sorted by name. There is no shared directory: every facility belongs to exactly one organization, and a caller with no resolvable one sees nothing.
+ *
+ * **Deactivated facilities are included by default.** This is the management catalog, and deactivation is a state it exists to show and undo — not a removal. Pass `is_active=true` for the working list (which is what a picker wants) or `is_active=false` for the deactivated ones. Every row carries `is_active` so the distinction is always renderable.
+ *
+ * **Always paginated** — the response shape does not vary with the query parameters. The default page is wide enough to hold the whole catalog in one response.
+ *
+ * For the assignment-narrowed picker the mobile app uses, see `GET /api/v1/facilities/`; it is a different resource.
+ */
+export const listFacilitiesCatalog = (
+    params?: ListFacilitiesCatalogParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedFacilityCatalogList>(
+      {url: `/api/v1/directory/facilities/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListFacilitiesCatalogQueryKey = (params?: ListFacilitiesCatalogParams,) => {
+    return [
+    `/api/v1/directory/facilities/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFacilitiesCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>>(params?: ListFacilitiesCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFacilitiesCatalogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFacilitiesCatalog>>> = ({ signal }) => listFacilitiesCatalog(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFacilitiesCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listFacilitiesCatalog>>>
+export type ListFacilitiesCatalogQueryError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>
+
+
+export function useListFacilitiesCatalog<TData = Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>>(
+ params: undefined |  ListFacilitiesCatalogParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFacilitiesCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listFacilitiesCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFacilitiesCatalog<TData = Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>>(
+ params?: ListFacilitiesCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFacilitiesCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listFacilitiesCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFacilitiesCatalog<TData = Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>>(
+ params?: ListFacilitiesCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListFacilitiesCatalog<TData = Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError = ErrorType<ListFacilitiesCatalog400 | ErrorDetail>>(
+ params?: ListFacilitiesCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFacilitiesCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFacilitiesCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a facility to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
+ *
+ * A fresh `Company` identity is created to back it, so the response is the full document with `company` included — a client that has just created a facility can add its addresses through `/api/v1/directory/companies/{id}/addresses/` without a second request.
+ */
+export const createFacility = (
+    facilityWriteRequest: BodyType<FacilityWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacilityDetail>(
+      {url: `/api/v1/directory/facilities/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: facilityWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateFacilityQueryKey = (facilityWriteRequest?: BodyType<FacilityWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/facilities/`, facilityWriteRequest
+    ] as const;
+    }
+
+
+export const getCreateFacilityQueryOptions = <TData = Awaited<ReturnType<typeof createFacility>>, TError = ErrorType<CreateFacility400 | ErrorDetail>>(facilityWriteRequest: BodyType<FacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateFacilityQueryKey(facilityWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createFacility>>> = ({ signal }) => createFacility(facilityWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateFacilityQueryResult = NonNullable<Awaited<ReturnType<typeof createFacility>>>
+export type CreateFacilityQueryError = ErrorType<CreateFacility400 | ErrorDetail>
+
+
+export function useCreateFacility<TData = Awaited<ReturnType<typeof createFacility>>, TError = ErrorType<CreateFacility400 | ErrorDetail>>(
+ facilityWriteRequest: BodyType<FacilityWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createFacility>>,
+          TError,
+          Awaited<ReturnType<typeof createFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateFacility<TData = Awaited<ReturnType<typeof createFacility>>, TError = ErrorType<CreateFacility400 | ErrorDetail>>(
+ facilityWriteRequest: BodyType<FacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createFacility>>,
+          TError,
+          Awaited<ReturnType<typeof createFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateFacility<TData = Awaited<ReturnType<typeof createFacility>>, TError = ErrorType<CreateFacility400 | ErrorDetail>>(
+ facilityWriteRequest: BodyType<FacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateFacility<TData = Awaited<ReturnType<typeof createFacility>>, TError = ErrorType<CreateFacility400 | ErrorDetail>>(
+ facilityWriteRequest: BodyType<FacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateFacilityQueryOptions(facilityWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * One facility, if this organization may see it — with the organization identity behind it and that identity's addresses, in one request.
+ *
+ * `company` is the shared `Company` a role points at. It may be referenced by this organization's other roles too, which is why `company.id` is published: it is what lets a client notice that two roles share one address book before someone edits it. Addresses are read-only here — write them through `/api/v1/directory/companies/{id}/addresses/`.
+ *
+ * Deactivated facilities are readable here, which is what makes reactivation possible.
+ */
+export const retrieveFacilityDetail = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacilityDetail>(
+      {url: `/api/v1/directory/facilities/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetrieveFacilityDetailQueryKey = (id: number,) => {
+    return [
+    `/api/v1/directory/facilities/${id}/`
+    ] as const;
+    }
+
+
+export const getRetrieveFacilityDetailQueryOptions = <TData = Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetrieveFacilityDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrieveFacilityDetail>>> = ({ signal }) => retrieveFacilityDetail(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetrieveFacilityDetailQueryResult = NonNullable<Awaited<ReturnType<typeof retrieveFacilityDetail>>>
+export type RetrieveFacilityDetailQueryError = ErrorType<ErrorDetail>
+
+
+export function useRetrieveFacilityDetail<TData = Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveFacilityDetail>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveFacilityDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveFacilityDetail<TData = Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveFacilityDetail>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveFacilityDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveFacilityDetail<TData = Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetrieveFacilityDetail<TData = Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveFacilityDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetrieveFacilityDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Amend a facility this organization owns. Organization admins only.
+ *
+ * `is_active` is writable, and `true` is how a deactivated facility comes back.
+ *
+ * **Renaming writes through to the `Company`.** `Facility.name` is a one-way mirror of `company.name`, so a rename lands on the identity — and if that identity is shared with another of this organization's roles (a hospital that is also a manufacturer, say), that role is renamed too. Check `company.id` against your other rows if that matters.
+ *
+ * Ownership and the `Company` link are not accepted from the body: the first comes from the session, and repointing a facility at a different identity is a merge rather than a field edit.
+ */
+export const partialUpdateFacility = (
+    id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacilityDetail>(
+      {url: `/api/v1/directory/facilities/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedFacilityWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateFacilityQueryKey = (id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/directory/facilities/${id}/`, patchedFacilityWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateFacilityQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateFacility>>, TError = ErrorType<PartialUpdateFacility400 | ErrorDetail>>(id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateFacilityQueryKey(id,patchedFacilityWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateFacility>>> = ({ signal }) => partialUpdateFacility(id,patchedFacilityWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateFacilityQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateFacility>>>
+export type PartialUpdateFacilityQueryError = ErrorType<PartialUpdateFacility400 | ErrorDetail>
+
+
+export function usePartialUpdateFacility<TData = Awaited<ReturnType<typeof partialUpdateFacility>>, TError = ErrorType<PartialUpdateFacility400 | ErrorDetail>>(
+ id: number,
+    patchedFacilityWriteRequest: undefined |  BodyType<PatchedFacilityWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateFacility>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateFacility<TData = Awaited<ReturnType<typeof partialUpdateFacility>>, TError = ErrorType<PartialUpdateFacility400 | ErrorDetail>>(
+ id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateFacility>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateFacility<TData = Awaited<ReturnType<typeof partialUpdateFacility>>, TError = ErrorType<PartialUpdateFacility400 | ErrorDetail>>(
+ id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateFacility<TData = Awaited<ReturnType<typeof partialUpdateFacility>>, TError = ErrorType<PartialUpdateFacility400 | ErrorDetail>>(
+ id: number,
+    patchedFacilityWriteRequest?: BodyType<PatchedFacilityWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateFacilityQueryOptions(id,patchedFacilityWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Deactivate a facility this organization owns. Organization admins only.
+ *
+ * **This is not a delete, and it differs from the manufacturer and procedure catalogs.** `Facility` has no soft-delete column, so the row is marked `is_active=false` and nothing else changes: it stays in this catalog, stays readable at this URL, and **keeps its name**, so the name is not freed for reuse. Every case, quote, stock assignment, price file and user assignment pointing at it keeps resolving. `PATCH {"is_active": true}` undoes it.
+ *
+ * What does change: the facility stops appearing in `GET /api/v1/facilities/`, so it leaves the case and quote pickers, and a user whose only facility assignment is this one sees an empty picker until it is reactivated.
+ *
+ * Answers 200 with the updated document rather than 204, so the client can show what it just stood down.
+ */
+export const deactivateFacility = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<FacilityDetail>(
+      {url: `/api/v1/directory/facilities/${id}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeactivateFacilityQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/directory/facilities/${id}/`
+    ] as const;
+    }
+
+
+export const getDeactivateFacilityQueryOptions = <TData = Awaited<ReturnType<typeof deactivateFacility>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeactivateFacilityQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deactivateFacility>>> = ({ signal }) => deactivateFacility(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeactivateFacilityQueryResult = NonNullable<Awaited<ReturnType<typeof deactivateFacility>>>
+export type DeactivateFacilityQueryError = ErrorType<ErrorDetail>
+
+
+export function useDeactivateFacility<TData = Awaited<ReturnType<typeof deactivateFacility>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deactivateFacility>>,
+          TError,
+          Awaited<ReturnType<typeof deactivateFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeactivateFacility<TData = Awaited<ReturnType<typeof deactivateFacility>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deactivateFacility>>,
+          TError,
+          Awaited<ReturnType<typeof deactivateFacility>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeactivateFacility<TData = Awaited<ReturnType<typeof deactivateFacility>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeactivateFacility<TData = Awaited<ReturnType<typeof deactivateFacility>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deactivateFacility>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeactivateFacilityQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

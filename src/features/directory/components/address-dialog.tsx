@@ -54,7 +54,7 @@ import {
  * same rules and differ only in which request they send and what the form is
  * seeded from — the split `NameDialog` makes.
  *
- * A `Dialog` rather than a page, unlike the manufacturer record itself: this is
+ * A `Dialog` rather than a page, unlike the records it hangs under: this is
  * a sub-collection on a detail screen, which is where this app puts dialogs
  * (`AddComponentDialog`, `ComponentQuantityDialog`). Eleven of the twelve
  * controls are one-line inputs.
@@ -168,8 +168,8 @@ export function AddressDialog({
           <DialogHeader>
             <DialogTitle>{isNew ? 'Add address' : 'Edit address'}</DialogTitle>
             <DialogDescription>
-              This address book belongs to the organization behind the manufacturer, so any other
-              role it plays reads the same one.
+              This address book belongs to the organization behind this record, so any other role it
+              plays reads the same one.
             </DialogDescription>
           </DialogHeader>
 

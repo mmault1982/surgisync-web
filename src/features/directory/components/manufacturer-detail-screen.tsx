@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-import { COMPANY_FIELDS } from '../manufacturer-form';
+import { COMPANY_FIELDS } from '../company-form';
 
 /**
  * One manufacturer's record.

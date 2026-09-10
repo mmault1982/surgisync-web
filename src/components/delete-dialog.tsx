@@ -26,17 +26,36 @@ import {
  *
  * The copy avoids "permanently": none of these servers promise it, and the one
  * caller whose delete really is destructive says so in its own words.
+ *
+ * **The words are the caller's; the behaviour is what is shared.** What every
+ * caller actually wants from this is the same four things: a dialog that
+ * survives a failure so the server's message has somewhere to render, one that
+ * cannot be dismissed out from under a request in flight, the invalidation
+ * loop, and Cancel focused by default. Facilities is the caller that proved
+ * those are separable from the label — its DELETE *deactivates*, so "Remove"
+ * would have been a lie, and a second dialog would have been a second copy of
+ * all four behaviours.
  */
 export function DeleteDialog({
   title,
   description,
   conflictCode,
+  confirmLabel = 'Remove',
+  pendingLabel = 'Removing',
   onDelete,
   invalidates,
   onClose,
 }: {
   title: string;
   description: string;
+  /**
+   * The action button's label, and the spinner's accessible name while the
+   * request is in flight. They default together and must stay in step — the
+   * spinner replaces the label, so a screen reader hearing "Removing" after
+   * pressing "Deactivate" has been told the wrong thing happened.
+   */
+  confirmLabel?: string;
+  pendingLabel?: string;
   /**
    * The 409 `error` code this entity refuses with, e.g. `procedure_in_use`.
    * Branching on the code rather than the prose is the house rule; the
@@ -108,10 +127,10 @@ export function DeleteDialog({
               <span
                 className="size-5 animate-spin rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground"
                 role="status"
-                aria-label="Removing"
+                aria-label={pendingLabel}
               />
             ) : (
-              'Remove'
+              confirmLabel
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -6,4 +6,4 @@
  * OpenAPI spec version: v1
  */
 
-export type PartialUpdateManufacturer400 = {[key: string]: string[]};
+export type CreateManufacturerCatalog400 = {[key: string]: string[]};

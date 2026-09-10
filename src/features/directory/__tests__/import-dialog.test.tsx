@@ -8,8 +8,8 @@ import type { ImportReport } from '@/api/generated/model';
 import { server } from '@/test/msw/server';
 
 import {
-  importManufacturers,
-  manufacturerImportTemplate,
+  importManufacturersCatalog,
+  manufacturerCatalogImportTemplate,
 } from '@/api/generated/endpoints/inventory/inventory';
 
 import { ImportDialog } from '../components/import-dialog';
@@ -26,7 +26,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
-const IMPORT = '/api/v1/manufacturers/import/';
+const IMPORT = '/api/v1/directory/manufacturers/import/';
 
 function report(overrides: Partial<ImportReport> = {}): ImportReport {
   return {
@@ -60,8 +60,8 @@ function renderDialog() {
       <ImportDialog
         title="Import manufacturers"
         description="A CSV or Excel file with a single column headed name."
-        onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
-        onTemplate={() => manufacturerImportTemplate()}
+        onImport={(file, dryRun) => importManufacturersCatalog({ file, dry_run: dryRun })}
+        onTemplate={() => manufacturerCatalogImportTemplate()}
         templateFilename="manufacturers_template.csv"
         invalidates={[['directory-manufacturers'], ['catalog']]}
         onClose={onClose}
@@ -321,8 +321,8 @@ describe('committing', () => {
         <ImportDialog
           title="Import parts"
           description="A CSV or Excel file."
-          onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
-          onTemplate={() => manufacturerImportTemplate()}
+          onImport={(file, dryRun) => importManufacturersCatalog({ file, dry_run: dryRun })}
+          onTemplate={() => manufacturerCatalogImportTemplate()}
           templateFilename="parts_template.csv"
           reasons={{ already_exists: 'Already in your catalog, unchanged' }}
           invalidates={[['product-catalog']]}

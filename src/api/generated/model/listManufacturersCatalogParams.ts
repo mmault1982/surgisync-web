@@ -6,7 +6,7 @@
  * OpenAPI spec version: v1
  */
 
-export type ListManufacturersParams = {
+export type ListManufacturersCatalogParams = {
 /**
  * Filter to only manufacturers with active items (true/false)
  */

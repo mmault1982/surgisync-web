@@ -16,9 +16,4 @@ export interface PaginatedManufacturerList {
   current_page: number;
   total_pages: number;
   results: Manufacturer[];
-  /**
-     * DEPRECATED — an exact duplicate of `results`, kept for clients written against the pre-pagination shape. Read `results`.
-     * @deprecated
-     */
-  data?: Manufacturer[];
 }

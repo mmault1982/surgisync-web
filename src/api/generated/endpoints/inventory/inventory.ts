@@ -21,14 +21,18 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Address,
+  AddressRequest,
   ApiV1StockItemsList400,
   ApiV1StockItemsListParams,
   ApiV1StockItemsPartialUpdate400,
+  Company,
   Conflict,
+  CreateCompanyAddress400,
   CreateInventoryKit400,
   CreateInventoryKitPhoto400,
   CreateInventoryTransfer400,
-  CreateManufacturer400,
+  CreateManufacturerCatalog400,
   CreatePart400,
   CreatePartComponent400,
   CreateProcedure400,
@@ -36,7 +40,7 @@ import type {
   ErrorDetail,
   FacetResponse,
   ImportKitBom400,
-  ImportManufacturers400,
+  ImportManufacturersCatalog400,
   ImportParts400,
   ImportProcedures400,
   ImportReport,
@@ -51,13 +55,13 @@ import type {
   ListInventoryKitHistoryParams,
   ListInventoryKitManufacturerKitIds400,
   ListInventoryKitManufacturerKitIdsParams,
-  ListManufacturersParams,
+  ListManufacturersCatalogParams,
   ListPartComponentsParams,
   ListParts400,
   ListPartsParams,
   ListProceduresCatalogParams,
   ListSurgeonsCatalogParams,
-  Manufacturer,
+  ManufacturerDetail,
   ManufacturerWriteRequest,
   PaginatedInventoryKitHistoryList,
   PaginatedInventoryKitListList,
@@ -70,11 +74,15 @@ import type {
   PartComponentWriteRequest,
   PartDetail,
   PartWriteRequest,
-  PartialUpdateManufacturer400,
+  PartialUpdateCompany400,
+  PartialUpdateCompanyAddress400,
+  PartialUpdateManufacturerCatalog400,
   PartialUpdatePart400,
   PartialUpdatePartComponent400,
   PartialUpdateProcedure400,
   PartialUpdateSurgeon400,
+  PatchedAddressRequest,
+  PatchedCompanyWriteRequest,
   PatchedInventoryKitDetailRequest,
   PatchedManufacturerWriteRequest,
   PatchedPartComponentQuantityRequest,
@@ -111,6 +119,1060 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+/**
+ * Amend an organization's contact and billing-contact details. Organization admins only.
+ *
+ * **There is no name field here**, and that is the design rather than an omission: the role's own name is the only name in the API, so renaming is `PATCH /api/v1/directory/manufacturers/{id}/`, which already writes through to this Company.
+ *
+ * **Addresses are not accepted here either.** An `addresses` key is refused rather than ignored — write them through `.../companies/{id}/addresses/`, which names the organization that owns them, because this identity may be shared with the organization's other roles.
+ */
+export const partialUpdateCompany = (
+    id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Company>(
+      {url: `/api/v1/directory/companies/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedCompanyWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateCompanyQueryKey = (id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/directory/companies/${id}/`, patchedCompanyWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateCompanyQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateCompany>>, TError = ErrorType<PartialUpdateCompany400 | ErrorDetail>>(id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateCompanyQueryKey(id,patchedCompanyWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateCompany>>> = ({ signal }) => partialUpdateCompany(id,patchedCompanyWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateCompanyQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateCompany>>>
+export type PartialUpdateCompanyQueryError = ErrorType<PartialUpdateCompany400 | ErrorDetail>
+
+
+export function usePartialUpdateCompany<TData = Awaited<ReturnType<typeof partialUpdateCompany>>, TError = ErrorType<PartialUpdateCompany400 | ErrorDetail>>(
+ id: number,
+    patchedCompanyWriteRequest: undefined |  BodyType<PatchedCompanyWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateCompany>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateCompany>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateCompany<TData = Awaited<ReturnType<typeof partialUpdateCompany>>, TError = ErrorType<PartialUpdateCompany400 | ErrorDetail>>(
+ id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateCompany>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateCompany>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateCompany<TData = Awaited<ReturnType<typeof partialUpdateCompany>>, TError = ErrorType<PartialUpdateCompany400 | ErrorDetail>>(
+ id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateCompany<TData = Awaited<ReturnType<typeof partialUpdateCompany>>, TError = ErrorType<PartialUpdateCompany400 | ErrorDetail>>(
+ id: number,
+    patchedCompanyWriteRequest?: BodyType<PatchedCompanyWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompany>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateCompanyQueryOptions(id,patchedCompanyWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add an address to this organization's address book. Organization admins only.
+ *
+ * The organization comes from the path. Sending `is_primary: true` **stands down the current primary of that kind** in the same transaction — at most one address per organization per kind is primary, so promotion is a transition rather than a flag.
+ */
+export const createCompanyAddress = (
+    id: number,
+    addressRequest?: BodyType<AddressRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Address>(
+      {url: `/api/v1/directory/companies/${id}/addresses/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: addressRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateCompanyAddressQueryKey = (id: number,
+    addressRequest?: BodyType<AddressRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/companies/${id}/addresses/`, addressRequest
+    ] as const;
+    }
+
+
+export const getCreateCompanyAddressQueryOptions = <TData = Awaited<ReturnType<typeof createCompanyAddress>>, TError = ErrorType<CreateCompanyAddress400 | ErrorDetail>>(id: number,
+    addressRequest?: BodyType<AddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateCompanyAddressQueryKey(id,addressRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createCompanyAddress>>> = ({ signal }) => createCompanyAddress(id,addressRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateCompanyAddressQueryResult = NonNullable<Awaited<ReturnType<typeof createCompanyAddress>>>
+export type CreateCompanyAddressQueryError = ErrorType<CreateCompanyAddress400 | ErrorDetail>
+
+
+export function useCreateCompanyAddress<TData = Awaited<ReturnType<typeof createCompanyAddress>>, TError = ErrorType<CreateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressRequest: undefined |  BodyType<AddressRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof createCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateCompanyAddress<TData = Awaited<ReturnType<typeof createCompanyAddress>>, TError = ErrorType<CreateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressRequest?: BodyType<AddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof createCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateCompanyAddress<TData = Awaited<ReturnType<typeof createCompanyAddress>>, TError = ErrorType<CreateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressRequest?: BodyType<AddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateCompanyAddress<TData = Awaited<ReturnType<typeof createCompanyAddress>>, TError = ErrorType<CreateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressRequest?: BodyType<AddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateCompanyAddressQueryOptions(id,addressRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Amend one address. Organization admins only.
+ *
+ * Setting `is_primary: true` **stands down the current primary of that kind**. `kind` and `is_primary` may move in the same request, in which case it is the primary of the *new* kind that stands down.
+ */
+export const partialUpdateCompanyAddress = (
+    id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Address>(
+      {url: `/api/v1/directory/companies/${id}/addresses/${addressPk}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedAddressRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateCompanyAddressQueryKey = (id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>,) => {
+    return [
+    'PATCH', `/api/v1/directory/companies/${id}/addresses/${addressPk}/`, patchedAddressRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateCompanyAddressQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>>(id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateCompanyAddressQueryKey(id,addressPk,patchedAddressRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>> = ({ signal }) => partialUpdateCompanyAddress(id,addressPk,patchedAddressRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && addressPk !== null && addressPk !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateCompanyAddressQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>>
+export type PartialUpdateCompanyAddressQueryError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>
+
+
+export function usePartialUpdateCompanyAddress<TData = Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressPk: number,
+    patchedAddressRequest: undefined |  BodyType<PatchedAddressRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateCompanyAddress<TData = Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateCompanyAddress<TData = Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateCompanyAddress<TData = Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError = ErrorType<PartialUpdateCompanyAddress400 | ErrorDetail>>(
+ id: number,
+    addressPk: number,
+    patchedAddressRequest?: BodyType<PatchedAddressRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateCompanyAddressQueryOptions(id,addressPk,patchedAddressRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove one address. Organization admins only. A soft delete — the row stops being listed but stays for the shipments that reference it.
+ *
+ * Removing the primary of a kind leaves that kind without one; nothing is promoted in its place, because which address should take over is a decision rather than an ordering.
+ */
+export const deleteCompanyAddress = (
+    id: number,
+    addressPk: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<void>(
+      {url: `/api/v1/directory/companies/${id}/addresses/${addressPk}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteCompanyAddressQueryKey = (id: number,
+    addressPk: number,) => {
+    return [
+    'DELETE', `/api/v1/directory/companies/${id}/addresses/${addressPk}/`
+    ] as const;
+    }
+
+
+export const getDeleteCompanyAddressQueryOptions = <TData = Awaited<ReturnType<typeof deleteCompanyAddress>>, TError = ErrorType<ErrorDetail>>(id: number,
+    addressPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteCompanyAddressQueryKey(id,addressPk);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteCompanyAddress>>> = ({ signal }) => deleteCompanyAddress(id,addressPk, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && addressPk !== null && addressPk !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeleteCompanyAddressQueryResult = NonNullable<Awaited<ReturnType<typeof deleteCompanyAddress>>>
+export type DeleteCompanyAddressQueryError = ErrorType<ErrorDetail>
+
+
+export function useDeleteCompanyAddress<TData = Awaited<ReturnType<typeof deleteCompanyAddress>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    addressPk: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof deleteCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteCompanyAddress<TData = Awaited<ReturnType<typeof deleteCompanyAddress>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    addressPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteCompanyAddress>>,
+          TError,
+          Awaited<ReturnType<typeof deleteCompanyAddress>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteCompanyAddress<TData = Awaited<ReturnType<typeof deleteCompanyAddress>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    addressPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeleteCompanyAddress<TData = Awaited<ReturnType<typeof deleteCompanyAddress>>, TError = ErrorType<ErrorDetail>>(
+ id: number,
+    addressPk: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteCompanyAddress>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteCompanyAddressQueryOptions(id,addressPk,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Manufacturers this organization owns, sorted by name. There is no shared catalog: every manufacturer belongs to exactly one organization, and a caller with no resolvable one sees nothing. **Always paginated** — the response shape does not vary with the query parameters. `page` and `page_size` are optional; the default page is wide enough to hold the whole catalog in one response.
+ */
+export const listManufacturersCatalog = (
+    params?: ListManufacturersCatalogParams,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<PaginatedManufacturerList>(
+      {url: `/api/v1/directory/manufacturers/`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListManufacturersCatalogQueryKey = (params?: ListManufacturersCatalogParams,) => {
+    return [
+    `/api/v1/directory/manufacturers/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListManufacturersCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listManufacturersCatalog>>, TError = ErrorType<ErrorDetail>>(params?: ListManufacturersCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListManufacturersCatalogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listManufacturersCatalog>>> = ({ signal }) => listManufacturersCatalog(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListManufacturersCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listManufacturersCatalog>>>
+export type ListManufacturersCatalogQueryError = ErrorType<ErrorDetail>
+
+
+export function useListManufacturersCatalog<TData = Awaited<ReturnType<typeof listManufacturersCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params: undefined |  ListManufacturersCatalogParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listManufacturersCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listManufacturersCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListManufacturersCatalog<TData = Awaited<ReturnType<typeof listManufacturersCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListManufacturersCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listManufacturersCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof listManufacturersCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListManufacturersCatalog<TData = Awaited<ReturnType<typeof listManufacturersCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListManufacturersCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListManufacturersCatalog<TData = Awaited<ReturnType<typeof listManufacturersCatalog>>, TError = ErrorType<ErrorDetail>>(
+ params?: ListManufacturersCatalogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListManufacturersCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
+ *
+ * Answers with the full document, `company` included, so a client that has just created a manufacturer can edit its contact details without a second request.
+ */
+export const createManufacturerCatalog = (
+    manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ManufacturerDetail>(
+      {url: `/api/v1/directory/manufacturers/`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: manufacturerWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateManufacturerCatalogQueryKey = (manufacturerWriteRequest?: BodyType<ManufacturerWriteRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/manufacturers/`, manufacturerWriteRequest
+    ] as const;
+    }
+
+
+export const getCreateManufacturerCatalogQueryOptions = <TData = Awaited<ReturnType<typeof createManufacturerCatalog>>, TError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>>(manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateManufacturerCatalogQueryKey(manufacturerWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createManufacturerCatalog>>> = ({ signal }) => createManufacturerCatalog(manufacturerWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CreateManufacturerCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof createManufacturerCatalog>>>
+export type CreateManufacturerCatalogQueryError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>
+
+
+export function useCreateManufacturerCatalog<TData = Awaited<ReturnType<typeof createManufacturerCatalog>>, TError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>>(
+ manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof createManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateManufacturerCatalog<TData = Awaited<ReturnType<typeof createManufacturerCatalog>>, TError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>>(
+ manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof createManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateManufacturerCatalog<TData = Awaited<ReturnType<typeof createManufacturerCatalog>>, TError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>>(
+ manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useCreateManufacturerCatalog<TData = Awaited<ReturnType<typeof createManufacturerCatalog>>, TError = ErrorType<CreateManufacturerCatalog400 | ErrorDetail>>(
+ manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateManufacturerCatalogQueryOptions(manufacturerWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * One manufacturer, if this organization may see it — with the organization identity behind it and that identity's addresses, in one request.
+ *
+ * `company` is the shared `Company` a role points at. It may be referenced by this organization's other roles too, which is why `company.id` is published: it is what lets a client notice that two roles share one address book before someone edits it. Addresses are read-only here — write them through `/api/v1/directory/companies/{id}/addresses/`.
+ */
+export const retrieveManufacturerDetail = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ManufacturerDetail>(
+      {url: `/api/v1/directory/manufacturers/${id}/`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetrieveManufacturerDetailQueryKey = (id: number,) => {
+    return [
+    `/api/v1/directory/manufacturers/${id}/`
+    ] as const;
+    }
+
+
+export const getRetrieveManufacturerDetailQueryOptions = <TData = Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRetrieveManufacturerDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrieveManufacturerDetail>>> = ({ signal }) => retrieveManufacturerDetail(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RetrieveManufacturerDetailQueryResult = NonNullable<Awaited<ReturnType<typeof retrieveManufacturerDetail>>>
+export type RetrieveManufacturerDetailQueryError = ErrorType<ErrorDetail>
+
+
+export function useRetrieveManufacturerDetail<TData = Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveManufacturerDetail>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveManufacturerDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveManufacturerDetail<TData = Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof retrieveManufacturerDetail>>,
+          TError,
+          Awaited<ReturnType<typeof retrieveManufacturerDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRetrieveManufacturerDetail<TData = Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useRetrieveManufacturerDetail<TData = Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError = ErrorType<ErrorDetail>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturerDetail>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRetrieveManufacturerDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Rename a manufacturer this organization owns. Organization admins only. `name` is the only writable field: the barcode is generated from it, ownership comes from the session, and deactivation is what DELETE does.
+ */
+export const partialUpdateManufacturerCatalog = (
+    id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ManufacturerDetail>(
+      {url: `/api/v1/directory/manufacturers/${id}/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchedManufacturerWriteRequest, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPartialUpdateManufacturerCatalogQueryKey = (id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>,) => {
+    return [
+    'PATCH', `/api/v1/directory/manufacturers/${id}/`, patchedManufacturerWriteRequest
+    ] as const;
+    }
+
+
+export const getPartialUpdateManufacturerCatalogQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>>(id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateManufacturerCatalogQueryKey(id,patchedManufacturerWriteRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>> = ({ signal }) => partialUpdateManufacturerCatalog(id,patchedManufacturerWriteRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PartialUpdateManufacturerCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>>
+export type PartialUpdateManufacturerCatalogQueryError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>
+
+
+export function usePartialUpdateManufacturerCatalog<TData = Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>>(
+ id: number,
+    patchedManufacturerWriteRequest: undefined |  BodyType<PatchedManufacturerWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateManufacturerCatalog<TData = Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>>(
+ id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePartialUpdateManufacturerCatalog<TData = Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>>(
+ id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePartialUpdateManufacturerCatalog<TData = Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError = ErrorType<PartialUpdateManufacturerCatalog400 | ErrorDetail>>(
+ id: number,
+    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPartialUpdateManufacturerCatalogQueryOptions(id,patchedManufacturerWriteRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Remove a manufacturer this organization owns. Organization admins only. A soft delete — the row stops being listed and frees its name, but stays for the history that references it. Refused while catalog parts still point at it.
+ */
+export const deleteManufacturerCatalog = (
+    id: number,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<ManufacturerDetail>(
+      {url: `/api/v1/directory/manufacturers/${id}/`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteManufacturerCatalogQueryKey = (id: number,) => {
+    return [
+    'DELETE', `/api/v1/directory/manufacturers/${id}/`
+    ] as const;
+    }
+
+
+export const getDeleteManufacturerCatalogQueryOptions = <TData = Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError = ErrorType<ErrorDetail | Conflict>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteManufacturerCatalogQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteManufacturerCatalog>>> = ({ signal }) => deleteManufacturerCatalog(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DeleteManufacturerCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof deleteManufacturerCatalog>>>
+export type DeleteManufacturerCatalogQueryError = ErrorType<ErrorDetail | Conflict>
+
+
+export function useDeleteManufacturerCatalog<TData = Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof deleteManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteManufacturerCatalog<TData = Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteManufacturerCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof deleteManufacturerCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteManufacturerCatalog<TData = Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDeleteManufacturerCatalog<TData = Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError = ErrorType<ErrorDetail | Conflict>>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturerCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteManufacturerCatalogQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * Create manufacturers in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview the outcome of every row without writing anything.
+ */
+export const importManufacturersCatalog = (
+    importRequestRequest: BodyType<ImportRequestRequest>,
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+      const formData = new FormData();
+formData.append(`file`, importRequestRequest.file);
+if(importRequestRequest.dry_run !== undefined) {
+ formData.append(`dry_run`, importRequestRequest.dry_run.toString())
+ }
+
+      return apiRequest<ImportReport>(
+      {url: `/api/v1/directory/manufacturers/import/`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      options);
+    }
+
+
+
+
+export const getImportManufacturersCatalogQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
+    return [
+    'POST', `/api/v1/directory/manufacturers/import/`, importRequestRequest
+    ] as const;
+    }
+
+
+export const getImportManufacturersCatalogQueryOptions = <TData = Awaited<ReturnType<typeof importManufacturersCatalog>>, TError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getImportManufacturersCatalogQueryKey(importRequestRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof importManufacturersCatalog>>> = ({ signal }) => importManufacturersCatalog(importRequestRequest, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ImportManufacturersCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof importManufacturersCatalog>>>
+export type ImportManufacturersCatalogQueryError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>
+
+
+export function useImportManufacturersCatalog<TData = Awaited<ReturnType<typeof importManufacturersCatalog>>, TError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importManufacturersCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof importManufacturersCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportManufacturersCatalog<TData = Awaited<ReturnType<typeof importManufacturersCatalog>>, TError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof importManufacturersCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof importManufacturersCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useImportManufacturersCatalog<TData = Awaited<ReturnType<typeof importManufacturersCatalog>>, TError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useImportManufacturersCatalog<TData = Awaited<ReturnType<typeof importManufacturersCatalog>>, TError = ErrorType<ImportManufacturersCatalog400 | ErrorDetail>>(
+ importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturersCatalog>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getImportManufacturersCatalogQueryOptions(importRequestRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * An empty CSV with the header row the importer expects.
+ */
+export const manufacturerCatalogImportTemplate = (
+
+ options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
+) => {
+
+
+      return apiRequest<Blob>(
+      {url: `/api/v1/directory/manufacturers/import/template/`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      options);
+    }
+
+
+
+
+export const getManufacturerCatalogImportTemplateQueryKey = () => {
+    return [
+    `/api/v1/directory/manufacturers/import/template/`
+    ] as const;
+    }
+
+
+export const getManufacturerCatalogImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getManufacturerCatalogImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>> = ({ signal }) => manufacturerCatalogImportTemplate(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ManufacturerCatalogImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>>
+export type ManufacturerCatalogImportTemplateQueryError = ErrorType<ErrorDetail>
+
+
+export function useManufacturerCatalogImportTemplate<TData = Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useManufacturerCatalogImportTemplate<TData = Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useManufacturerCatalogImportTemplate<TData = Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useManufacturerCatalogImportTemplate<TData = Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError = ErrorType<ErrorDetail>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerCatalogImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getManufacturerCatalogImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
 
 /**
  * Surgeons this organization may choose from, sorted by name: the shared roster plus any the organization owns. Always paginated. This is the management list; the legacy `/api/v1/surgeons/` remains the per-facility lookup its clients depend on.
@@ -796,6 +1858,9 @@ if(inventoryTransferDetailRequest.to_assigned_to_representative !== undefined &&
 if(inventoryTransferDetailRequest.to_assigned_to_facility !== undefined && inventoryTransferDetailRequest.to_assigned_to_facility !== null) {
  formData.append(`to_assigned_to_facility`, inventoryTransferDetailRequest.to_assigned_to_facility.toString())
  }
+if(inventoryTransferDetailRequest.to_assigned_to_manufacturer !== undefined && inventoryTransferDetailRequest.to_assigned_to_manufacturer !== null) {
+ formData.append(`to_assigned_to_manufacturer`, inventoryTransferDetailRequest.to_assigned_to_manufacturer.toString())
+ }
 if(inventoryTransferDetailRequest.kit_photo !== undefined && inventoryTransferDetailRequest.kit_photo !== null) {
  formData.append(`kit_photo`, inventoryTransferDetailRequest.kit_photo);
  }
@@ -1150,649 +2215,6 @@ export function useListInventoryTransferTargets<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListInventoryTransferTargetsQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * Manufacturers this organization owns, sorted by name. There is no shared catalog: every manufacturer belongs to exactly one organization, and a caller with no resolvable one sees nothing. **Always paginated** — the response shape does not vary with the query parameters. `page` and `page_size` are optional; the default page is wide enough to hold the whole catalog in one response.
- */
-export const listManufacturers = (
-    params?: ListManufacturersParams,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<PaginatedManufacturerList>(
-      {url: `/api/v1/manufacturers/`, method: 'GET',
-        params, signal
-    },
-      options);
-    }
-
-
-
-
-export const getListManufacturersQueryKey = (params?: ListManufacturersParams,) => {
-    return [
-    `/api/v1/manufacturers/`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<ErrorDetail>>(params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListManufacturersQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listManufacturers>>> = ({ signal }) => listManufacturers(params, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListManufacturersQueryResult = NonNullable<Awaited<ReturnType<typeof listManufacturers>>>
-export type ListManufacturersQueryError = ErrorType<ErrorDetail>
-
-
-export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<ErrorDetail>>(
- params: undefined |  ListManufacturersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listManufacturers>>,
-          TError,
-          Awaited<ReturnType<typeof listManufacturers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<ErrorDetail>>(
- params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listManufacturers>>,
-          TError,
-          Awaited<ReturnType<typeof listManufacturers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<ErrorDetail>>(
- params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListManufacturers<TData = Awaited<ReturnType<typeof listManufacturers>>, TError = ErrorType<ErrorDetail>>(
- params?: ListManufacturersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListManufacturersQueryOptions(params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * Add a manufacturer to this organization. Organization admins only. The new row belongs to the caller's organization and is invisible to every other one.
- */
-export const createManufacturer = (
-    manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<Manufacturer>(
-      {url: `/api/v1/manufacturers/`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: manufacturerWriteRequest, signal
-    },
-      options);
-    }
-
-
-
-
-export const getCreateManufacturerQueryKey = (manufacturerWriteRequest?: BodyType<ManufacturerWriteRequest>,) => {
-    return [
-    'POST', `/api/v1/manufacturers/`, manufacturerWriteRequest
-    ] as const;
-    }
-
-
-export const getCreateManufacturerQueryOptions = <TData = Awaited<ReturnType<typeof createManufacturer>>, TError = ErrorType<CreateManufacturer400 | ErrorDetail>>(manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCreateManufacturerQueryKey(manufacturerWriteRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof createManufacturer>>> = ({ signal }) => createManufacturer(manufacturerWriteRequest, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type CreateManufacturerQueryResult = NonNullable<Awaited<ReturnType<typeof createManufacturer>>>
-export type CreateManufacturerQueryError = ErrorType<CreateManufacturer400 | ErrorDetail>
-
-
-export function useCreateManufacturer<TData = Awaited<ReturnType<typeof createManufacturer>>, TError = ErrorType<CreateManufacturer400 | ErrorDetail>>(
- manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof createManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof createManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCreateManufacturer<TData = Awaited<ReturnType<typeof createManufacturer>>, TError = ErrorType<CreateManufacturer400 | ErrorDetail>>(
- manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof createManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof createManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCreateManufacturer<TData = Awaited<ReturnType<typeof createManufacturer>>, TError = ErrorType<CreateManufacturer400 | ErrorDetail>>(
- manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useCreateManufacturer<TData = Awaited<ReturnType<typeof createManufacturer>>, TError = ErrorType<CreateManufacturer400 | ErrorDetail>>(
- manufacturerWriteRequest: BodyType<ManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getCreateManufacturerQueryOptions(manufacturerWriteRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * One manufacturer, if this organization may see it.
- */
-export const retrieveManufacturer = (
-    id: number,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<Manufacturer>(
-      {url: `/api/v1/manufacturers/${id}/`, method: 'GET', signal
-    },
-      options);
-    }
-
-
-
-
-export const getRetrieveManufacturerQueryKey = (id: number,) => {
-    return [
-    `/api/v1/manufacturers/${id}/`
-    ] as const;
-    }
-
-
-export const getRetrieveManufacturerQueryOptions = <TData = Awaited<ReturnType<typeof retrieveManufacturer>>, TError = ErrorType<ErrorDetail>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getRetrieveManufacturerQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof retrieveManufacturer>>> = ({ signal }) => retrieveManufacturer(id, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type RetrieveManufacturerQueryResult = NonNullable<Awaited<ReturnType<typeof retrieveManufacturer>>>
-export type RetrieveManufacturerQueryError = ErrorType<ErrorDetail>
-
-
-export function useRetrieveManufacturer<TData = Awaited<ReturnType<typeof retrieveManufacturer>>, TError = ErrorType<ErrorDetail>>(
- id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof retrieveManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof retrieveManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRetrieveManufacturer<TData = Awaited<ReturnType<typeof retrieveManufacturer>>, TError = ErrorType<ErrorDetail>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof retrieveManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof retrieveManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRetrieveManufacturer<TData = Awaited<ReturnType<typeof retrieveManufacturer>>, TError = ErrorType<ErrorDetail>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useRetrieveManufacturer<TData = Awaited<ReturnType<typeof retrieveManufacturer>>, TError = ErrorType<ErrorDetail>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof retrieveManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getRetrieveManufacturerQueryOptions(id,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * Rename a manufacturer this organization owns. Organization admins only. `name` is the only writable field: the barcode is generated from it, ownership comes from the session, and deactivation is what DELETE does.
- */
-export const partialUpdateManufacturer = (
-    id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<Manufacturer>(
-      {url: `/api/v1/manufacturers/${id}/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: patchedManufacturerWriteRequest, signal
-    },
-      options);
-    }
-
-
-
-
-export const getPartialUpdateManufacturerQueryKey = (id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>,) => {
-    return [
-    'PATCH', `/api/v1/manufacturers/${id}/`, patchedManufacturerWriteRequest
-    ] as const;
-    }
-
-
-export const getPartialUpdateManufacturerQueryOptions = <TData = Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>>(id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPartialUpdateManufacturerQueryKey(id,patchedManufacturerWriteRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof partialUpdateManufacturer>>> = ({ signal }) => partialUpdateManufacturer(id,patchedManufacturerWriteRequest, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type PartialUpdateManufacturerQueryResult = NonNullable<Awaited<ReturnType<typeof partialUpdateManufacturer>>>
-export type PartialUpdateManufacturerQueryError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>
-
-
-export function usePartialUpdateManufacturer<TData = Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>>(
- id: number,
-    patchedManufacturerWriteRequest: undefined |  BodyType<PatchedManufacturerWriteRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof partialUpdateManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof partialUpdateManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartialUpdateManufacturer<TData = Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>>(
- id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof partialUpdateManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof partialUpdateManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function usePartialUpdateManufacturer<TData = Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>>(
- id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function usePartialUpdateManufacturer<TData = Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError = ErrorType<PartialUpdateManufacturer400 | ErrorDetail>>(
- id: number,
-    patchedManufacturerWriteRequest?: BodyType<PatchedManufacturerWriteRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof partialUpdateManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPartialUpdateManufacturerQueryOptions(id,patchedManufacturerWriteRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * Remove a manufacturer this organization owns. Organization admins only. A soft delete — the row stops being listed and frees its name, but stays for the history that references it. Refused while catalog parts still point at it.
- */
-export const deleteManufacturer = (
-    id: number,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<Manufacturer>(
-      {url: `/api/v1/manufacturers/${id}/`, method: 'DELETE', signal
-    },
-      options);
-    }
-
-
-
-
-export const getDeleteManufacturerQueryKey = (id: number,) => {
-    return [
-    'DELETE', `/api/v1/manufacturers/${id}/`
-    ] as const;
-    }
-
-
-export const getDeleteManufacturerQueryOptions = <TData = Awaited<ReturnType<typeof deleteManufacturer>>, TError = ErrorType<ErrorDetail | Conflict>>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getDeleteManufacturerQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteManufacturer>>> = ({ signal }) => deleteManufacturer(id, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type DeleteManufacturerQueryResult = NonNullable<Awaited<ReturnType<typeof deleteManufacturer>>>
-export type DeleteManufacturerQueryError = ErrorType<ErrorDetail | Conflict>
-
-
-export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteManufacturer>>, TError = ErrorType<ErrorDetail | Conflict>>(
- id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof deleteManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof deleteManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteManufacturer>>, TError = ErrorType<ErrorDetail | Conflict>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof deleteManufacturer>>,
-          TError,
-          Awaited<ReturnType<typeof deleteManufacturer>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteManufacturer>>, TError = ErrorType<ErrorDetail | Conflict>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useDeleteManufacturer<TData = Awaited<ReturnType<typeof deleteManufacturer>>, TError = ErrorType<ErrorDetail | Conflict>>(
- id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteManufacturer>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteManufacturerQueryOptions(id,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * Create manufacturers in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview the outcome of every row without writing anything.
- */
-export const importManufacturers = (
-    importRequestRequest: BodyType<ImportRequestRequest>,
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-      const formData = new FormData();
-formData.append(`file`, importRequestRequest.file);
-if(importRequestRequest.dry_run !== undefined) {
- formData.append(`dry_run`, importRequestRequest.dry_run.toString())
- }
-
-      return apiRequest<ImportReport>(
-      {url: `/api/v1/manufacturers/import/`, method: 'POST',
-      headers: {'Content-Type': 'multipart/form-data', },
-       data: formData, signal
-    },
-      options);
-    }
-
-
-
-
-export const getImportManufacturersQueryKey = (importRequestRequest?: BodyType<ImportRequestRequest>,) => {
-    return [
-    'POST', `/api/v1/manufacturers/import/`, importRequestRequest
-    ] as const;
-    }
-
-
-export const getImportManufacturersQueryOptions = <TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getImportManufacturersQueryKey(importRequestRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof importManufacturers>>> = ({ signal }) => importManufacturers(importRequestRequest, requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ImportManufacturersQueryResult = NonNullable<Awaited<ReturnType<typeof importManufacturers>>>
-export type ImportManufacturersQueryError = ErrorType<ImportManufacturers400 | ErrorDetail>
-
-
-export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- importRequestRequest: BodyType<ImportRequestRequest>, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof importManufacturers>>,
-          TError,
-          Awaited<ReturnType<typeof importManufacturers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof importManufacturers>>,
-          TError,
-          Awaited<ReturnType<typeof importManufacturers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useImportManufacturers<TData = Awaited<ReturnType<typeof importManufacturers>>, TError = ErrorType<ImportManufacturers400 | ErrorDetail>>(
- importRequestRequest: BodyType<ImportRequestRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof importManufacturers>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getImportManufacturersQueryOptions(importRequestRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-/**
- * An empty CSV with the header row the importer expects.
- */
-export const manufacturerImportTemplate = (
-
- options?: SecondParameter<typeof apiRequest>,signal?: AbortSignal
-) => {
-
-
-      return apiRequest<Blob>(
-      {url: `/api/v1/manufacturers/import/template/`, method: 'GET',
-        responseType: 'blob', signal
-    },
-      options);
-    }
-
-
-
-
-export const getManufacturerImportTemplateQueryKey = () => {
-    return [
-    `/api/v1/manufacturers/import/template/`
-    ] as const;
-    }
-
-
-export const getManufacturerImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getManufacturerImportTemplateQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof manufacturerImportTemplate>>> = ({ signal }) => manufacturerImportTemplate(requestOptions, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ManufacturerImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof manufacturerImportTemplate>>>
-export type ManufacturerImportTemplateQueryError = ErrorType<ErrorDetail>
-
-
-export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof manufacturerImportTemplate>>,
-          TError,
-          Awaited<ReturnType<typeof manufacturerImportTemplate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof manufacturerImportTemplate>>,
-          TError,
-          Awaited<ReturnType<typeof manufacturerImportTemplate>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useManufacturerImportTemplate<TData = Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError = ErrorType<ErrorDetail>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof manufacturerImportTemplate>>, TError, TData>>, request?: SecondParameter<typeof apiRequest>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getManufacturerImportTemplateQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

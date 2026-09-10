@@ -84,6 +84,14 @@ describe('findNavSubtree', () => {
     expect(findNavSubtree('/inventory/on-hand')?.item.title).toBe('Manage On-Hand');
   });
 
+  it('covers the manufacturer detail, form and edit screens', () => {
+    // None of the three is a nav target, and all three should leave
+    // Manufacturers highlighted with the breadcrumb reading through it.
+    expect(findNavSubtree('/directory/manufacturers/123')?.item.title).toBe('Manufacturers');
+    expect(findNavSubtree('/directory/manufacturers/new')?.item.title).toBe('Manufacturers');
+    expect(findNavSubtree('/directory/manufacturers/123/edit')?.item.title).toBe('Manufacturers');
+  });
+
   it('does not match a sibling that merely shares a prefix', () => {
     // The trailing slash in the prefix test is the whole guard: without it, a
     // future /inventory/on-hand-archive would light up Manage On-Hand.

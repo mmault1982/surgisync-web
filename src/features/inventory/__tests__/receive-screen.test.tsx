@@ -48,7 +48,7 @@ const emptyPage = () =>
 
 beforeEach(() => {
   server.use(
-    http.get('/api/v1/manufacturers/', emptyPage),
+    http.get('/api/v1/directory/manufacturers/', emptyPage),
     http.get('/api/v1/parts/', emptyPage),
     http.get('/api/v1/inventory-transfers/targets/', () => HttpResponse.json({ results: [] })),
     http.get('/api/v1/stock-items/physical-locations/', () => HttpResponse.json({ results: [] })),

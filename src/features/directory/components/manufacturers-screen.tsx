@@ -3,11 +3,9 @@ import { PlusIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import {
-  createManufacturer,
-  deleteManufacturer,
-  importManufacturers,
-  manufacturerImportTemplate,
-  partialUpdateManufacturer,
+  deleteManufacturerCatalog,
+  importManufacturersCatalog,
+  manufacturerCatalogImportTemplate,
 } from '@/api/generated/endpoints/inventory/inventory';
 import type { Manufacturer } from '@/api/generated/model';
 import { useAuth } from '@/auth/auth-context';
@@ -24,7 +22,6 @@ import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
 import { ImportDialog } from './import-dialog';
-import { NameDialog } from './name-dialog';
 import { ManufacturersTable } from './manufacturers-table';
 
 /**
@@ -50,20 +47,23 @@ export function ManufacturersScreen({
   search,
   onSearchChange,
   onPageChange,
+  onAdd,
+  onOpen,
+  onEdit,
 }: {
   search: ManufacturerSearch;
   onSearchChange: (patch: Partial<ManufacturerSearch>) => void;
   onPageChange: (page: number) => void;
+  /** Add and Edit are pages now, so both are the route's to navigate to. */
+  onAdd: () => void;
+  onOpen: (id: number) => void;
+  onEdit: (id: number) => void;
 }) {
   const query = useQuery(manufacturerListQuery(search));
   // Writes are org-admin only server-side. Offering the controls to
   // everyone would mean a rep fills in the form and learns on submit.
   const canManage = canManageOrgRecords(useAuth().user?.role);
 
-  // `undefined` closed, `null` open-for-create, a row open-for-rename. One
-  // piece of state rather than two booleans, so "adding" and "renaming" cannot
-  // both be true.
-  const [editing, setEditing] = useState<Manufacturer | null | undefined>(undefined);
   const [deleting, setDeleting] = useState<Manufacturer | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -100,7 +100,7 @@ export function ManufacturersScreen({
               <UploadIcon />
               Import
             </Button>
-            <Button type="button" onClick={() => setEditing(null)}>
+            <Button type="button" onClick={onAdd}>
               <PlusIcon />
               Add manufacturer
             </Button>
@@ -142,7 +142,8 @@ export function ManufacturersScreen({
             <ManufacturersTable
               rows={rows}
               canManage={canManage}
-              onEdit={setEditing}
+              onOpenRow={(row) => onOpen(row.id)}
+              onEdit={(row) => onEdit(row.id)}
               onDelete={setDeleting}
             />
             <Pagination
@@ -156,29 +157,6 @@ export function ManufacturersScreen({
         )}
       </div>
 
-      {/*
-        Mounted only while open, so a draft name cannot outlive a close and
-        every open reseeds from the row — the same rule kit-actions.tsx applies
-        to the Kit Detail dialogs.
-      */}
-      {editing !== undefined ? (
-        <NameDialog
-          title={editing ? 'Rename manufacturer' : 'Add manufacturer'}
-          description={
-            editing
-              ? 'The new name appears everywhere this manufacturer is listed.'
-              : 'Visible to your organization only. A name already in the shared ' +
-                'catalog counts as a duplicate.'
-          }
-          initialName={editing?.name ?? ''}
-          isRename={editing !== null}
-          onSave={(name) =>
-            editing ? partialUpdateManufacturer(editing.id, { name }) : createManufacturer({ name })
-          }
-          invalidates={INVALIDATES}
-          onClose={() => setEditing(undefined)}
-        />
-      ) : null}
       {deleting ? (
         <DeleteDialog
           title={`Remove ${deleting.name}?`}
@@ -187,7 +165,7 @@ export function ManufacturersScreen({
             'received keeps its manufacturer.'
           }
           conflictCode="manufacturer_in_use"
-          onDelete={() => deleteManufacturer(deleting.id)}
+          onDelete={() => deleteManufacturerCatalog(deleting.id)}
           invalidates={INVALIDATES}
           onClose={() => setDeleting(null)}
         />
@@ -203,8 +181,8 @@ export function ManufacturersScreen({
               stock can be received against them.
             </>
           }
-          onImport={(file, dryRun) => importManufacturers({ file, dry_run: dryRun })}
-          onTemplate={() => manufacturerImportTemplate()}
+          onImport={(file, dryRun) => importManufacturersCatalog({ file, dry_run: dryRun })}
+          onTemplate={() => manufacturerCatalogImportTemplate()}
           templateFilename="manufacturers_template.csv"
           invalidates={INVALIDATES}
           onClose={() => setImporting(false)}

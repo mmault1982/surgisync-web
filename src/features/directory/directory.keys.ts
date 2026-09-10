@@ -6,7 +6,7 @@ import type { SurgeonSearch } from './surgeons.search';
  * Query keys for the Directory Profiles section.
  *
  * Rooted separately from `catalogKeys` even though both read
- * `/api/v1/manufacturers/`, because they are different questions with
+ * `/api/v1/directory/manufacturers/`, because they are different questions with
  * different lifetimes: the catalog key caches the *picker's* option list for
  * five minutes, this one caches a *page* of a table the user is editing. One
  * root would mean either a rename leaving the picker stale, or every save
@@ -17,6 +17,29 @@ import type { SurgeonSearch } from './surgeons.search';
 export const manufacturerKeys = {
   all: ['directory-manufacturers'] as const,
   list: (search: ManufacturerSearch) => [...manufacturerKeys.all, 'list', search] as const,
+  /**
+   * Every manufacturer's composite document — the prefix an address write
+   * invalidates.
+   *
+   * The prefix rather than one id, because the address book belongs to the
+   * shared `Company` identity and not to the role: two manufacturer rows this
+   * organization owns may point at one company, and editing an address through
+   * either has to leave both stale. That is the case the backend gave these
+   * writes their own URL for. At most a couple of documents are ever cached, so
+   * the width costs nothing.
+   *
+   * Not `all`: the *listing* shows a name and whether a barcode exists, neither
+   * of which an address can change.
+   */
+  details: () => [...manufacturerKeys.all, 'detail'] as const,
+  /**
+   * One manufacturer's composite document — the role, its `Company` identity
+   * and that company's addresses, in one read.
+   *
+   * A sibling of `list`, not a child of it, the same split
+   * `productCatalogKeys.detail` makes.
+   */
+  detail: (id: number) => [...manufacturerKeys.details(), id] as const,
 };
 
 /**

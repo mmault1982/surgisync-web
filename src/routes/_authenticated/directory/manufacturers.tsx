@@ -40,6 +40,25 @@ function ManufacturersPage() {
       onPageChange={(page) => {
         void navigate({ search: (prev) => ({ ...prev, page }) });
       }}
+      // Add and Edit are pages now rather than a dialog on this screen — a
+      // manufacturer carries eleven writable fields across two resources, which
+      // is well past where `NameDialog`'s docstring says a shared one-field
+      // dialog should stop.
+      onAdd={() => {
+        void navigate({ to: '/directory/manufacturers/new' });
+      }}
+      onOpen={(id) => {
+        void navigate({
+          to: '/directory/manufacturers/$manufacturerId',
+          params: { manufacturerId: String(id) },
+        });
+      }}
+      onEdit={(id) => {
+        void navigate({
+          to: '/directory/manufacturers/$manufacturerId/edit',
+          params: { manufacturerId: String(id) },
+        });
+      }}
     />
   );
 }

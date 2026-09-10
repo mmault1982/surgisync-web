@@ -179,6 +179,47 @@ const ALLOWED_OPERATIONS = new Set([
   'import_surgeons',
   'surgeon_import_template',
 
+  // Directory Profiles → Facilities, on /api/v1/directory/ — the same
+  // composite-read + shared-`Company` contract manufacturers got, and inside
+  // the response-accuracy gate from its first commit.
+  //
+  // The legacy `/api/v1/facilities/` (`list_facilities`) is deliberately NOT
+  // here, and this is not the same endpoint under an older name. That one is
+  // an assignment-narrowed picker with a `search_all` toggle, it declares a
+  // bare array while answering {message, data}, and two shipped mobile call
+  // sites parse the envelope — it is named twice above as one of the liars.
+  // The catalog below is org-scoped, paginated for real, and shows
+  // deactivated rows. The backend keeps both on their own merits.
+  //
+  // Four things here diverge from the manufacturer catalog, all deliberate:
+  //
+  // - `deactivate_facility` is a DELETE that *deactivates*. `Facility` has no
+  //   soft-delete column, so the row stays in this catalog, stays readable at
+  //   its URL, and keeps its name — the name is not freed for reuse. It
+  //   answers 200 with the updated document, not 204, and `partial_update_facility`
+  //   with `{is_active: true}` undoes it.
+  // - There is no 409, unlike `delete_manufacturer_catalog`. Nothing is
+  //   hidden and nothing is freed, so there is no reference for one to guard.
+  // - There is no import pair. The other three directory entities have one;
+  //   this endpoint does not offer it.
+  // - `create_facility` and `partial_update_facility` take fifteen fields, not
+  //   just `name` — the classification, affiliation and licensing blocks go in
+  //   the same request. The ten contact fields still belong to the shared
+  //   `Company` and still go through `partial_update_company` above, so a save
+  //   is still two requests.
+  //
+  // One inaccuracy to be aware of rather than to work around: `facility_type`
+  // and `onboarding_status` are documented "Repeatable" and read server-side
+  // with `getlist`, but declared `type: string` rather than `type: array` as
+  // `/stock-items/` correctly declares `manufacturer_id`. So the generated
+  // params type is a scalar and the filters are single-select. That is a
+  // backend schema bug to raise, not something to cast past here.
+  'list_facilities_catalog',
+  'create_facility',
+  'retrieve_facility_detail',
+  'partial_update_facility',
+  'deactivate_facility',
+
   // The catalog, on /api/v1/parts/ — inside the response accuracy gate from
   // its first commit, so all six of these are verified rather than merely
   // documented. `list_parts` backs the Receive form's pickers and the Product

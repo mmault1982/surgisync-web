@@ -1478,7 +1478,17 @@ export function useDeleteManufacturerCatalog<TData = Awaited<ReturnType<typeof d
 
 
 /**
- * Create manufacturers in bulk from a CSV or Excel file with a `name` column. Organization admins only. Names this organization already has are **skipped**, not re-created and not errors, so re-running the same file is safe. Send `dry_run=true` to preview the outcome of every row without writing anything.
+ * Create and amend manufacturers in bulk from a CSV or Excel file. Organization admins only.
+ *
+ * The file carries everything the manufacturer form edits — the name, the ten contact fields of the organization behind it, and one address — so a maintained spreadsheet can stay the source of truth. Download the template for the column contract.
+ *
+ * **A name this organization already has is amended, not duplicated.** A row whose stored values already agree with the file in every stated field is `skipped`; one that differs is `updated`. Neither is an error, so re-running the same file is safe.
+ *
+ * **A blank cell means "not stated", never "clear this."** A file carrying only a name and a phone number amends the phone and leaves every other field alone.
+ *
+ * **A manufacturer cannot be renamed here.** The name is what a row is matched on; use `PATCH /api/v1/directory/manufacturers/{id}/`.
+ *
+ * The address is written as the primary of its kind, creating one where there is none and amending the existing one where there is. Send `dry_run=true` to preview the outcome of every row without writing anything.
  */
 export const importManufacturersCatalog = (
     importRequestRequest: BodyType<ImportRequestRequest>,
@@ -1574,7 +1584,7 @@ export function useImportManufacturersCatalog<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * An empty CSV with the header row the importer expects.
+ * An empty CSV with the header row the importer expects, and two worked example rows. The columns are documented in `docs/manufacturer-import-format.md`.
  */
 export const manufacturerCatalogImportTemplate = (
 

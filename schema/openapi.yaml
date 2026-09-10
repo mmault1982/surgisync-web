@@ -1300,11 +1300,18 @@ paths:
   /api/v1/directory/manufacturers/import/:
     post:
       operationId: import_manufacturers_catalog
-      description: Create manufacturers in bulk from a CSV or Excel file with a `name`
-        column. Organization admins only. Names this organization already has are
-        **skipped**, not re-created and not errors, so re-running the same file is
-        safe. Send `dry_run=true` to preview the outcome of every row without writing
-        anything.
+      description: |-
+        Create and amend manufacturers in bulk from a CSV or Excel file. Organization admins only.
+
+        The file carries everything the manufacturer form edits — the name, the ten contact fields of the organization behind it, and one address — so a maintained spreadsheet can stay the source of truth. Download the template for the column contract.
+
+        **A name this organization already has is amended, not duplicated.** A row whose stored values already agree with the file in every stated field is `skipped`; one that differs is `updated`. Neither is an error, so re-running the same file is safe.
+
+        **A blank cell means "not stated", never "clear this."** A file carrying only a name and a phone number amends the phone and leaves every other field alone.
+
+        **A manufacturer cannot be renamed here.** The name is what a row is matched on; use `PATCH /api/v1/directory/manufacturers/{id}/`.
+
+        The address is written as the primary of its kind, creating one where there is none and amending the existing one where there is. Send `dry_run=true` to preview the outcome of every row without writing anything.
       tags:
       - Inventory
       requestBody:
@@ -1348,7 +1355,8 @@ paths:
   /api/v1/directory/manufacturers/import/template/:
     get:
       operationId: manufacturer_catalog_import_template
-      description: An empty CSV with the header row the importer expects.
+      description: An empty CSV with the header row the importer expects, and two
+        worked example rows. The columns are documented in `docs/manufacturer-import-format.md`.
       tags:
       - Inventory
       security:
@@ -4946,11 +4954,18 @@ paths:
   /api/v1/manufacturers/import/:
     post:
       operationId: import_manufacturers
-      description: Create manufacturers in bulk from a CSV or Excel file with a `name`
-        column. Organization admins only. Names this organization already has are
-        **skipped**, not re-created and not errors, so re-running the same file is
-        safe. Send `dry_run=true` to preview the outcome of every row without writing
-        anything.
+      description: |-
+        Create and amend manufacturers in bulk from a CSV or Excel file. Organization admins only.
+
+        The file carries everything the manufacturer form edits — the name, the ten contact fields of the organization behind it, and one address — so a maintained spreadsheet can stay the source of truth. Download the template for the column contract.
+
+        **A name this organization already has is amended, not duplicated.** A row whose stored values already agree with the file in every stated field is `skipped`; one that differs is `updated`. Neither is an error, so re-running the same file is safe.
+
+        **A blank cell means "not stated", never "clear this."** A file carrying only a name and a phone number amends the phone and leaves every other field alone.
+
+        **A manufacturer cannot be renamed here.** The name is what a row is matched on; use `PATCH /api/v1/directory/manufacturers/{id}/`.
+
+        The address is written as the primary of its kind, creating one where there is none and amending the existing one where there is. Send `dry_run=true` to preview the outcome of every row without writing anything.
       tags:
       - Inventory
       requestBody:
@@ -4995,7 +5010,8 @@ paths:
   /api/v1/manufacturers/import/template/:
     get:
       operationId: manufacturer_import_template
-      description: An empty CSV with the header row the importer expects.
+      description: An empty CSV with the header row the importer expects, and two
+        worked example rows. The columns are documented in `docs/manufacturer-import-format.md`.
       tags:
       - Inventory
       security:
@@ -10972,7 +10988,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/OutcomeEnum'
           description: |-
-            `created` — a new record. `updated` — a record already existed and at least one value in the file differed, so it was amended in place. `skipped` — a record already existed and the file agreed with it in every stated field, so there was nothing to do. `failed` — the row could not be used. Only `failed` is an error: `updated` and `skipped` are the normal outcomes of re-running a file. Importers over records with no amendable fields — manufacturers, procedures, surgeons — never emit `updated`.
+            `created` — a new record. `updated` — a record already existed and at least one value in the file differed, so it was amended in place. `skipped` — a record already existed and the file agreed with it in every stated field, so there was nothing to do. `failed` — the row could not be used. Only `failed` is an error: `updated` and `skipped` are the normal outcomes of re-running a file. Importers over records with no amendable fields — procedures and surgeons, which are lists of names — never emit `updated`.
 
             * `created` - created
             * `updated` - updated

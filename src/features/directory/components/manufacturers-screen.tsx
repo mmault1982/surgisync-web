@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { manufacturerKeys } from '../directory.keys';
+import { MANUFACTURER_REASONS } from '../manufacturer-import';
 import { manufacturerListQuery } from '../manufacturers.queries';
 import { hasActiveSearch, type ManufacturerSearch } from '../manufacturers.search';
 
@@ -27,10 +28,14 @@ import { ManufacturersTable } from './manufacturers-table';
 /**
  * Manufacturers, under Directory Profiles.
  *
- * The list is the shared catalog plus the ones this organization owns; only
- * the owned ones can be edited, and the server decides which those are — a
- * client-side guess would either hide rows it should not or offer edits the
- * server will 404.
+ * Every manufacturer belongs to exactly one organization — `parent_company` is
+ * NOT NULL on the model, and `list_manufacturers_catalog` says so in the
+ * contract. There is no shared catalog, and this screen used to claim there
+ * was in three places.
+ *
+ * Which rows can be edited is still the server's answer rather than a
+ * client-side guess, because `is_owned` is False for anything a superuser or a
+ * multi-membership user can see but not write.
  */
 /**
  * The two query roots every manufacturer write refreshes.
@@ -80,9 +85,9 @@ export function ManufacturersScreen({
         you can receive against.
       */}
       <p className="mb-4 text-sm text-muted-foreground">
-        Manufacturers your organization has added, alongside the shared catalog. Receiving stock
-        against one also needs its catalog of parts, which is loaded separately — until then it will
-        not be offered on Receive / Load.
+        Manufacturers your organization has added. Receiving stock against one also needs its
+        catalog of parts, which is loaded separately — until then it will not be offered on Receive
+        / Load.
       </p>
 
       <header className="mb-3 flex flex-wrap items-center gap-3">
@@ -175,15 +180,19 @@ export function ManufacturersScreen({
           title="Import manufacturers"
           description={
             <>
-              A CSV or Excel file with a single column headed <strong>name</strong>. Names already
-              available to you — your own or the shared catalog — are left alone, so the same file
-              can be imported twice safely. Imported manufacturers need a catalog of parts before
-              stock can be received against them.
+              A CSV or Excel file with a <strong>Name</strong> column, plus optional contact and
+              address columns — everything this screen can edit. A name you already have is{' '}
+              <strong>amended</strong> rather than duplicated, so the same file can be imported
+              twice safely and a maintained spreadsheet can stay the source of truth. A blank cell
+              is left alone rather than cleared, and a manufacturer cannot be renamed here. Download
+              the template for the full column list. Imported manufacturers need a catalog of parts
+              before stock can be received against them.
             </>
           }
           onImport={(file, dryRun) => importManufacturersCatalog({ file, dry_run: dryRun })}
           onTemplate={() => manufacturerCatalogImportTemplate()}
           templateFilename="manufacturers_template.csv"
+          reasons={MANUFACTURER_REASONS}
           invalidates={INVALIDATES}
           onClose={() => setImporting(false)}
         />

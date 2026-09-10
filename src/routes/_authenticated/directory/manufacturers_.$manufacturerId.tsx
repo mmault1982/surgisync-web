@@ -6,8 +6,9 @@ import { errorMessage, isNotFound } from '@/api/errors';
 import { useAuth } from '@/auth/auth-context';
 import { canManageOrgRecords } from '@/auth/permissions';
 import { Button } from '@/components/ui/button';
-import { ManufacturerAddressesCard } from '@/features/directory/components/manufacturer-addresses-card';
+import { CompanyAddressesCard } from '@/features/directory/components/company-addresses-card';
 import { ManufacturerDetailScreen } from '@/features/directory/components/manufacturer-detail-screen';
+import { manufacturerKeys } from '@/features/directory/directory.keys';
 import { manufacturerDetailQuery } from '@/features/directory/manufacturers.queries';
 
 /**
@@ -83,10 +84,16 @@ function ManufacturerDetailPage() {
         purpose — that identity may be shared with this organization's facility
         and tenant rows.
       */}
-      <ManufacturerAddressesCard
+      <CompanyAddressesCard
         companyId={manufacturer.company.id}
         addresses={manufacturer.company.addresses}
         canManage={canWrite}
+        roleNoun="manufacturer"
+        // The detail documents, not the listing: an address cannot change a
+        // table showing a name and whether a barcode exists, and evicting
+        // `catalogKeys` would throw away a warm Receive-picker cache for a
+        // change that cannot reach it.
+        invalidates={[manufacturerKeys.details()]}
       />
     </div>
   );

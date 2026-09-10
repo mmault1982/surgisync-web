@@ -1,6 +1,15 @@
 import { asFieldErrors, errorMessage } from '@/api/errors';
 import type { ManufacturerDetail, PatchedCompanyWriteRequest } from '@/api/generated/model';
 
+import {
+  COMPANY_FIELDS,
+  blankCompanyValues,
+  buildCompanyPatch,
+  seedCompanyValues,
+  validateCompanyEmails,
+  type CompanyValues,
+} from './company-form';
+
 /**
  * Everything the manufacturer form decides, with no DOM in sight.
  *
@@ -21,60 +30,23 @@ import type { ManufacturerDetail, PatchedCompanyWriteRequest } from '@/api/gener
  * Ten contact fields mapped through a camelCase alias table would be ten more
  * places for a rename to go wrong, and both the patch builder and the
  * server-error mapping below become identities by keeping them the same.
+ *
+ * The ten themselves live in `company-form.ts` now, because Facilities writes
+ * the same block through the same endpoint. What stays here is everything that
+ * is about the *manufacturer* role: its one writable field, and the plan that
+ * decides which of the two requests a save needs.
  */
 
 export const MAX_NAME_LENGTH = 100;
 
-/** The `Company` fields this form writes, in the order they are laid out. */
-export const COMPANY_FIELDS = [
-  'phone',
-  'fax',
-  'email',
-  'contact_name',
-  'contact_title',
-  'contact_email',
-  'contact_phone',
-  'billing_contact_name',
-  'billing_contact_email',
-  'billing_contact_phone',
-] as const;
-
-export type CompanyField = (typeof COMPANY_FIELDS)[number];
-
-export type ManufacturerValues = { name: string } & Record<CompanyField, string>;
-
-/** The three fields the server holds to an email shape. */
-const EMAIL_FIELDS = ['email', 'contact_email', 'billing_contact_email'] as const;
-
-/**
- * Loose on purpose: something before an `@`, something after it, and a dot in
- * the tail. Mirroring Django's own `EmailValidator` here would be a second
- * spelling of a rule only the server can enforce — this catches the typo that
- * would otherwise cost a round trip, and leaves the judgement where it lives.
- */
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function blankCompanyValues(): Record<CompanyField, string> {
-  return Object.fromEntries(COMPANY_FIELDS.map((field) => [field, ''])) as Record<
-    CompanyField,
-    string
-  >;
-}
+export type ManufacturerValues = { name: string } & CompanyValues;
 
 export function initialManufacturerValues(): ManufacturerValues {
   return { name: '', ...blankCompanyValues() };
 }
 
-/**
- * Every value is a string, including the ten that are optional on the wire.
- * That is what an `<input>` holds, and converting at the edges — here and in
- * `manufacturerSavePlan` — beats scattering `?? ''` through the component.
- */
 export function seedManufacturerValues(record: ManufacturerDetail): ManufacturerValues {
-  const values = initialManufacturerValues();
-  values.name = record.name;
-  for (const field of COMPANY_FIELDS) values[field] = record.company[field] ?? '';
-  return values;
+  return { name: record.name, ...seedCompanyValues(record.company) };
 }
 
 export type ManufacturerErrors = Partial<Record<keyof ManufacturerValues, string>>;
@@ -96,14 +68,9 @@ export function validateManufacturer(values: ManufacturerValues): ManufacturerEr
     errors.name = `Use ${MAX_NAME_LENGTH} characters or fewer.`;
   }
 
-  for (const field of EMAIL_FIELDS) {
-    const value = values[field].trim();
-    // Optional, as the model has it — every contact field is blankable. But a
-    // value that is present must look like an address.
-    if (value && !EMAIL_PATTERN.test(value)) {
-      errors[field] = 'Enter a valid email address.';
-    }
-  }
+  // Optional, as the model has them — every contact field is blankable. But a
+  // value that is present must look like an address.
+  Object.assign(errors, validateCompanyEmails(values));
 
   return errors;
 }
@@ -146,15 +113,8 @@ export function manufacturerSavePlan(
 
   if (!record || name !== record.name) plan.renameTo = name;
 
-  const companyPatch: PatchedCompanyWriteRequest = {};
-  for (const field of COMPANY_FIELDS) {
-    const value = values[field].trim();
-    // `?? ''` on the right, because absent and empty are the same thing here:
-    // the server renders every blankable CharField as `''`, but a client
-    // holding an older document should not read a missing key as a change.
-    if (value !== (record?.company[field] ?? '')) companyPatch[field] = value;
-  }
-  if (Object.keys(companyPatch).length > 0) plan.companyPatch = companyPatch;
+  const companyPatch = buildCompanyPatch(values, record?.company ?? null);
+  if (companyPatch) plan.companyPatch = companyPatch;
 
   return plan;
 }

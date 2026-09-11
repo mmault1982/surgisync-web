@@ -35,8 +35,9 @@ export type RowReasons = Readonly<Record<string, string>>;
  *
  * Updates are named separately for the same reason in reverse — a catalog
  * import that amends 40 prices has changed something, and folding those into
- * "already there" would say the opposite. The directory importers never report
- * any, so their sentence is unchanged.
+ * "already there" would say the opposite. Procedures and surgeons are still
+ * lists of names and never report any, so their sentence is unchanged;
+ * manufacturers amend now, and do.
  */
 export function summarise(report: ImportReport): string {
   const parts: string[] = [];

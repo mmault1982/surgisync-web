@@ -86,8 +86,8 @@ describe('summarise', () => {
   });
 
   it('does not mention updates when there are none', () => {
-    // The three directory importers can never report one, so their sentence
-    // has to read exactly as it did before the outcome existed.
+    // Procedures and surgeons can never report one, so their sentence has to
+    // read exactly as it did before the outcome existed.
     expect(summarise(report({ dry_run: false, total_rows: 3, created: 3 }))).toBe(
       '3 rows: 3 added.',
     );
